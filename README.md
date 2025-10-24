@@ -186,7 +186,6 @@ curl -X GET http://localhost:8000/api/comedores/      -H "Authorization: Bearer 
 1. Crear una branch desde `development`.  
 2. Commit siguiendo el estándar definido.  
 3. Abrir **Pull Request** a `development`.  
-4. Pasar linters y tests antes del PR.  
-5. Revisión de al menos otro dev antes del merge.  
+4. Pasar linters y tests antes del PR.  \n5. Revisión de al menos otro dev antes del merge.  
 
 ---
