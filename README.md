@@ -1,7 +1,7 @@
-# SISOC
+# SISOC - Versión Básica
 
-Sistema de gestión basado en **Django** y **MySQL**, desplegable mediante **Docker** y **Docker Compose**.  
-Cada aplicación del repositorio representa un módulo funcional (ej. `comedores`, `relevamientos`, `users`).
+Sistema de gestión básico basado en **Django** y **MySQL**, desplegable mediante **Docker** y **Docker Compose**.  
+Esta versión incluye únicamente los módulos esenciales: Login, Ciudadanos y configuración de usuarios.
 
 ---
 
@@ -14,12 +14,9 @@ Cada aplicación del repositorio representa un módulo funcional (ej. `comedores
 5. [Formateo y Estilo de Código](#formateo-y-estilo-de-código)  
 6. [Variables de Entorno](#variables-de-entorno)  
 7. [Tests Automáticos](#tests-automáticos)  
-8. [Buenas Prácticas](#buenas-prácticas)  
-9. [API](#api)  
-10. [Tecnologías Utilizadas](#tecnologías-utilizadas)  
-11. [Despliegues](#despliegues)  
-12. [Changelog](#changelog)  
-13. [Contribución](#contribución)
+8. [Módulos Incluidos](#módulos-incluidos)  
+9. [Tecnologías Utilizadas](#tecnologías-utilizadas)  
+10. [Contribución](#contribución)
 
 ---
 
@@ -45,21 +42,22 @@ Cada aplicación del repositorio representa un módulo funcional (ej. `comedores
 
 1. Clonar el repositorio:
    ```bash
-   git clone https://github.com/ORGANIZACION/SISOC.git
-   cd SISOC
+   git clone <URL_DEL_REPOSITORIO>
+   cd Sedronar
    ```
-2. (Opcional) Colocar un dump en `./docker/mysql/local-dump.sql`.  
-3. Levantar servicios:
+2. Levantar servicios:
    ```bash
    docker-compose up
    ```
-4. Acceder a la app en [http://localhost:8000](http://localhost:8000).
+3. Acceder a la app en [http://localhost:8000](http://localhost:8000).
+4. Credenciales por defecto:
+   - Usuario: `admin`
+   - Contraseña: `admin123`
 
-## Reiniciar base de datos con nuevo dump
+## Reiniciar base de datos
 ```bash
 docker-compose down
-docker volume rm sisoc_mysql_data
-# colocar nuevo dump en ./docker/mysql/local-dump.sql
+docker volume rm sedronar_sedronar_mysql_data
 docker-compose up
 ```
 
@@ -73,11 +71,13 @@ docker-compose up
 
 - **`config/`** → configuración global de Django  
 - **`docker/`** → archivos de contenedores  
-- **`apps/`** (`comedores/`, `relevamientos/`, `users/`, …) → aplicaciones Django  
-- **`templates/`** y **`**/templates/`** → plantillas HTML  
-- **`templates/components`** → Componentes HTML  
+- **`users/`** → gestión de usuarios y autenticación  
+- **`core/`** → funcionalidades básicas del sistema  
+- **`dashboard/`** → página de inicio  
+- **`ciudadanos/`** → módulo de gestión de ciudadanos  
+- **`healthcheck/`** → verificación de salud del sistema  
+- **`templates/`** → plantillas HTML  
 - **`static/`** → archivos estáticos (CSS, JS, imágenes)  
-- **`**/tests/`** → pruebas automáticas  
 
 ---
 
@@ -86,13 +86,13 @@ docker-compose up
 Antes de un **Pull Request**, ejecutar:
 
 ```bash
-# Linter (Se debe resolver a mano)
+# Linter
 pylint **/*.py --rcfile=.pylintrc
 
-# Formateo Python (Automagico)
+# Formateo Python
 black .
 
-# Formateo Django Templates (Aveces automagico, a veces no)
+# Formateo Django Templates
 djlint . --configuration=.djlintrc --reformat
 ```
 
@@ -100,7 +100,21 @@ djlint . --configuration=.djlintrc --reformat
 
 ## Variables de Entorno
 
-Ejemplo en [.env.example](https://github.com/dsocial118/BACKOFFICE/blob/development/.env.example):
+Copiar `.env.example` a `.env` y configurar:
+
+```bash
+# Django
+DJANGO_DEBUG=True
+DJANGO_SECRET_KEY=tu-clave-secreta
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Base de datos
+DATABASE_HOST=sedronar-mysql
+DATABASE_PORT=3306
+DATABASE_USER=root
+DATABASE_PASSWORD=sedronar123
+DATABASE_NAME=sedronar
+```
 
 ---
 
@@ -113,79 +127,56 @@ docker compose exec django pytest -n auto
 
 ---
 
-## Buenas Prácticas
+## Módulos Incluidos
 
-1. **Estilo de código**  
-   - Python → `snake_case`  
-   - JavaScript → `CamelCase`  
+### 1. **Autenticación y Usuarios**
+- Login/Logout
+- Gestión de usuarios
+- Grupos y permisos
+- Perfiles de usuario
 
-2. **Arquitectura Django**  
-   - **Modelo**: docstring + `verbose_name` → evitar redundancia.  
-   - **Vista**: usar **Class Based Views**, sin lógica de negocio.  
-   - **Template**: evitar consultas y mantener simple.  
+### 2. **Ciudadanos**
+- Registro de ciudadanos
+- Búsqueda y filtrado
+- Gestión de información personal
 
-3. **Organización interna**  
-   - Archivos ordenados por módulo.  
-   - Servicios en `services/` por modelo.  
-   - Templates separados por entidad.  
+### 3. **Dashboard**
+- Página de inicio
+- Estadísticas básicas
 
-4. **Commits**  
-   Usar formato consistente:  
-   ```
-   feat: nueva funcionalidad en comedores
-   fix: corregido bug en relevamientos
-   refactor: limpieza en servicios de users
-   ```
+### 4. **Core**
+- Funcionalidades compartidas
+- Modelos base (Provincia, Localidad, etc.)
+- Utilidades comunes
 
 ---
 
-## API
+## Tecnologías Utilizadas
 
-Documentación Postman:  
-[API SISOC](https://documenter.getpostman.com/view/14921866/2sAXxMfDXf#01ac9db5-a6b5-4b20-9e8c-973e38884f17)
-No es la mejor documentacion. En caso de dudas, consultar con Juani (Tech lead de SISOC) o Andy (Dueño de GESCOM)
-
-Ejemplo de request:
-```bash
-curl -X GET http://localhost:8000/api/comedores/      -H "Authorization: Bearer <API_KEY>"
-```
-
----
-
-## Despliegues
-
-##Ciclo quincenal de releases
-- **Semana 0 (jueves)** → abrir branch `development`.  
-- **Semana 2 (lunes, freeze)** → congelar `development`, crear tag `YY.MM.DD-rc1`.  
-- **Semana 2 (miércoles noche)** → deploy a PRD si QA aprueba último `rcX`.  
-
-##Checklist
-- [ ] Branch `development` congelada sin features nuevos  
-- [ ] Backup válido de DB  
-- [ ] Tag final creado en `development`  
-- [ ] Probado con base similar a PRD  
-- [ ] Testeado en QA ese mismo tag  
-- [ ] QA aprobó el tag  
-- [ ] Merge limpio a `main`  
-- [ ] Changelog actualizado  
-- [ ] Migraciones reversibles/controladas  
-- [ ] Equipo notificado  
-- [ ] Último tag estable guardado para rollback  
-- [ ] Squash de migraciones estables  
-
----
-
-## Changelog
-
-[CHANGELOG.md](https://github.com/dsocial118/BACKOFFICE/blob/development/CHANGELOG.md)
+- **Django 4.2**: Framework web
+- **MySQL 8.0**: Base de datos
+- **Docker & Docker Compose**: Contenedores
+- **Bootstrap 5**: Framework CSS
+- **pytest**: Testing
+- **Black**: Formateo de código
+- **Pylint**: Análisis de código
 
 ---
 
 ## Contribución
 
-1. Crear una branch desde `development`.  
+1. Crear una branch desde `main`.  
 2. Commit siguiendo el estándar definido.  
-3. Abrir **Pull Request** a `development`.  
-4. Pasar linters y tests antes del PR.  \n5. Revisión de al menos otro dev antes del merge.  
+3. Abrir **Pull Request** a `main`.  
+4. Pasar linters y tests antes del PR.  
+5. Revisión de al menos otro dev antes del merge.  
 
 ---
+
+## Credenciales por Defecto
+
+- **Usuario**: admin
+- **Contraseña**: admin123
+- **Email**: admin@sisoc.gov.ar
+
+**¡IMPORTANTE!** Cambiar estas credenciales en producción.

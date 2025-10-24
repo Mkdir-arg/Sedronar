@@ -11,21 +11,8 @@ urlpatterns = [
     path("", include("users.urls")),
     path("", include("core.urls")),
     path("", include("dashboard.urls")),
-    path("", include("comedores.urls")),
-    path("", include("organizaciones.urls")),
-    path("", include("cdi.urls")),
-    path("", include("duplas.urls")),
     path("", include("ciudadanos.urls")),
-    path("", include("admisiones.urls")),
-    path("", include("admisiones.urls")),
-    path("", include("centrodefamilia.urls")),
     path("", include("healthcheck.urls")),
-    path("acompanamientos/", include("acompanamientos.urls")),
-    path("expedientespagos/", include("expedientespagos.urls")),
-    path("", include("rendicioncuentasfinal.urls")),
-    path("", include("relevamientos.urls")),
-    path("rendicioncuentasmensual/", include("rendicioncuentasmensual.urls")),
-    path("", include("celiaquia.urls")),
 ]
 
 if settings.DEBUG:
