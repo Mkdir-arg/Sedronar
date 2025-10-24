@@ -25,7 +25,7 @@ Esta versión incluye únicamente los módulos esenciales: Login, Ciudadanos y c
 - **Backend**: Django  
 - **Base de datos**: MySQL  
 - **Contenedores**: Docker + Docker Compose  
-- **Front-end**: HTML, CSS, JS, Bootstrap  
+- **Front-end**: HTML, CSS, JS, Tailwind CSS, Alpine.js  
 - **Tests**: pytest  
 
 ---
@@ -49,7 +49,7 @@ Esta versión incluye únicamente los módulos esenciales: Login, Ciudadanos y c
    ```bash
    docker-compose up
    ```
-3. Acceder a la app en [http://localhost:8000](http://localhost:8000).
+3. Acceder a la app en [http://localhost:9000](http://localhost:9000).
 4. Credenciales por defecto:
    - Usuario: `admin`
    - Contraseña: `admin123`
@@ -156,7 +156,8 @@ docker compose exec django pytest -n auto
 - **Django 4.2**: Framework web
 - **MySQL 8.0**: Base de datos
 - **Docker & Docker Compose**: Contenedores
-- **Bootstrap 5**: Framework CSS
+- **Tailwind CSS**: Framework CSS utilitario
+- **Alpine.js**: Framework JS ligero para interactividad
 - **pytest**: Testing
 - **Black**: Formateo de código
 - **Pylint**: Análisis de código

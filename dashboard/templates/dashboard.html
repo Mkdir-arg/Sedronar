@@ -1,142 +1,146 @@
-{% extends "includes/main.html" %}
+{% extends "includes/base.html" %}
 {% load static custom_filters %}
-{% block head %}
-    {{ block.super }}
-    <link rel="stylesheet"
-          href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css" />
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/charts.css/dist/charts.min.css" />
-    <link rel="stylesheet" href="{% static 'custom/css/dashboard.css' %}" />
-{% endblock %}
-{% block breadcrumb %}{% endblock %}
-{% block menu-adicional %}{% endblock %}
-{% block content %}
-    <!-- Bloque SSE: sólo indicadores nuevos -->
-    {% if request.user|has_group:"Dashboard Centrodefamilia" %}
-        <div class="row">
-            <div class="container">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Datos de Centro De Familia</h3>
-                        <div class="card-tools">
-                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                <i class="fas fa-minus"></i>
-                            </button>
+
+{% block title %}Dashboard{% endblock %}
+
+{% block main-content %}
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <!-- Page header -->
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="min-w-0 flex-1">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+                Dashboard
+            </h2>
+        </div>
+    </div>
+
+    <!-- Stats cards -->
+    <div class="mt-8">
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <!-- Card 1 -->
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-white">
+                            <i class="fas fa-users text-sm"></i>
                         </div>
                     </div>
-                    <div class="card-body p-0">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="position-relative">
-                                    <iframe title="Centros de Familia - Seguimiento del programa v3"
-                                            src="https://app.powerbi.com/view?r=eyJrIjoiOTMyNjY2ZjQtY2FhZC00NGRlLTg0NjUtNDFlNWQ5MGMwNjVlIiwidCI6IjRmODIyY2Y0LTY4NjctNDNmYS1hZTRhLTAzYTM5ZmU5MzA5YyIsImMiOjR9"
-                                            frameborder="0"
-                                            allowfullscreen
-                                            style="position:absolute;
-                                                   top:0;
-                                                   left:0;
-                                                   width:100%;
-                                                   border:0;
-                                                   min-height:75vh">
-                                    </iframe>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="truncate text-sm font-medium text-gray-500">Total Usuarios</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ total_usuarios|default:"0" }}</dd>
+                        </dl>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-{% elif request.user|has_group:"Dashboard Comedor" %}
-    <div class="row mb-4">
-        <div class="col-4">
-            <div class="custom-card card-violet">
-                <div class="card-icon">
-                    <i class="fas fa-utensils"></i>
-                </div>
-                <div class="card-content">
-                    <div class="card-amount">{{ cantidad_comedores_activos }}</div>
-                    <div class="card-title">Comedores Activos</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-4">
-            <div class="custom-card card-red">
-                <div class="card-icon">
-                    <i class="fas fa-clipboard-check"></i>
-                </div>
-                <div class="card-content">
-                    <div class="card-amount">{{ cantidad_relevamientos_activos }}</div>
-                    <div class="card-title">Relevamientos Activos</div>
+
+            <!-- Card 2 -->
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-md bg-green-500 text-white">
+                            <i class="fas fa-user-friends text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="truncate text-sm font-medium text-gray-500">Ciudadanos Registrados</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ total_ciudadanos|default:"0" }}</dd>
+                        </dl>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-4">
-            <div class="custom-card card-green">
-                <div class="card-icon">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="card-content">
-                    <div class="card-amount">0</div>
-                    <div class="card-title">Beneficiarios</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-9">
-            <div class="embed-responsive embed-responsive-16by9 w-100">
-                <iframe class="embed-responsive-item"
-                        title="Tablero - Comedores"
-                        src="https://app.powerbi.com/reportEmbed?reportId=35d6f754-ce1d-48b8-a463-3ba9f3ac6d70&autoAuth=true&ctid=4f822cf4-6867-43fa-ae4a-03a39fe9309c"
-                        allowfullscreen></iframe>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="custom-card mb-2">
-                <div class="card-icon">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="card-content">
-                    <div class="card-title">Duplas</div>
-                    <div class="card-amount">{{ presupuesto_desayuno }}</div>
-                </div>
-            </div>
-            <div class="custom-card mb-2">
-                <div class="card-icon">
-                    <i class="fas fa-coffee"></i>
-                </div>
-                <div class="card-content">
-                    <div class="card-title">Presupuesto Desayuno</div>
-                    <div class="card-amount">${{ presupuesto_desayuno }}</div>
-                </div>
-            </div>
-            <div class="custom-card mb-2">
-                <div class="card-icon">
-                    <i class="fas fa-cookie"></i>
-                </div>
-                <div class="card-content">
-                    <div class="card-title">Presupuesto Merienda</div>
-                    <div class="card-amount">${{ presupuesto_merienda }}</div>
-                </div>
-            </div>
-            <div class="custom-card mb-2">
-                <div class="card-icon">
-                    <i class="fas fa-utensils"></i>
-                </div>
-                <div class="card-content">
-                    <div class="card-title">Presupuesto Comida</div>
-                    <div class="card-amount">${{ presupuesto_comida }}</div>
+
+            <!-- Card 3 -->
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-md bg-yellow-500 text-white">
+                            <i class="fas fa-chart-line text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="truncate text-sm font-medium text-gray-500">Actividad del Sistema</dt>
+                            <dd class="text-lg font-medium text-gray-900">Activo</dd>
+                        </dl>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-{% else %}
-    <div class="d-flex justify-content-center align-items-center"
-         style="height: 70vh">
-        <img src="{% static 'custom/img/sisoc_logo.png' %}"
-             class="img-fluid"
-             alt="Capacitación Humano" />
+
+    <!-- Welcome section -->
+    <div class="mt-8">
+        <div class="overflow-hidden rounded-lg bg-white shadow">
+            <div class="px-4 py-5 sm:p-6">
+                <div class="text-center">
+                    <img class="mx-auto h-32 w-auto" src="{% static 'custom/img/sisoc_logo.png' %}" alt="SEDRONAR">
+                    <h3 class="mt-6 text-lg font-medium text-gray-900">
+                        Bienvenido a SEDRONAR
+                    </h3>
+                    <p class="mt-2 text-sm text-gray-500">
+                        Sistema de gestión básico para la Secretaría Nacional de Políticas Integrales sobre Drogas
+                    </p>
+                    <div class="mt-6">
+                        <div class="flex justify-center space-x-6">
+                            {% if request.user|has_group:"Ciudadanos" %}
+                                <a href="{% url 'ciudadanos' %}" class="inline-flex items-center rounded-md border border-transparent bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                                    <i class="fas fa-users mr-2"></i>
+                                    Gestionar Ciudadanos
+                                </a>
+                            {% endif %}
+                            {% if request.user|has_group:"Administrador" %}
+                                <a href="{% url 'usuarios' %}" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                                    <i class="fas fa-cog mr-2"></i>
+                                    Administrar Sistema
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-{% endif %}
+
+    <!-- Quick actions -->
+    <div class="mt-8">
+        <h3 class="text-lg font-medium text-gray-900">Acciones Rápidas</h3>
+        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {% if request.user|has_group:"Ciudadanos" %}
+                <div class="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm hover:border-gray-400">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-plus h-6 w-6 text-primary"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <a href="{% url 'ciudadanos' %}" class="focus:outline-none">
+                                <span class="absolute inset-0" aria-hidden="true"></span>
+                                <p class="text-sm font-medium text-gray-900">Nuevo Ciudadano</p>
+                                <p class="truncate text-sm text-gray-500">Registrar un nuevo ciudadano en el sistema</p>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if request.user|has_group:"Administrador" %}
+                <div class="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm hover:border-gray-400">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-user-plus h-6 w-6 text-primary"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <a href="{% url 'usuarios' %}" class="focus:outline-none">
+                                <span class="absolute inset-0" aria-hidden="true"></span>
+                                <p class="text-sm font-medium text-gray-900">Nuevo Usuario</p>
+                                <p class="truncate text-sm text-gray-500">Crear un nuevo usuario del sistema</p>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
 {% endblock %}

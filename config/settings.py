@@ -50,12 +50,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.admindocs",
     # Libs
-    "crispy_forms",
-    "crispy_bootstrap5",
     "django_extensions",
-    "import_export",
     "rest_framework",
-    "corsheaders",
     # Apps propias
     "users",
     "core",
@@ -67,7 +63,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -119,16 +114,14 @@ if ENVIRONMENT == "prd":
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-# Mensajes / Crispy
+# Mensajes
 MESSAGE_TAGS = {
-    messages.DEBUG: "alert-dark",
-    messages.INFO: "info",
-    messages.SUCCESS: "success",
-    messages.WARNING: "warning",
-    messages.ERROR: "error",
+    messages.DEBUG: "bg-gray-800 text-white",
+    messages.INFO: "bg-blue-500 text-white",
+    messages.SUCCESS: "bg-green-500 text-white",
+    messages.WARNING: "bg-yellow-500 text-white",
+    messages.ERROR: "bg-red-500 text-white",
 }
-CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
-CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 # DB
 DATABASES = {
@@ -165,9 +158,7 @@ DEFAULT_CACHE_TIMEOUT = 300
 DASHBOARD_CACHE_TIMEOUT = 300
 CIUDADANO_CACHE_TIMEOUT = 300
 
-# CORS
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = CSRF_TRUSTED_ORIGINS
+
 
 # REST Framework
 REST_FRAMEWORK = {
@@ -181,8 +172,7 @@ RENAPER_API_USERNAME = os.getenv("RENAPER_API_USERNAME")
 RENAPER_API_PASSWORD = os.getenv("RENAPER_API_PASSWORD")
 RENAPER_API_URL = os.getenv("RENAPER_API_URL")
 
-# IPs internas
-INTERNAL_IPS = ["127.0.0.1", "::1"]
+
 
 # Logging (asegurar directorio)
 LOG_DIR = BASE_DIR / "logs"
@@ -297,15 +287,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# Herramientas debug/perf en desarrollo
+# Herramientas debug en desarrollo
 if DEBUG:
-    INSTALLED_APPS += ["debug_toolbar", "silk"]
-    MIDDLEWARE.insert(
-        3, "debug_toolbar.middleware.DebugToolbarMiddleware"
-    )  # index tras Cors/Common
-    MIDDLEWARE += ["silk.middleware.SilkyMiddleware"]
-    DEBUG_TOOLBAR_CONFIG = {"SHOW_TOOLBAR_CALLBACK": lambda request: True}
-    SILKY_PYTHON_PROFILER = True
+    INTERNAL_IPS = ["127.0.0.1", "::1"]
 
 # Seguridad por entorno
 if ENVIRONMENT == "prd":

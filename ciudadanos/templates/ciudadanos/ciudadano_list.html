@@ -1,74 +1,197 @@
-{% extends "includes/main.html" %}
+{% extends "includes/base.html" %}
 {% load static %}
-{% block head %}{% endblock %}
-{% block title %}Ciudadano{% endblock %}
-{% block titulo-pagina %}{% endblock %}
-{% block breadcrumb %}
-    {% include 'components/breadcrumb.html' with items=breadcrumb_items %}
-{% endblock %}
-{% block menu-adicional %}{% endblock %}
-{% block content %}
-    {% url 'ciudadanos_ajax' as ajax_url %}
-    {% include 'components/search_bar.html' with titulo="Buscar Ciudadano" placeholder="Buscar" help_text="Ingresar DNI o apellido." reset_url=reset_url add_url=add_url show_add_button=can_add query=query ajax_search_mode=True ajax_url=ajax_url target_tbody_id="ciudadanos-table-body" %}
-    <div class="row mt-5 max-width-100">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <table class="table table-bordered table-striped projects">
-                        <thead>
+
+{% block title %}Ciudadanos{% endblock %}
+
+{% block main-content %}
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <!-- Page header -->
+    <div class="sm:flex sm:items-center">
+        <div class="sm:flex-auto">
+            <h1 class="text-2xl font-semibold text-gray-900">Ciudadanos</h1>
+            <p class="mt-2 text-sm text-gray-700">
+                Lista de todos los ciudadanos registrados en el sistema.
+            </p>
+        </div>
+        <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+            {% if can_add %}
+                <a href="{{ add_url }}" class="inline-flex items-center justify-center rounded-md border border-transparent bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 sm:w-auto">
+                    <i class="fas fa-plus mr-2"></i>
+                    Agregar Ciudadano
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Search bar -->
+    <div class="mt-6">
+        <div class="bg-white shadow sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <form method="get" class="flex flex-col sm:flex-row gap-4">
+                    <div class="flex-1">
+                        <label for="search" class="sr-only">Buscar</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search h-5 w-5 text-gray-400"></i>
+                            </div>
+                            <input type="text" name="q" value="{{ query }}" placeholder="Buscar por DNI o apellido..." class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                            Buscar
+                        </button>
+                        <a href="{{ reset_url }}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                            Limpiar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="mt-8 flex flex-col">
+        <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+            <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+                <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-300">
+                        <thead class="bg-gray-50">
                             <tr>
-                                <th>Nombre</th>
-                                <th>Documento</th>
-                                <th>Sexo</th>
-                                <th>Localidad</th>
-                                <th>Estado</th>
-                                <th style="width: 15%" class="notexport">Acciones</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Nombre
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Documento
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Sexo
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Localidad
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Estado
+                                </th>
+                                <th scope="col" class="relative px-6 py-3">
+                                    <span class="sr-only">Acciones</span>
+                                </th>
                             </tr>
                         </thead>
-                        <tbody id="ciudadanos-table-body">
+                        <tbody class="bg-white divide-y divide-gray-200">
                             {% for o in object_list %}
-                                <tr>
-                                    <td>
-                                        <a href="{% url 'ciudadanos_ver' o.id %}"
-                                           class="font-weight-bold"
-                                           title="Ver detalles">{{ o.apellido }} {{ o.nombre }}</a>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        <a href="{% url 'ciudadanos_ver' o.id %}" class="text-primary hover:text-blue-700">
+                                            {{ o.apellido }} {{ o.nombre }}
+                                        </a>
                                     </td>
-                                    <td>{{ o.tipo_documento }} {{ o.documento }}</td>
-                                    <td>{{ o.sexo }}</td>
-                                    <td>{{ o.localidad }}</td>
-                                    <td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ o.tipo_documento }} {{ o.documento }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ o.sexo }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ o.localidad }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
                                         {% if o.estado %}
-                                            <span class="text-success font-weight-bold">Activo</span>
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                                Activo
+                                            </span>
                                         {% else %}
-                                            <span class="text-danger font-weight-bold">Inactivo</span>
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                                Inactivo
+                                            </span>
                                         {% endif %}
                                     </td>
-                                    <td class="project-actions text-right">
-                                        {% if perms.Usuarios.rol_admin %}
-                                            <div class="btn-group" role="group">
-                                                <a href="{% url 'ciudadanos_ver' o.id %}"
-                                                   class="btn btn-primary btn-sm ver">Ver</a>
-                                                <a href="{% url 'ciudadanos_editar' o.id %}"
-                                                   class="btn btn-primary btn-sm editar">Editar</a>
-                                                <a href="{% url 'ciudadanos_eliminar' o.id %}"
-                                                   class="btn btn-danger btn-sm eliminar">Eliminar</a>
-                                            </div>
-                                        {% endif %}
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div class="flex justify-end space-x-2">
+                                            <a href="{% url 'ciudadanos_ver' o.id %}" class="text-primary hover:text-blue-700">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if perms.Usuarios.rol_admin %}
+                                                <a href="{% url 'ciudadanos_editar' o.id %}" class="text-yellow-600 hover:text-yellow-900">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{% url 'ciudadanos_eliminar' o.id %}" class="text-red-600 hover:text-red-900">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
                                     </td>
                                 </tr>
                             {% empty %}
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">No hay ciudadanos para mostrar</td>
+                                    <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
+                                        No hay ciudadanos para mostrar
+                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
                     </table>
-                    <div id="pagination-container">
-                        {% include 'components/pagination.html' with is_paginated=is_paginated page_obj=page_obj page_range=page_range query=query %}
-                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+        <div class="mt-6 flex items-center justify-between">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Anterior
+                    </a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Siguiente
+                    </a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Mostrando
+                        <span class="font-medium">{{ page_obj.start_index }}</span>
+                        a
+                        <span class="font-medium">{{ page_obj.end_index }}</span>
+                        de
+                        <span class="font-medium">{{ page_obj.paginator.count }}</span>
+                        resultados
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                        {% if page_obj.has_previous %}
+                            <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <i class="fas fa-chevron-left h-5 w-5"></i>
+                            </a>
+                        {% endif %}
+                        
+                        {% for num in page_range %}
+                            {% if num == page_obj.number %}
+                                <span class="relative inline-flex items-center px-4 py-2 border border-primary bg-primary text-sm font-medium text-white">
+                                    {{ num }}
+                                </span>
+                            {% else %}
+                                <a href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    {{ num }}
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <i class="fas fa-chevron-right h-5 w-5"></i>
+                            </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
 {% endblock %}
-{% block customJS %}{% endblock %}
