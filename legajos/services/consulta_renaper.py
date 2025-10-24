@@ -2,7 +2,7 @@ from django.conf import settings
 import requests
 import datetime
 import unicodedata
-from ciudadanos.models import Sexo, TipoDocumento, Provincia
+from core.models import Provincia
 from requests.exceptions import RequestException, ConnectionError
 
 API_BASE = settings.RENAPER_API_URL
@@ -93,7 +93,6 @@ class APIClient:
         try:
             data = response.json()
         except Exception as e:
-            # Log the raw response for debugging
             import logging
 
             logging.getLogger("django").exception("Respuesta no es JSON válido")
@@ -143,15 +142,6 @@ def consultar_datos_renaper(dni, sexo):
         if datos.get("mensaf") == "FALLECIDO":
             return {"success": False, "fallecido": True}
 
-        sexo_map = {"F": "Femenino", "M": "Masculino", "X": "X"}
-        sexo_texto = sexo_map.get(sexo)
-        sexo_pk = None
-        if sexo_texto:
-            sexo_obj = Sexo.objects.filter(sexo=sexo_texto).first()
-            sexo_pk = sexo_obj.pk if sexo_obj else None
-
-        tipo_doc = TipoDocumento.objects.get(tipo="DNI")
-
         EQUIVALENCIAS_PROVINCIAS = {
             "ciudad de buenos aires": "ciudad autonoma de buenos aires",
             "caba": "ciudad autonoma de buenos aires",
@@ -174,19 +164,13 @@ def consultar_datos_renaper(dni, sexo):
                 break
 
         datos_mapeados = {
-            "documento": dni,
-            "tipo_documento": tipo_doc.pk,
-            "sexo": sexo_pk,
-            "apellido": datos.get("apellido"),
+            "dni": dni,
             "nombre": datos.get("nombres"),
+            "apellido": datos.get("apellido"),
             "fecha_nacimiento": datos.get("fechaNacimiento"),
-            "calle": datos.get("calle"),
-            "altura": datos.get("numero"),
-            "piso_departamento": f"{datos.get('piso', '')} {datos.get('departamento', '')}".strip(),
-            "ciudad": datos.get("ciudad"),
+            "genero": "F" if sexo.upper() == "F" else "M" if sexo.upper() == "M" else "X",
+            "domicilio": f"{datos.get('calle', '')} {datos.get('numero', '')} {datos.get('piso', '')} {datos.get('departamento', '')}".strip(),
             "provincia": provincia.pk if provincia else None,
-            "pais": datos.get("pais"),
-            "codigo_postal": datos.get("cpostal"),
         }
 
         return {"success": True, "data": datos_mapeados, "datos_api": datos}

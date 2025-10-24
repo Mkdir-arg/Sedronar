@@ -56,7 +56,6 @@ INSTALLED_APPS = [
     "users",
     "core",
     "dashboard",
-    "ciudadanos",
     "legajos",
 ]
 
