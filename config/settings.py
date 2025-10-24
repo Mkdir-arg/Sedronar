@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "core",
     "dashboard",
     "ciudadanos",
+    "legajos",
 ]
 
 # Middleware (orden CORS correcto)

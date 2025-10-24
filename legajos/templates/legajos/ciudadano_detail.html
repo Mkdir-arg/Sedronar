@@ -1,0 +1,133 @@
+{% extends "includes/base.html" %}
+{% load static %}
+
+{% block title %}{{ ciudadano.apellido }}, {{ ciudadano.nombre }}{% endblock %}
+
+{% block main-content %}
+<div class="max-w-6xl mx-auto">
+    <div class="mb-8">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-3xl font-lora font-bold text-gray-900">{{ ciudadano.apellido }}, {{ ciudadano.nombre }}</h1>
+                <p class="text-gray-600 mt-2">DNI: {{ ciudadano.dni }}</p>
+            </div>
+            <div class="flex gap-3">
+                <a href="{% url 'legajos:ciudadano_editar' ciudadano.pk %}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-edit mr-2"></i>Editar
+                </a>
+                <a href="{% url 'legajos:nuevo' %}?ciudadano={{ ciudadano.pk }}" class="bg-arg-azul text-white px-4 py-2 rounded-lg hover:bg-arg-secundario transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Nuevo Legajo
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Información Personal -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Información Personal</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">DNI</label>
+                        <p class="text-gray-900">{{ ciudadano.dni }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Nombre Completo</label>
+                        <p class="text-gray-900">{{ ciudadano.nombre }} {{ ciudadano.apellido }}</p>
+                    </div>
+                    {% if ciudadano.fecha_nacimiento %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Fecha de Nacimiento</label>
+                        <p class="text-gray-900">{{ ciudadano.fecha_nacimiento|date:"d/m/Y" }}</p>
+                    </div>
+                    {% endif %}
+                    {% if ciudadano.genero %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Género</label>
+                        <p class="text-gray-900">{{ ciudadano.get_genero_display|default:ciudadano.genero }}</p>
+                    </div>
+                    {% endif %}
+                    {% if ciudadano.telefono %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Teléfono</label>
+                        <p class="text-gray-900">{{ ciudadano.telefono }}</p>
+                    </div>
+                    {% endif %}
+                    {% if ciudadano.email %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Email</label>
+                        <p class="text-gray-900">{{ ciudadano.email }}</p>
+                    </div>
+                    {% endif %}
+                    {% if ciudadano.domicilio %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Domicilio</label>
+                        <p class="text-gray-900">{{ ciudadano.domicilio }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Legajos -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900">Legajos de Atención</h2>
+                    <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                        {{ legajos.count }} legajo{{ legajos.count|pluralize }}
+                    </span>
+                </div>
+
+                {% if legajos %}
+                    <div class="space-y-4">
+                        {% for legajo in legajos %}
+                        <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <h3 class="font-semibold text-gray-900">{{ legajo.codigo }}</h3>
+                                        <span class="px-2 py-1 rounded-full text-xs font-medium
+                                            {% if legajo.estado == 'ABIERTO' %}bg-green-100 text-green-800
+                                            {% elif legajo.estado == 'EN_SEGUIMIENTO' %}bg-blue-100 text-blue-800
+                                            {% elif legajo.estado == 'DERIVADO' %}bg-yellow-100 text-yellow-800
+                                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                            {{ legajo.get_estado_display }}
+                                        </span>
+                                        <span class="px-2 py-1 rounded-full text-xs font-medium
+                                            {% if legajo.nivel_riesgo == 'ALTO' %}bg-red-100 text-red-800
+                                            {% elif legajo.nivel_riesgo == 'MEDIO' %}bg-orange-100 text-orange-800
+                                            {% else %}bg-green-100 text-green-800{% endif %}">
+                                            Riesgo {{ legajo.get_nivel_riesgo_display }}
+                                        </span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-1">
+                                        <i class="fas fa-building mr-1"></i>{{ legajo.dispositivo.nombre }}
+                                    </p>
+                                    <p class="text-sm text-gray-600">
+                                        <i class="fas fa-calendar mr-1"></i>Apertura: {{ legajo.fecha_apertura|date:"d/m/Y" }}
+                                    </p>
+                                </div>
+                                <a href="{% url 'legajos:detalle' legajo.pk %}" class="text-arg-azul hover:text-arg-secundario">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-folder-open text-4xl text-gray-300 mb-4"></i>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Sin legajos</h3>
+                        <p class="text-gray-600 mb-4">Este ciudadano no tiene legajos de atención registrados</p>
+                        <a href="{% url 'legajos:nuevo' %}?ciudadano={{ ciudadano.pk }}" class="bg-arg-azul text-white px-4 py-2 rounded-lg hover:bg-arg-secundario transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Crear Primer Legajo
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

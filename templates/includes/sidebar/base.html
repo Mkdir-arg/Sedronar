@@ -23,14 +23,31 @@
 </div>
 
 <!-- Desktop sidebar -->
-<div class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-    <div class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-arg-azul px-6 pb-4">
-        <div class="flex h-16 shrink-0 items-center">
-            <img class="h-8 w-auto" src="{% static 'custom/img/sisoc_logo.png' %}" alt="SEDRONAR">
-            <span class="ml-3 text-xl font-lora font-semibold text-white">SEDRONAR</span>
+<div class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col transition-all duration-300" :class="sidebarCollapsed ? 'lg:w-20' : 'lg:w-72'">
+    <div class="flex grow flex-col bg-gradient-to-b from-arg-azul to-arg-secundario shadow-xl h-full">
+        <!-- Header con botón de colapso -->
+        <div class="flex h-16 shrink-0 items-center border-b border-white/10 px-4">
+            <template x-if="!sidebarCollapsed">
+                <div class="flex items-center flex-1">
+                    <img class="h-8 w-auto" src="{% static 'custom/img/sisoc_logo.png' %}" alt="SEDRONAR">
+                    <span class="ml-3 text-xl font-lora font-semibold text-white">SEDRONAR</span>
+                </div>
+            </template>
+            
+            <template x-if="sidebarCollapsed">
+                <div class="flex items-center justify-center flex-1">
+                    <img class="h-8 w-auto" src="{% static 'custom/img/sisoc_logo.png' %}" alt="SEDRONAR">
+                </div>
+            </template>
+            
+            <button @click="sidebarCollapsed = !sidebarCollapsed" class="p-2 rounded-lg hover:bg-white/10 transition-colors" :class="sidebarCollapsed ? 'absolute top-4 right-4' : 'ml-auto'">
+                <i class="fas fa-bars text-white text-sm" x-show="!sidebarCollapsed"></i>
+                <i class="fas fa-chevron-right text-white text-sm" x-show="sidebarCollapsed"></i>
+            </button>
         </div>
-        <nav class="flex flex-1 flex-col">
+        
+        <div class="flex-1 px-4 py-6 overflow-y-auto">
             {% include 'includes/sidebar/opciones.html' %}
-        </nav>
+        </div>
     </div>
 </div>
