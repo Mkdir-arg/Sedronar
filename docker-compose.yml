@@ -1,37 +1,40 @@
 services:
 
-  mysql:
+  sedronar-mysql:
     image: mysql:8.0
+    container_name: sedronar-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${DATABASE_PASSWORD}
       MYSQL_DATABASE: ${DATABASE_NAME}
-      DOCKER_MYSQL_PORT: ${DOCKER_MYSQL_PORT}
+      MYSQL_USER: sedronar
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
     volumes:
-      - mysql_data:/var/lib/mysql
+      - sedronar_mysql_data:/var/lib/mysql
       - ./docker/mysql/local-dump.sql:/docker-entrypoint-initdb.d/local-dump.sql
     ports:
-      - ${DOCKER_MYSQL_PORT_FORWARD}:${DOCKER_MYSQL_PORT}
-    expose:
-      - ${DOCKER_MYSQL_PORT}
+      - "3306:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-P", "${DOCKER_MYSQL_PORT}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 10s
       retries: 5
 
-  django:
+  sedronar:
     build:
       context: .
       dockerfile: ./docker/django/Dockerfile
+    container_name: sedronar-app
     env_file:
       - .env
     ports:
-      - ${DOCKER_DJANGO_PORT_FORWARD}:${DOCKER_DJANGO_PORT}
-      - ${DOCKER_DEBUGGER_PORT_FORWARD}:${DOCKER_DEBUGGER_PORT}
+      - "8000:8000"
+      - "5678:5678"
     volumes:
-      - .:/sisoc/
-    user: "${RUN_UID:-0}:${RUN_GID:-0}"
+      - .:/app/
+    depends_on:
+      sedronar-mysql:
+        condition: service_healthy
     restart: always
 
 volumes:
-  mysql_data:
+  sedronar_mysql_data:

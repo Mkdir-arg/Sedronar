@@ -54,29 +54,13 @@ INSTALLED_APPS = [
     "crispy_bootstrap5",
     "django_extensions",
     "import_export",
-    "multiselectfield",
     "rest_framework",
-    "rest_framework_api_key",
     "corsheaders",
     # Apps propias
     "users",
     "core",
     "dashboard",
-    "comedores",
-    "organizaciones",
-    "cdi",
     "ciudadanos",
-    "duplas",
-    "admisiones",
-    "intervenciones",
-    "historial",
-    "acompanamientos",
-    "expedientespagos",
-    "relevamientos",
-    "rendicioncuentasfinal",
-    "rendicioncuentasmensual",
-    "centrodefamilia",
-    "celiaquia",
 ]
 
 # Middleware (orden CORS correcto)
@@ -179,10 +163,7 @@ CACHES = {
 # TTLs (segundos)
 DEFAULT_CACHE_TIMEOUT = 300
 DASHBOARD_CACHE_TIMEOUT = 300
-COMEDOR_CACHE_TIMEOUT = 300
 CIUDADANO_CACHE_TIMEOUT = 300
-INTERVENCIONES_CACHE_TIMEOUT = 1800
-CENTROFAMILIA_CACHE_TIMEOUT = 300
 
 # CORS
 CORS_ALLOW_ALL_ORIGINS = False
@@ -346,10 +327,4 @@ else:
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
 
-# Config propia (constantes)
-PROG_MILD = 24
-PROG_CDIF = 23
-PROG_CDLE = 25
-PROG_PDV = 26
-PROG_MA = 30
-PROG_SL = 21
+
