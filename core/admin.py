@@ -8,6 +8,7 @@ from core.models import (
     Mes,
     Dia,
     Turno,
+    DispositivoRed,
 )
 
 admin.site.register(Provincia)
@@ -28,3 +29,29 @@ class LocalidadAdmin(admin.ModelAdmin):
             else:
                 kwargs["queryset"] = Municipio.objects.all()
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+@admin.register(DispositivoRed)
+class DispositivoRedAdmin(admin.ModelAdmin):
+    list_display = ("nombre", "tipo", "activo", "municipio", "provincia")
+    list_filter = ("tipo", "activo", "provincia")
+    search_fields = ("nombre", "municipio__nombre", "provincia__nombre")
+    ordering = ("provincia", "municipio", "nombre")
+    
+    fieldsets = (
+        ("Información Básica", {
+            "fields": ("nombre", "tipo", "activo")
+        }),
+        ("Ubicación", {
+            "fields": ("provincia", "municipio", "localidad", "direccion")
+        }),
+        ("Contacto", {
+            "fields": ("telefono", "email")
+        }),
+        ("Registro", {
+            "fields": ("nro_registro", "resolucion", "fecha_alta")
+        }),
+        ("Descripción", {
+            "fields": ("descripcion",)
+        }),
+    )

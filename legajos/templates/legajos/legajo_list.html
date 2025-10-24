@@ -1,0 +1,135 @@
+{% extends "includes/base.html" %}
+{% load static %}
+
+{% block title %}Legajos de Atención{% endblock %}
+
+{% block main-content %}
+<div class="mb-8">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-lora font-bold text-gray-900">Legajos de Atención</h1>
+            <p class="text-gray-600 mt-2">Gestión de legajos individuales de ciudadanos</p>
+        </div>
+        <a href="{% url 'legajos:nuevo' %}" class="bg-arg-azul text-white px-6 py-3 rounded-xl hover:bg-arg-secundario transition-colors font-medium">
+            <i class="fas fa-plus mr-2"></i>Nuevo Legajo
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <form method="get" class="flex gap-4">
+            <div class="flex-1">
+                <select name="estado" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-arg-azul focus:border-transparent">
+                    <option value="">Todos los estados</option>
+                    <option value="ABIERTO" {% if request.GET.estado == 'ABIERTO' %}selected{% endif %}>Abierto</option>
+                    <option value="EN_SEGUIMIENTO" {% if request.GET.estado == 'EN_SEGUIMIENTO' %}selected{% endif %}>En Seguimiento</option>
+                    <option value="DERIVADO" {% if request.GET.estado == 'DERIVADO' %}selected{% endif %}>Derivado</option>
+                    <option value="CERRADO" {% if request.GET.estado == 'CERRADO' %}selected{% endif %}>Cerrado</option>
+                </select>
+            </div>
+            <button type="submit" class="bg-arg-azul text-white px-6 py-3 rounded-lg hover:bg-arg-secundario transition-colors">
+                <i class="fas fa-filter"></i>
+            </button>
+        </form>
+    </div>
+
+    <!-- Lista de legajos -->
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        {% if legajos %}
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Código</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Ciudadano</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Dispositivo</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Estado</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Riesgo</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Fecha Apertura</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for legajo in legajos %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900">
+                                <div class="flex items-center">
+                                    {{ legajo.codigo|slice:":8" }}...
+                                    {% if legajo.plan_vigente %}
+                                        <i class="fas fa-clipboard-check text-green-500 ml-2" title="Plan vigente"></i>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900">
+                                <div>
+                                    <p class="font-medium">{{ legajo.ciudadano.apellido }}, {{ legajo.ciudadano.nombre }}</p>
+                                    <p class="text-gray-500">DNI: {{ legajo.ciudadano.dni }}</p>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600">
+                                <div>
+                                    <p>{{ legajo.dispositivo.nombre }}</p>
+                                    <p class="text-xs text-gray-500">{{ legajo.dispositivo.get_tipo_display }}</p>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm">
+                                <span class="px-2 py-1 rounded-full text-xs font-medium
+                                    {% if legajo.estado == 'ABIERTO' %}bg-green-100 text-green-800
+                                    {% elif legajo.estado == 'EN_SEGUIMIENTO' %}bg-blue-100 text-blue-800
+                                    {% elif legajo.estado == 'DERIVADO' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ legajo.get_estado_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm">
+                                <span class="px-2 py-1 rounded-full text-xs font-medium
+                                    {% if legajo.nivel_riesgo == 'ALTO' %}bg-red-100 text-red-800
+                                    {% elif legajo.nivel_riesgo == 'MEDIO' %}bg-orange-100 text-orange-800
+                                    {% else %}bg-green-100 text-green-800{% endif %}">
+                                    {{ legajo.get_nivel_riesgo_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600">{{ legajo.fecha_apertura|date:"d/m/Y" }}</td>
+                            <td class="px-6 py-4 text-sm">
+                                <a href="{% url 'legajos:detalle' legajo.pk %}" 
+                                   class="text-arg-azul hover:text-arg-secundario">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            {% if is_paginated %}
+            <div class="px-6 py-4 border-t border-gray-200">
+                <div class="flex justify-between items-center">
+                    <p class="text-sm text-gray-600">
+                        Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ paginator.count }} legajos
+                    </p>
+                    <div class="flex gap-2">
+                        {% if page_obj.has_previous %}
+                            <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Anterior</a>
+                        {% endif %}
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 bg-arg-azul text-white rounded hover:bg-arg-secundario">Siguiente</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="p-12 text-center">
+                <i class="fas fa-folder-open text-6xl text-gray-300 mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">No hay legajos registrados</h3>
+                <p class="text-gray-600 mb-6">Comienza creando el primer legajo de atención</p>
+                <a href="{% url 'legajos:nuevo' %}" class="bg-arg-azul text-white px-6 py-3 rounded-xl hover:bg-arg-secundario transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Crear Legajo
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
