@@ -7,7 +7,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import connection
 from django.db.utils import OperationalError, ProgrammingError
 from django.contrib.auth.models import User
-from ciudadanos.models import Ciudadano
+from legajos.models import Ciudadano
 
 logger = logging.getLogger(__name__)
 

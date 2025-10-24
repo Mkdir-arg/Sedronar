@@ -11,7 +11,6 @@ urlpatterns = [
     path("", include("users.urls")),
     path("", include("core.urls")),
     path("", include("dashboard.urls")),
-    path("", include("ciudadanos.urls")),
     path("legajos/", include("legajos.urls")),
     path("", include("healthcheck.urls")),
 ]

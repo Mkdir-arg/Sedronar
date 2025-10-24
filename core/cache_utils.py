@@ -36,7 +36,7 @@ def invalidate_dashboard_cache():
 
 
 # Signals para invalidación automática
-@receiver([post_save, post_delete], sender="ciudadanos.Ciudadano")
+@receiver([post_save, post_delete], sender="legajos.Ciudadano")
 def invalidate_ciudadano_cache_on_change(sender, instance, **kwargs):
     """Invalida cache cuando se modifica un ciudadano."""
     invalidate_ciudadano_cache(instance.id)
