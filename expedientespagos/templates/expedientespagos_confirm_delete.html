@@ -1,0 +1,19 @@
+{% extends "includes/main.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block title %}Acciones{% endblock %}
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item">
+            <a href="" title="Ver listado de admisiones">Expedientes de pagos</a>
+        </li>
+        <li class="breadcrumb-item ">
+            <a href="{% url 'expedientespagos_detail' object.id %}"
+               title="Ver ciudadano">{{ object.expediente_pago }}</a>
+        </li>
+        <li class="breadcrumb-item active">Eliminar</li>
+    </ol>
+{% endblock %}
+{% block content %}
+    {% include 'components/delete_confirm.html' with object_name=object.expediente_pago title='Eliminar Expediente' cancel_url_with_id=True cancel_url='expedientespagos_detail' confirm_text='Eliminar' cancel_text='Cancelar' message='¿Estás seguro que deseas eliminar de manera permanente el expediente' %}
+{% endblock content %}

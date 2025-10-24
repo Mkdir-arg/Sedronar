@@ -1,0 +1,175 @@
+{% extends "includes/main.html" %}
+{% load static crispy_forms_tags %}
+{% block title %}Agregar a Nómina{% endblock %}
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item">
+            <a href="{% url 'comedor_detalle' object.id %}">Comedor</a>
+        </li>
+        <li class="breadcrumb-item active">Agregar a Nómina</li>
+    </ol>
+{% endblock %}
+{% block content %}
+    <div class="container">
+        <h2 class="text-center display-4 mb-4">Agregar a Nómina</h2>
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show"
+                     role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+ 
+        <!-- Buscar Ciudadano -->
+        <div class="card mb-3">
+            <div class="card-header font-weight-bold">Buscar Ciudadano</div>
+            <div class="card-body">
+                <form method="get" class="form-inline">
+                    <div class="form-group mr-2">
+                        <label for="busqueda-dni" class="sr-only">DNI</label>
+                        <input type="text"
+                               class="form-control"
+                               name="query"
+                               id="busqueda-dni"
+                               placeholder="Ingrese DNI (mín 4 dígitos)"
+                               value="{{ request.GET.query }}" />
+                    </div>
+                    <button class="btn btn-secondary mt-3" type="submit">Buscar</button>
+                </form>
+            </div>
+        </div>
+ 
+        <!-- Resultados de Búsqueda -->
+        {% if ciudadanos %}
+            <div class="card mb-3">
+                <div class="card-header font-weight-bold">Resultados de Búsqueda</div>
+                <div class="card-body table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <th>Apellido</th>
+                                <th>Nombre</th>
+                                <th>DNI</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in ciudadanos %}
+                                <tr>
+                                    <td>{{ c.apellido }}</td>
+                                    <td>{{ c.nombre }}</td>
+                                    <td>{{ c.documento }}</td>
+                                    <td>
+                                        <button type="button"
+                                                class="btn btn-sm btn-success btn-agregar"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modalNomina"
+                                                data-ciudadano-id="{{ c.id }}"
+                                                data-ciudadano-nombre="{{ c.apellido }}, {{ c.nombre }}">
+                                            Agregar
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endif %}
+ 
+        <!-- Formulario Creación de Ciudadano -->
+        {% if request.GET.query and no_resultados %}
+            <div class="alert alert-info mb-3">
+                <i class="bi bi-exclamation-triangle-fill fs-4"></i> No se encontraron coincidencias.
+            </div>
+            <div class="card mb-3">
+                <div class="card-header font-weight-bold">Crear Nuevo Ciudadano</div>
+                <div class="card-body">
+                    {% if form_ciudadano.non_field_errors %}
+                        <div class="alert alert-danger">{{ form_ciudadano.non_field_errors }}</div>
+                    {% endif %}
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form_ciudadano|crispy }}
+                        <div class="mt-4 alert alert-light">
+                            <h5 class="mb-3">
+                                <i class="bi bi-info-circle-fill"></i> Estado y observaciones en la Nómina
+                            </h5>
+                            {{ form_nomina_extra|crispy }}
+                        </div>
+                        <button type="submit"
+                                class="btn btn-primary"
+                                onclick="this.disabled=true;this.innerHTML='<span class=&quot;spinner-border spinner-border-sm&quot; role=&quot;status&quot; aria-hidden=&quot;true&quot;></span> Procesando…'; this.form.submit();">
+                            Crear y Agregar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+ 
+    <!-- Modal Agregar Ciudadano -->
+    <div class="modal fade"
+         id="modalNomina"
+         tabindex="-1"
+         aria-labelledby="modalNominaLabel"
+         aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" id="form-nomina">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalNominaLabel">Agregar a Nómina</h5>
+                        <button type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="ciudadano_id" id="ciudadano_id" />
+                        <div class="fs-6 fw-bold py-2 mb-3" id="ciudadano_nombre_display"></div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="estado" class="form-label">Estado</label>
+                                <select name="estado" id="estado" class="form-control">
+                                    <option value="">Seleccione un estado</option>
+                                    {% for estado in estados %}<option value="{{ estado.id }}">{{ estado.nombre }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-12 mt-3">
+                                <label for="observaciones" class="form-label">Observaciones</label>
+                                <textarea name="observaciones" id="observaciones" class="form-control" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Agregar</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block customJS %}
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Configurar modal para agregar ciudadanos existentes
+            document.querySelectorAll(".btn-agregar").forEach(function(btn) {
+                btn.addEventListener("click", function() {
+                    const ciudadanoId = this.dataset.ciudadanoId;
+                    const ciudadanoNombre = this.dataset.ciudadanoNombre;
+
+                    document.getElementById("ciudadano_id").value = ciudadanoId;
+                    document.getElementById("ciudadano_nombre_display").textContent =
+                        "Ciudadano seleccionado: " + ciudadanoNombre;
+                });
+            });
+        });
+    </script>
+{% endblock %}

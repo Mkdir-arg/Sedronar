@@ -1,0 +1,165 @@
+/* Custom para relevamiento_detail */
+.relevamiento-container .card, .comedor-form .card{
+    min-height: 95% !important;
+    margin-bottom:1rem;
+}
+
+/* Custom para comedores_detail */
+
+.card-informacion .nav-item
+{
+    margin-bottom: 1rem !important;
+}
+  
+.card .card-body{
+    margin-left: 1rem; 
+}
+
+.mb-3 {
+    margin-bottom: 1rem !important;
+}
+
+.btn-margin-right {
+    margin-right: 15px; 
+}
+
+.carousel-item img {
+    width: 100%; 
+    height: 400px; 
+    object-fit: cover; 
+    border-radius: 10px; 
+}
+
+.carousel-control-prev,
+.carousel-control-next {
+    background-color: rgba(234, 231, 231, 0.936); 
+    width: 40px; 
+    height: 40px; 
+    border-radius: 50%;
+    top: 50%; 
+    transform: translateY(-50%); 
+}
+.carousel-control-prev
+{
+    left: 40px; 
+}
+.carousel-control-next {
+    right: 40px; 
+}
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+    filter: brightness(0) invert(1); 
+    width: 30px; 
+    height: 30px;
+}
+
+#imagePreviewContainer .card {
+    transition: transform 0.2s;
+}
+
+#imagePreviewContainer .card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+#imagePreviewContainer img {
+    cursor: pointer;
+}
+
+#fotoLegajoPreviewContainer .card {
+    transition: transform 0.2s;
+    border: 2px solid #007bff;
+}
+
+#fotoLegajoPreviewContainer .card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+}
+
+#fotoLegajoPreviewContainer .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+#imagePreviewContainer .card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+#imagePreviewContainer .card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Estilo para el botón de eliminar */
+#imagePreviewContainer .btn-danger {
+    border-radius: 50%;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+#imagePreviewContainer .btn-danger:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* Estilo para el botón de agregar imágenes */
+#addImagesBtn {
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: 500;
+}
+
+#addImagesBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+}
+
+/* Estilos para footers de modales - mantener color azul */
+.modal-footer {
+    background-color: #0e2033 !important;
+    color: white !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.modal-footer .btn-secondary {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    color: white !important;
+}
+
+.modal-footer .btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.3) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.modal-footer .btn-primary {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.9) !important;
+    color: #333 !important;
+}
+
+.modal-footer .btn-primary:hover {
+    background-color: white !important;
+    border-color: white !important;
+    color: #333 !important;
+}
+
+/* Alinear encabezados de cards con el componente info_card */
+.relevamiento-container .card-header {
+    background-color: var(--bs-card-cap-bg, #f8f9fa) !important;
+    color: var(--bs-body-color, #212529) !important;
+    border-bottom: 2px solid #0d6efd;
+}
+
+.relevamiento-container .card-header .card-title,
+.relevamiento-container .card-header h3 {
+    color: inherit !important;
+    margin-bottom: 0;
+}
+
+[data-bs-theme="dark"] .relevamiento-container .card-header {
+    background-color: #3a4148 !important;
+    color: #ffffff !important;
+    border-bottom-color: #0d6efd;
+}

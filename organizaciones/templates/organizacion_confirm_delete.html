@@ -1,0 +1,17 @@
+{% extends "includes/main.html" %}
+{% load static %}
+{% block title %}Organizacion - {{ organizacion.nombre }}{% endblock %}
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <div class="breadcrumb-item">
+            <a href="{% url 'organizaciones' %}">Organizaciones</a>
+        </div>
+        <div class="breadcrumb-item">
+            <a href="{% url 'organizacion_detalle' organizacion.id %}">{{ organizacion.nombre }}</a>
+        </div>
+        <div class="breadcrumb-item">Eliminar</div>
+    </ol>
+{% endblock %}
+{% block content %}
+    {% include 'components/delete_confirm.html' with object=organizacion object_name=organizacion.nombre title='Eliminar Organización' cancel_url='organizacion_detalle' cancel_url_with_id=True confirm_text='Eliminar Organización' %}
+{% endblock %}

@@ -1,0 +1,1563 @@
+{% extends "includes/main.html" %}
+{% load static custom_filters dict_extras %}
+{% block title %}Expediente{% endblock %}
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item">
+            <a href="{% url 'expediente_list' %}">Expedientes</a>
+        </li>
+        <li class="breadcrumb-item active"></li>
+    </ol>
+{% endblock %}
+{% block content %}
+    {% with is_tec=request.user|has_group:"TecnicoCeliaquia" is_coord=request.user|has_group:"CoordinadorCeliaquia" is_prov=request.user|has_group:"ProvinciaCeliaquia" %}
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <div>
+                <a href="{% url 'expediente_list' %}"
+                   class="btn btn-outline-secondary btn-sm">Volver</a>
+                {% if expediente.estado.nombre == 'CREADO' %}
+                    <a href="{% url 'expediente_update' expediente.pk %}"
+                       class="btn btn-outline-primary btn-sm ms-2">Editar Metadatos</a>
+                {% endif %}
+            </div>
+            <div class="d-flex gap-2">
+                <!-- Subir/Reprocesar Cruce: Técnico o Coordinador, no Provincia -->
+                {% if is_tec or is_coord %}
+                    {% if expediente.estado.nombre == 'ASIGNADO' or expediente.estado.nombre == 'PROCESO_DE_CRUCE' %}
+                        <a href="{% url 'expediente_nomina_sintys_export' expediente.pk %}"
+                           class="btn btn-outline-success btn-sm me-2">Descargar nómina Sintys</a>
+                        <button type="button"
+                                class="btn btn-outline-info btn-sm me-2"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalHistorial">Ver Historial</button>
+                        <button type="button"
+                                class="btn btn-outline-secondary btn-sm me-2"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalEstructuraFamiliar">
+                            <i class="fas fa-users"></i> Ver Familias
+                        </button>
+                        <button type="button"
+                                class="btn btn-success btn-sm me-2"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalCruceCuit"
+                                data-mode="new">Subir Excel de Documentos (Cruce)</button>
+                    {% endif %}
+                    {% if expediente.cruce_excel %}
+                        {% if expediente.estado.nombre == 'ASIGNADO' or expediente.estado.nombre == 'PROCESO_DE_CRUCE' or expediente.estado.nombre == 'CRUCE_FINALIZADO' %}
+                            <button type="button"
+                                    class="btn btn-warning btn-sm"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalCruceCuit"
+                                    data-mode="reprocess">Reprocesar cruce</button>
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% if cupo_metrics %}
+            <div class="p-3 rounded shadow mb-4"
+                 style="background-color:#11202e;
+                        color:#e0e0e0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-3">Provincial de {{ expediente.usuario_provincia.profile.provincia|default:"-" }}</h5>
+                </div>
+                <div class="row g-3">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="border rounded p-3 h-100" style="background:#1b2a3b;">
+                            <div class="small text-muted">Total asignado</div>
+                            <div class="h4 mb-0">{{ cupo_metrics.total_asignado }}</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="border rounded p-3 h-100" style="background:#1b2a3b;">
+                            <div class="small text-muted">Usados</div>
+                            <div class="h4 mb-0">{{ cupo_metrics.usados }}</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="border rounded p-3 h-100" style="background:#1b2a3b;">
+                            <div class="small text-muted">Disponibles</div>
+                            <div class="h4 mb-0">{{ cupo_metrics.disponibles }}</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="border rounded p-3 h-100" style="background:#1b2a3b;">
+                            <div class="small text-muted">Fuera de cupo</div>
+                            <div class="h4 mb-0">{{ fuera_count }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        <div id="expediente-alerts"></div>
+        <div class="p-3 rounded shadow mb-4"
+             style="background-color: #1c2a3a;
+                    color: #e0e0e0">
+            <h5 class="mb-3">Detalle del Expediente</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <p>
+                        <strong>Numero de expediente:</strong> {{ expediente.numero_expediente|default:"-" }}
+                    </p>
+                    <p>
+                        <strong>Estado:</strong> {{ expediente.estado.display_name }}
+                    </p>
+                    <p>
+                        <strong>Fecha de creacion:</strong> {{ expediente.fecha_creacion|date:"d/m/Y" }}
+                    </p>
+                    {% if expediente.documento %}
+                        <p class="mb-0">
+                            <strong>PRD generado:</strong>
+                            <a href="{{ expediente.documento.url }}"
+                               target="_blank"
+                               class="text-decoration-underline">ver documento</a>
+                        </p>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <p>
+                        <strong>Provincia:</strong> {{ expediente.usuario_provincia.profile.provincia|default:"-" }}
+                    </p>
+                    <p>
+                        <strong>Técnicos asignados:</strong>
+                        {% if expediente.asignaciones_tecnicos.exists %}
+                            {% for asignacion in expediente.asignaciones_tecnicos.all %}
+                                <span class="badge bg-info me-1">{{ asignacion.tecnico.get_full_name|default:asignacion.tecnico.username }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted">No asignado</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% if False %}
+
+            <div class="list-group">
+                {% for h in historial_page_obj %}
+                    <div class="list-group-item border-0 mb-3 rounded shadow-sm card-dark">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <div class="fw-semibold">{{ h.fecha|date:"d/m/Y H:i" }}</div>
+                                <div class="small">{{ h.estado_anterior.display_name }} â†’ {{ h.estado_nuevo.display_name }}</div>
+                            </div>
+                            <div class="text-end small">
+                                {% if h.usuario %}{{ h.usuario.get_full_name|default:h.usuario.username }}{% endif %}
+                                {% if h.observaciones %}<div class="text-muted mt-1">{{ h.observaciones }}</div>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-muted mb-0">Sin cambios de estado.</p>
+                {% endfor %}
+            </div>
+            {% if historial_page_obj.paginator.num_pages > 1 %}
+                <nav class="mt-3">
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if historial_page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                   href="?{% for key, value in request.GET.items %}{% if key != 'historial_page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}historial_page={{ historial_page_obj.previous_page_number }}"
+                                   aria-label="Anterior">&laquo;</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">&laquo;</span>
+                            </li>
+                        {% endif %}
+                        {% for num in historial_page_obj.paginator.page_range %}
+                            {% if num == historial_page_obj.number %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link"
+                                       href="?{% for key, value in request.GET.items %}{% if key != 'historial_page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}historial_page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if historial_page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                   href="?{% for key, value in request.GET.items %}{% if key != 'historial_page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}historial_page={{ historial_page_obj.next_page_number }}"
+                                   aria-label="Siguiente">&raquo;</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">&raquo;</span>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        </div>
+    {% endif %}
+    {% if fuera_de_cupo %}
+        <div class="p-3 rounded shadow mb-4"
+             style="background-color:#1c2a3a;
+                    color:#e0e0e0">
+            <h5 class="mb-3">Lista de espera (Fuera de cupo)</h5>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-0" style="color:#fff;">
+                    <thead style="background:#13212f;">
+                        <tr>
+                            <th>DNI</th>
+                            <th>Nombre</th>
+                            <th>Apellido</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for l in fuera_de_cupo %}
+                            <tr>
+                                <td>{{ l.ciudadano.documento }}</td>
+                                <td>{{ l.ciudadano.nombre }}</td>
+                                <td>{{ l.ciudadano.apellido }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+    {% if preview %}
+        <div class="p-3 rounded shadow mb-4"
+             style="background-color: #1c2a3a;
+                    color: #e0e0e0">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-3">Vista previa del Excel</h5>
+                <div class="d-flex align-items-center gap-2">
+                    <label for="preview-page-size" class="me-2 mb-0 small">Registros por pagina:</label>
+                    <select id="preview-page-size"
+                            class="form-select form-select-sm"
+                            style="width: auto">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="15">15</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="all">Todos</option>
+                    </select>
+                </div>
+            </div>
+            <div id="preview-error-detail" class="text-danger mb-2"></div>
+            <div class="table-responsive">
+                <table id="preview-table" class="table table-bordered table-sm">
+                    <thead style="background-color: #13212f; color: #fff;">
+                        <tr>
+                            {% for h in preview.headers %}<th>{{ h|capfirst }}</th>{% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody id="preview-tbody">
+                        {% for row in preview.rows %}
+                            <tr class="preview-row">
+                                {% for h in preview.headers %}<td>{{ row|get_item:h }}</td>{% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <nav>
+                <ul id="preview-pagination"
+                    class="pagination pagination-sm justify-content-center mb-0">
+                </ul>
+            </nav>
+            {% if expediente.estado.nombre == 'CREADO' %}
+                <button id="btn-process-expediente" class="btn btn-primary mt-3">Procesar Expediente</button>
+            {% endif %}
+        </div>
+    {% elif preview_error %}
+        <div class="alert alert-danger">{{ preview_error }}</div>
+    {% endif %}
+    <div class="p-3 rounded shadow mb-4"
+         style="background-color: #1c2a3a;
+                color: #e0e0e0">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-3">Legajos</h5>
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <label for="filtro-estado" class="me-2 mb-0 small">Filtrar por estado:</label>
+                    <select id="filtro-estado"
+                            class="form-select form-select-sm"
+                            style="width: auto">
+                        <option value="">Todos</option>
+                        <option value="PENDIENTE">Pendiente</option>
+                        <option value="APROBADO">Aprobado</option>
+                        <option value="RECHAZADO">Rechazado</option>
+                        <option value="SUBSANAR">Subsanar</option>
+                        <option value="SUBSANADO">Subsanado</option>
+                    </select>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <label for="legajos-page-size" class="me-2 mb-0 small">Registros por página:</label>
+                    <select id="legajos-page-size"
+                            class="form-select form-select-sm"
+                            style="width: auto">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="15">15</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="all">Todos</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        {% if legajos %}
+
+            <div class="table-responsive">
+                <table class="table table-hover" style="color: #e0e0e0;">
+                    <thead style="background: #13212f;">
+                        <tr>
+                            <th width="25%">Beneficiario</th>
+                            <th width="15%">Estado</th>
+                            <th width="15%">Archivos</th>
+                            <th width="30%">Observaciones</th>
+                            <th width="15%">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for leg in legajos %}
+                            <tr class="legajo-row"
+                                {% if leg.revision_tecnico == 'SUBSANAR' %}style="border-left: 4px solid #ffc107;"{% elif leg.revision_tecnico == 'SUBSANADO' %}style="border-left: 4px solid #17a2b8;"{% elif leg.revision_tecnico == 'RECHAZADO' or leg.estado_validacion_renaper == 2 %}style="border-left: 4px solid #dc3545;"{% elif leg.revision_tecnico == 'APROBADO' %}style="border-left: 4px solid #28a745;"{% endif %}
+                                data-estado="{{ leg.revision_tecnico|default:'PENDIENTE' }}">
+                                <td>
+                                    <div {% if not leg.es_responsable and leg.responsable_id %}style="padding-left: 2rem;"{% endif %}>
+                                        <div class="fw-semibold">
+                                            {% if leg.es_responsable %}
+                                                👨👩👧👦 {{ leg.ciudadano.nombre }} {{ leg.ciudadano.apellido }}
+                                            {% elif leg.responsable_id %}
+                                                └─ 👶 {{ leg.ciudadano.nombre }} {{ leg.ciudadano.apellido }}
+                                            {% else %}
+                                                👶 {{ leg.ciudadano.nombre }} {{ leg.ciudadano.apellido }}
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">DNI: {{ leg.ciudadano.documento }}</small>
+                                        {% if leg.es_responsable %}
+                                            <small class="badge bg-info mt-1">Responsable</small>
+                                            {% if leg.hijos_a_cargo %}
+                                                <small class="text-muted d-block mt-1">Tiene {{ leg.hijos_a_cargo|length }} hijo{{ leg.hijos_a_cargo|length|pluralize }} a cargo</small>
+                                            {% endif %}
+                                        {% else %}
+                                            <small class="badge bg-success mt-1">Beneficiario</small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if leg.revision_tecnico == 'APROBADO' %}
+                                        <span class="badge bg-success">Aprobado</span>
+                                    {% elif leg.revision_tecnico == 'RECHAZADO' or leg.estado_validacion_renaper == 2 %}
+                                        <span class="badge bg-danger">Rechazado</span>
+                                    {% elif leg.revision_tecnico == 'SUBSANAR' %}
+                                        <span class="badge bg-warning text-dark">Subsanar</span>
+                                    {% elif leg.revision_tecnico == 'SUBSANADO' %}
+                                        <span class="badge bg-info text-dark">Subsanado</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Pendiente</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <span class="badge {% if leg.archivo2 %}bg-success{% else %}bg-warning{% endif %}">Doc1</span>
+                                        <span class="badge {% if leg.archivo3 %}bg-success{% else %}bg-warning{% endif %}">Doc2</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if leg.subsanacion_motivo %}
+                                        <small class="text-break">{{ leg.subsanacion_motivo|truncatechars:80 }}</small>
+                                    {% else %}
+                                        <span class="text-muted"></span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-outline-light btn-sm"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#detalle-{{ leg.pk }}-{{ forloop.counter }}">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="collapse" id="detalle-{{ leg.pk }}-{{ forloop.counter }}">
+                                <td colspan="5" class="p-0">
+                                    <div class="card mt-2" style="background: #2c3e50; border-color: #495057;">
+                                        <div class="card-body">
+                                            <div class="row gy-3 gx-3">
+                                                <!-- Col 1: Datos básicos -->
+                                                <div class="col-lg-3 col-md-5">
+                                                    <h6 class="mb-2">{{ leg.ciudadano.nombre }} {{ leg.ciudadano.apellido }}</h6>
+                                                    <div class="small text-muted mb-2">DNI: {{ leg.ciudadano.documento }}</div>
+                                                    <div class="small">
+                                                        <span class="text-muted">Estado:</span>
+                                                        {% if leg.revision_tecnico == 'APROBADO' %}
+                                                            <span class="badge bg-success">Aprobado</span>
+                                                        {% elif leg.revision_tecnico == 'RECHAZADO' or leg.estado_validacion_renaper == 2 %}
+                                                            <span class="badge bg-danger">Rechazado</span>
+                                                        {% elif leg.revision_tecnico == 'SUBSANAR' %}
+                                                            <span class="badge bg-warning text-dark">Subsanar</span>
+                                                        {% elif leg.revision_tecnico == 'SUBSANADO' %}
+                                                            <span class="badge bg-info text-dark">Subsanado</span>
+                                                        {% else %}
+                                                            <span class="badge bg-secondary">Pendiente</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                <!-- Col 2: Observaciones -->
+                                                <div class="col-lg-4 col-md-7">
+                                                    {% if is_prov %}
+                                                        <div class="small muted">Observación (subsanación):</div>
+                                                        <div class="mt-1">
+                                                            {% if leg.subsanacion_motivo %}
+                                                                <div class="p-2 rounded"
+                                                                     style="background:rgba(255,255,255,.04);
+                                                                            border:1px solid rgba(255,255,255,.08)">
+                                                                    <span class="d-block text-break">{{ leg.subsanacion_motivo }}</span>
+                                                                </div>
+                                                            {% else %}
+                                                                <span class="muted">-</span>
+                                                            {% endif %}
+                                                        </div>
+                                                        {% if leg.subsanacion_renaper_comentario %}
+                                                            <div class="small muted mt-2">Respuesta provincia:</div>
+                                                            <div class="mt-1">
+                                                                <div class="p-2 rounded"
+                                                                     style="background:rgba(255,193,7,.1);
+                                                                            border:1px solid rgba(255,193,7,.3)">
+                                                                    <span class="d-block text-break">{{ leg.subsanacion_renaper_comentario }}</span>
+                                                                </div>
+                                                            </div>
+                                                        {% endif %}
+                                                    {% else %}
+                                                        <div class="small muted">Comentario enviado a provincia:</div>
+                                                        <div class="mt-1">
+                                                            {% if leg.subsanacion_motivo %}
+                                                                <div class="p-2 rounded"
+                                                                     style="background:rgba(255,255,255,.04);
+                                                                            border:1px solid rgba(255,255,255,.08)">
+                                                                    <span class="d-block text-break">{{ leg.subsanacion_motivo }}</span>
+                                                                </div>
+                                                            {% else %}
+                                                                <span class="muted">-</span>
+                                                            {% endif %}
+                                                        </div>
+                                                        {% if leg.subsanacion_renaper_comentario %}
+                                                            <div class="small muted mt-2">Respuesta de provincia:</div>
+                                                            <div class="mt-1">
+                                                                <div class="p-2 rounded"
+                                                                     style="background:rgba(40,167,69,.1);
+                                                                            border:1px solid rgba(40,167,69,.3)">
+                                                                    <span class="d-block text-break">{{ leg.subsanacion_renaper_comentario }}</span>
+                                                                </div>
+                                                            </div>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                </div>
+                                                <!-- Col 3: Archivos -->
+                                                <div class="col-lg-5">
+                                                    {% include 'components/legajo_archivos_requeridos.html' with legajo=leg is_prov=is_prov expediente=expediente %}
+                                                    <!-- Botón confirmar subsanación individual (solo para subsanación técnica, no Renaper) -->
+                                                    {% if is_prov and leg.revision_tecnico == 'SUBSANAR' and leg.estado_validacion_renaper != 3 and leg.archivo2 and leg.archivo3 %}
+                                                        <div class="mt-3">
+                                                            <button type="button"
+                                                                    class="btn btn-warning btn-sm w-100 btn-confirmar-subsanacion-individual"
+                                                                    data-legajo-id="{{ leg.pk }}"
+                                                                    data-expediente-id="{{ expediente.pk }}">
+                                                                <i class="fas fa-check"></i> Confirmar subsanación
+                                                            </button>
+                                                        </div>
+                                                    {% endif %}
+ 
+                                                    <!-- Archivo subsanación Renaper -->
+                                                    {% if leg.subsanacion_renaper_comentario or leg.subsanacion_renaper_archivo %}
+                                                        <div class="mt-3 p-2 rounded" style="background:rgba(255,193,7,.1);">
+                                                            <div class="small muted mb-1">Respuesta subsanación Renaper</div>
+                                                            {% if leg.subsanacion_renaper_comentario %}
+                                                                <div class="small mb-2">
+                                                                    <strong>Comentario:</strong> {{ leg.subsanacion_renaper_comentario }}
+                                                                </div>
+                                                            {% endif %}
+                                                            {% if leg.subsanacion_renaper_archivo %}
+                                                                <a href="{{ leg.subsanacion_renaper_archivo.url }}"
+                                                                   target="_blank"
+                                                                   class="btn btn-sm btn-outline-warning mb-2">
+                                                                    <i class="fas fa-file"></i> Ver archivo
+                                                                </a>
+                                                            {% endif %}
+                                                            {% if is_prov and leg.revision_tecnico != 'SUBSANADO' and leg.estado_validacion_renaper == 3 %}
+                                                                <button type="button"
+                                                                        class="btn btn-warning btn-sm w-100"
+                                                                        data-bs-toggle="modal"
+                                                                        data-bs-target="#modalRespuestaSubsanacionRenaper"
+                                                                        data-legajo-id="{{ leg.pk }}"
+                                                                        data-expediente-id="{{ expediente.pk }}">
+                                                                    <i class="fas fa-edit"></i> Editar respuesta
+                                                                </button>
+                                                            {% endif %}
+                                                        </div>
+                                                    {% elif leg.estado_validacion_renaper == 3 %}
+                                                        <div class="mt-3 p-2 rounded" style="background:rgba(255,193,7,.1);">
+                                                            <div class="small muted mb-1">Subsanación Renaper solicitada</div>
+                                                            <div class="small text-warning mb-2">Pendiente de respuesta</div>
+                                                            {% if is_prov and leg.revision_tecnico != 'SUBSANADO' %}
+                                                                <button type="button"
+                                                                        class="btn btn-warning btn-sm w-100"
+                                                                        data-bs-toggle="modal"
+                                                                        data-bs-target="#modalRespuestaSubsanacionRenaper"
+                                                                        data-legajo-id="{{ leg.pk }}"
+                                                                        data-expediente-id="{{ expediente.pk }}">
+                                                                    <i class="fas fa-upload"></i> Responder
+                                                                </button>
+                                                            {% endif %}
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="list-divider"></div>
+                                            <!-- Acciones -->
+                                            {% if is_tec and expediente.estado.nombre in 'ASIGNADO,PROCESO_DE_CRUCE' %}
+                                                <div class="d-flex justify-content-end mt-2">
+                                                    <div class="btn-toolbar flex-wrap"
+                                                         role="toolbar"
+                                                         aria-label="Acciones del legajo">
+                                                        {% with estado=leg.revision_tecnico %}
+                                                            {% if estado == 'SUBSANADO' and leg.estado_validacion_renaper != 1 %}
+                                                                <!-- Subsanado pero sin Validacion Renaper aprobada -->
+                                                                <div class="btn-group btn-group-sm" role="group">
+                                                                    <button type="button"
+                                                                            class="btn btn-info btn-validar-renaper"
+                                                                            data-legajo-id="{{ leg.pk }}"
+                                                                            data-bs-toggle="modal"
+                                                                            data-bs-target="#modalValidarRenaper">
+                                                                        Validar Renaper
+                                                                    </button>
+                                                                </div>
+                                                            {% elif leg.estado_validacion_renaper == 0 %}
+                                                                <!-- Sin validar Renaper -->
+                                                                <div class="btn-group btn-group-sm" role="group">
+                                                                    <button type="button"
+                                                                            class="btn btn-info btn-validar-renaper"
+                                                                            data-legajo-id="{{ leg.pk }}"
+                                                                            data-bs-toggle="modal"
+                                                                            data-bs-target="#modalValidarRenaper">
+                                                                        Validar Renaper
+                                                                    </button>
+                                                                </div>
+                                                            {% elif leg.estado_validacion_renaper == 1 %}
+                                                                <!-- Renaper aprobado: mostrar botones de revisiÃ³n -->
+                                                                <div class="btn-group btn-group-sm me-2" role="group">
+                                                                    <button type="button"
+                                                                            class="btn {% if estado == 'APROBADO' %}btn-success active{% else %}btn-outline-success{% endif %} btn-revision"
+                                                                            data-legajo-id="{{ leg.pk }}"
+                                                                            data-accion="APROBAR">Aprobar</button>
+                                                                    <button type="button"
+                                                                            class="btn {% if estado == 'SUBSANAR' %}btn-warning active{% else %}btn-outline-warning{% endif %} btn-subsanar"
+                                                                            data-legajo-id="{{ leg.pk }}"
+                                                                            data-bs-toggle="modal"
+                                                                            data-bs-target="#modalSubsanar">
+                                                                        Subsanar
+                                                                    </button>
+                                                                    <button type="button"
+                                                                            class="btn {% if estado == 'RECHAZADO' %}btn-danger active{% else %}btn-outline-danger{% endif %} btn-revision"
+                                                                            data-legajo-id="{{ leg.pk }}"
+                                                                            data-accion="RECHAZAR">Rechazar</button>
+                                                                </div>
+                                                            {% endif %}
+                                                        {% endwith %}
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+ 
+            <!-- Detalles expandibles para cada legajo -->
+            {% for leg in legajos %}
+                <div class="collapse" id="detalle-{{ leg.pk }}">
+                    <div class="card mt-2" style="background: #2c3e50; border-color: #495057;">
+                        <div class="card-body">
+                            <div class="row gy-3 gx-3">
+                                <!-- Col 1: Datos básicos -->
+                                <div class="col-lg-3 col-md-5">
+                                    <h6 class="mb-2">{{ leg.ciudadano.nombre }} {{ leg.ciudadano.apellido }}</h6>
+                                    <div class="small text-muted mb-2">DNI: {{ leg.ciudadano.documento }}</div>
+                                    <div class="small">
+                                        <span class="text-muted">Estado:</span>
+                                        {% if leg.revision_tecnico == 'APROBADO' %}
+                                            <span class="badge bg-success">Aprobado</span>
+                                        {% elif leg.revision_tecnico == 'RECHAZADO' or leg.estado_validacion_renaper == 2 %}
+                                            <span class="badge bg-danger">Rechazado</span>
+                                        {% elif leg.revision_tecnico == 'SUBSANAR' %}
+                                            <span class="badge bg-warning text-dark">Subsanar</span>
+                                        {% elif leg.revision_tecnico == 'SUBSANADO' %}
+                                            <span class="badge bg-info text-dark">Subsanado</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Pendiente</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <!-- Col 2: Observaciones -->
+                                <div class="col-lg-4 col-md-7">
+                                    {% if is_prov %}
+                                        <div class="small muted">Observación (subsanación):</div>
+                                        <div class="mt-1">
+                                            {% if leg.subsanacion_motivo %}
+                                                <div class="p-2 rounded"
+                                                     style="background:rgba(255,255,255,.04);
+                                                            border:1px solid rgba(255,255,255,.08)">
+                                                    <span class="d-block text-break">{{ leg.subsanacion_motivo }}</span>
+                                                </div>
+                                            {% else %}
+                                                <span class="muted">-</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if leg.subsanacion_renaper_comentario %}
+                                            <div class="small muted mt-2">Respuesta provincia:</div>
+                                            <div class="mt-1">
+                                                <div class="p-2 rounded"
+                                                     style="background:rgba(255,193,7,.1);
+                                                            border:1px solid rgba(255,193,7,.3)">
+                                                    <span class="d-block text-break">{{ leg.subsanacion_renaper_comentario }}</span>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <div class="small muted">Comentario enviado a provincia:</div>
+                                        <div class="mt-1">
+                                            {% if leg.subsanacion_motivo %}
+                                                <div class="p-2 rounded"
+                                                     style="background:rgba(255,255,255,.04);
+                                                            border:1px solid rgba(255,255,255,.08)">
+                                                    <span class="d-block text-break">{{ leg.subsanacion_motivo }}</span>
+                                                </div>
+                                            {% else %}
+                                                <span class="muted">-</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if leg.subsanacion_renaper_comentario %}
+                                            <div class="small muted mt-2">Respuesta de provincia:</div>
+                                            <div class="mt-1">
+                                                <div class="p-2 rounded"
+                                                     style="background:rgba(40,167,69,.1);
+                                                            border:1px solid rgba(40,167,69,.3)">
+                                                    <span class="d-block text-break">{{ leg.subsanacion_renaper_comentario }}</span>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                <!-- Col 3: Archivos -->
+                                <div class="col-lg-5">
+                                    {% include 'components/legajo_archivos_requeridos.html' with legajo=leg is_prov=is_prov expediente=expediente %}
+                                    <!-- Botón confirmar subsanación individual (solo para subsanación técnica, no Renaper) -->
+                                    {% if is_prov and leg.revision_tecnico == 'SUBSANAR' and leg.estado_validacion_renaper != 3 and leg.archivo2 and leg.archivo3 %}
+                                        <div class="mt-3">
+                                            <button type="button"
+                                                    class="btn btn-warning btn-sm w-100 btn-confirmar-subsanacion-individual"
+                                                    data-legajo-id="{{ leg.pk }}"
+                                                    data-expediente-id="{{ expediente.pk }}">
+                                                <i class="fas fa-check"></i> Confirmar subsanación
+                                            </button>
+                                        </div>
+                                    {% endif %}
+ 
+                                    <!-- Archivo subsanación Renaper -->
+                                    {% if leg.subsanacion_renaper_comentario or leg.subsanacion_renaper_archivo %}
+                                        <div class="mt-3 p-2 rounded" style="background:rgba(255,193,7,.1);">
+                                            <div class="small muted mb-1">Respuesta subsanación Renaper</div>
+                                            {% if leg.subsanacion_renaper_comentario %}
+                                                <div class="small mb-2">
+                                                    <strong>Comentario:</strong> {{ leg.subsanacion_renaper_comentario }}
+                                                </div>
+                                            {% endif %}
+                                            {% if leg.subsanacion_renaper_archivo %}
+                                                <a href="{{ leg.subsanacion_renaper_archivo.url }}"
+                                                   target="_blank"
+                                                   class="btn btn-sm btn-outline-warning mb-2">
+                                                    <i class="fas fa-file"></i> Ver archivo
+                                                </a>
+                                            {% endif %}
+                                            {% if is_prov and leg.revision_tecnico != 'SUBSANADO' and leg.estado_validacion_renaper == 3 %}
+                                                <button type="button"
+                                                        class="btn btn-warning btn-sm w-100"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#modalRespuestaSubsanacionRenaper"
+                                                        data-legajo-id="{{ leg.pk }}"
+                                                        data-expediente-id="{{ expediente.pk }}">
+                                                    <i class="fas fa-edit"></i> Editar respuesta
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    {% elif leg.estado_validacion_renaper == 3 %}
+                                        <div class="mt-3 p-2 rounded" style="background:rgba(255,193,7,.1);">
+                                            <div class="small muted mb-1">Subsanación Renaper solicitada</div>
+                                            <div class="small text-warning mb-2">Pendiente de respuesta</div>
+                                            {% if is_prov and leg.revision_tecnico != 'SUBSANADO' %}
+                                                <button type="button"
+                                                        class="btn btn-warning btn-sm w-100"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#modalRespuestaSubsanacionRenaper"
+                                                        data-legajo-id="{{ leg.pk }}"
+                                                        data-expediente-id="{{ expediente.pk }}">
+                                                    <i class="fas fa-upload"></i> Responder
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="list-divider"></div>
+                            <!-- Acciones -->
+                            {% if is_tec and expediente.estado.nombre in 'ASIGNADO,PROCESO_DE_CRUCE' %}
+                                <div class="d-flex justify-content-end mt-2">
+                                    <div class="btn-toolbar flex-wrap"
+                                         role="toolbar"
+                                         aria-label="Acciones del legajo">
+                                        {% with estado=leg.revision_tecnico %}
+                                            {% if estado == 'SUBSANADO' and leg.estado_validacion_renaper != 1 %}
+                                                <!-- Subsanado pero sin Validacion Renaper aprobada -->
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <button type="button"
+                                                            class="btn btn-info btn-validar-renaper"
+                                                            data-legajo-id="{{ leg.pk }}"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#modalValidarRenaper">
+                                                        Validar Renaper
+                                                    </button>
+                                                </div>
+                                            {% elif leg.estado_validacion_renaper == 0 %}
+                                                <!-- Sin validar Renaper -->
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <button type="button"
+                                                            class="btn btn-info btn-validar-renaper"
+                                                            data-legajo-id="{{ leg.pk }}"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#modalValidarRenaper">
+                                                        Validar Renaper
+                                                    </button>
+                                                </div>
+                                            {% elif leg.estado_validacion_renaper == 1 %}
+                                                <!-- Renaper aprobado: mostrar botones de revisiÃ³n -->
+                                                <div class="btn-group btn-group-sm me-2" role="group">
+                                                    <button type="button"
+                                                            class="btn {% if estado == 'APROBADO' %}btn-success active{% else %}btn-outline-success{% endif %} btn-revision"
+                                                            data-legajo-id="{{ leg.pk }}"
+                                                            data-accion="APROBAR">âœ… Aprobar</button>
+                                                    <button type="button"
+                                                            class="btn {% if estado == 'SUBSANAR' %}btn-warning active{% else %}btn-outline-warning{% endif %} btn-subsanar"
+                                                            data-legajo-id="{{ leg.pk }}"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#modalSubsanar">ðŸ“ Subsanar</button>
+                                                    <button type="button"
+                                                            class="btn {% if estado == 'RECHAZADO' %}btn-danger active{% else %}btn-outline-danger{% endif %} btn-revision"
+                                                            data-legajo-id="{{ leg.pk }}"
+                                                            data-accion="RECHAZAR">âŒ Rechazar</button>
+                                                </div>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <nav class="mt-3">
+            <ul id="legajos-pagination"
+                class="pagination pagination-sm justify-content-center mb-0">
+            </ul>
+        </nav>
+    {% else %}
+        <p class="text-muted">No hay legajos cargados.</p>
+    {% endif %}
+    <!-- Confirmar EnvÃ­o: solo Provincia en EN_ESPERA -->
+    {% if legajos and is_prov and expediente.estado.nombre == 'EN_ESPERA' %}
+        <div class="text-end mt-3">
+            {% if registros_erroneos.count > 0 %}
+                <button id="btn-confirm"
+                        class="btn btn-secondary btn-confirm-disabled btn-confirm-tooltip"
+                        disabled
+                        title="No se puede enviar mientras haya registros con errores">
+                    <i class="fas fa-exclamation-triangle"></i> Confirmar Envi­o ({{ registros_erroneos.count }} errores)
+                </button>
+            {% else %}
+                <button id="btn-confirm" class="btn btn-success">Confirmar Envi­o</button>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<!-- Registros Erróneos -->
+{% if registros_erroneos %}
+    <div class="p-3 rounded shadow mb-4 registros-erroneos-section"
+         style="background-color: #1c2a3a;
+                color: #e0e0e0">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0 registros-erroneos-title">
+                <i class="fas fa-exclamation-triangle"></i> Registros con Errores ({{ registros_erroneos.count }})
+            </h5>
+            {% if is_prov %}
+                <button id="btn-reprocesar-errores" class="btn btn-warning btn-sm">
+                    <i class="fas fa-sync"></i> Reprocesar Todos
+                </button>
+            {% endif %}
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover" style="color: #e0e0e0;">
+                <thead style="background: #13212f;">
+                    <tr>
+                        <th width="5%">Fila</th>
+                        <th width="30%">Datos</th>
+                        <th width="40%">Error</th>
+                        <th width="15%">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for registro in registros_erroneos %}
+                        <tr class="registro-erroneo-row"
+                            data-registro-id="{{ registro.pk }}"
+                            style="border-left: 4px solid #dc3545">
+                            <td>{{ registro.fila_excel }}</td>
+                            <td>
+                                <small>
+                                    {% if registro.datos_raw.apellido %}
+                                        <strong>Apellido:</strong> {{ registro.datos_raw.apellido }}
+                                        <br />
+                                    {% endif %}
+                                    {% if registro.datos_raw.nombre %}
+                                        <strong>Nombre:</strong> {{ registro.datos_raw.nombre }}
+                                        <br />
+                                    {% endif %}
+                                    {% if registro.datos_raw.documento %}
+                                        <strong>DNI:</strong> {{ registro.datos_raw.documento }}
+                                        <br />
+                                    {% endif %}
+                                    {% if registro.datos_raw.fecha_nacimiento %}
+                                        <strong>F.Nac:</strong> {{ registro.datos_raw.fecha_nacimiento }}
+                                        <br />
+                                    {% endif %}
+                                    {% if registro.datos_raw.apellido_responsable or registro.datos_raw.nombre_responsable %}
+                                        <span class="badge bg-info mt-1">Con Responsable</span>
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td>
+                                <small class="text-danger">{{ registro.mensaje_error }}</small>
+                            </td>
+                            <td>
+                                <button class="btn btn-outline-light btn-sm"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#error-detalle-{{ registro.pk }}">
+                                    <i class="fas fa-edit"></i> Editar
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm btn-eliminar-error"
+                                        data-registro-id="{{ registro.pk }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="collapse" id="error-detalle-{{ registro.pk }}">
+                            <td colspan="4" class="p-0">
+                                <div class="card mt-2" style="background: #2c3e50; border-color: #495057;">
+                                    <div class="card-body">
+                                        <h6 class="mb-3">Editar Datos - Fila {{ registro.fila_excel }}</h6>
+                                        <form class="form-editar-error" data-registro-id="{{ registro.pk }}">
+                                            <!-- DATOS DEL BENEFICIARIO -->
+                                            <h6 class="text-primary mt-2 mb-2">
+                                                <i class="fas fa-child"></i> Beneficiario
+                                            </h6>
+                                            <div class="row g-2">
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Apellido *</label>
+                                                    <input type="text"
+                                                           class="form-control"
+                                                           name="apellido"
+                                                           value="{{ registro.datos_raw.apellido|default:'' }}"
+                                                           required />
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Nombre *</label>
+                                                    <input type="text"
+                                                           class="form-control"
+                                                           name="nombre"
+                                                           value="{{ registro.datos_raw.nombre|default:'' }}"
+                                                           required />
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Documento *</label>
+                                                    <input type="text"
+                                                           class="form-control"
+                                                           name="documento"
+                                                           value="{{ registro.datos_raw.documento|default:'' }}"
+                                                           required />
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Fecha Nacimiento *</label>
+                                                    <input type="text"
+                                                           class="form-control"
+                                                           name="fecha_nacimiento"
+                                                           value="{{ registro.datos_raw.fecha_nacimiento|default:'' }}"
+                                                           placeholder="DD/MM/YYYY"
+                                                           required />
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Sexo</label>
+                                                    <select class="form-select" name="sexo">
+                                                        <option value="">Seleccionar...</option>
+                                                        {% for sexo in sexos %}
+                                                            <option value="{{ sexo.id }}"
+                                                                    {% if registro.datos_raw.sexo|stringformat:"s" == sexo.id|stringformat:"s" or registro.datos_raw.sexo|lower == sexo.sexo|lower %}selected{% endif %}>
+                                                                {{ sexo.sexo }}
+                                                            </option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Nacionalidad</label>
+                                                    <select class="form-select" name="nacionalidad">
+                                                        <option value="">Seleccionar...</option>
+                                                        {% for nac in nacionalidades %}
+                                                            <option value="{{ nac.id }}"
+                                                                    {% if registro.datos_raw.nacionalidad|stringformat:"s" == nac.id|stringformat:"s" or registro.datos_raw.nacionalidad|lower == nac.nacionalidad|lower %}selected{% endif %}>
+                                                                {{ nac.nacionalidad }}
+                                                            </option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Municipio</label>
+                                                    <select class="form-select select-municipio"
+                                                            name="municipio"
+                                                            data-registro-id="{{ registro.pk }}">
+                                                        <option value="">Seleccionar...</option>
+                                                        {% for mun in municipios %}
+                                                            <option value="{{ mun.id }}"
+                                                                    {% if registro.datos_raw.municipio|stringformat:"s" == mun.id|stringformat:"s" %}selected{% endif %}>
+                                                                {{ mun.nombre }}
+                                                            </option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Localidad</label>
+                                                    <select class="form-select select-localidad"
+                                                            name="localidad"
+                                                            data-registro-id="{{ registro.pk }}">
+                                                        <option value="">Seleccionar...</option>
+                                                        {% for loc in localidades %}
+                                                            <option value="{{ loc.id }}"
+                                                                    data-municipio="{{ loc.municipio_id }}"
+                                                                    {% if registro.datos_raw.localidad|stringformat:"s" == loc.id|stringformat:"s" %}selected{% endif %}>
+                                                                {{ loc.nombre }} ({{ loc.municipio.nombre }})
+                                                            </option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Teléfono</label>
+                                                    <input type="text"
+                                                           class="form-control"
+                                                           name="telefono"
+                                                           value="{{ registro.datos_raw.telefono|default:'' }}" />
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Email</label>
+                                                    <input type="email"
+                                                           class="form-control"
+                                                           name="email"
+                                                           value="{{ registro.datos_raw.email|default:'' }}" />
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Calle</label>
+                                                    <input type="text"
+                                                           class="form-control"
+                                                           name="calle"
+                                                           value="{{ registro.datos_raw.calle|default:'' }}" />
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Altura</label>
+                                                    <input type="text"
+                                                           class="form-control"
+                                                           name="altura"
+                                                           value="{{ registro.datos_raw.altura|default:'' }}" />
+                                                </div>
+                                            </div>
+ 
+                                            <!-- DATOS DEL RESPONSABLE -->
+                                            {% if registro.datos_raw.apellido_responsable or registro.datos_raw.nombre_responsable or registro.datos_raw.documento_responsable %}
+                                                <hr class="my-3" />
+                                                <h6 class="text-info mt-2 mb-2">
+                                                    <i class="fas fa-user-tie"></i> Responsable
+                                                </h6>
+                                                <div class="row g-2">
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Apellido Responsable</label>
+                                                        <input type="text"
+                                                               class="form-control"
+                                                               name="apellido_responsable"
+                                                               value="{{ registro.datos_raw.apellido_responsable|default:'' }}" />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Nombre Responsable</label>
+                                                        <input type="text"
+                                                               class="form-control"
+                                                               name="nombre_responsable"
+                                                               value="{{ registro.datos_raw.nombre_responsable|default:'' }}" />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">CUIT/Documento Responsable</label>
+                                                        <input type="text"
+                                                               class="form-control"
+                                                               name="documento_responsable"
+                                                               value="{{ registro.datos_raw.documento_responsable|default:'' }}" />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Fecha Nac. Responsable</label>
+                                                        <input type="text"
+                                                               class="form-control"
+                                                               name="fecha_nacimiento_responsable"
+                                                               value="{{ registro.datos_raw.fecha_nacimiento_responsable|default:'' }}"
+                                                               placeholder="DD/MM/YYYY" />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Sexo Responsable</label>
+                                                        <select class="form-select" name="sexo_responsable">
+                                                            <option value="">Seleccionar...</option>
+                                                            {% for sexo in sexos %}
+                                                                <option value="{{ sexo.id }}"
+                                                                        {% if registro.datos_raw.sexo_responsable|stringformat:"s" == sexo.id|stringformat:"s" or registro.datos_raw.sexo_responsable|lower == sexo.sexo|lower %}selected{% endif %}>
+                                                                    {{ sexo.sexo }}
+                                                                </option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Teléfono Responsable</label>
+                                                        <input type="text"
+                                                               class="form-control"
+                                                               name="telefono_responsable"
+                                                               value="{{ registro.datos_raw.telefono_responsable|default:'' }}" />
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Email Responsable</label>
+                                                        <input type="email"
+                                                               class="form-control"
+                                                               name="email_responsable"
+                                                               value="{{ registro.datos_raw.email_responsable|default:'' }}" />
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Domicilio Responsable</label>
+                                                        <input type="text"
+                                                               class="form-control"
+                                                               name="domicilio_responsable"
+                                                               value="{{ registro.datos_raw.domicilio_responsable|default:'' }}" />
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+ 
+                                            <div class="alert alert-info mt-3 mb-0">
+                                                <small><strong>Nota:</strong> Los campos se guardan automáticamente al cambiar. Luego usa "Reprocesar Todos" para crear los legajos.</small>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endif %}
+
+<div class="p-3 rounded shadow mb-4"
+     style="background-color: #1c2a3a;
+            color: #e0e0e0">
+    {% if hay_subsanar and is_prov and expediente.estado.nombre == 'ASIGNADO' %}
+        <div class="text-end mt-3">
+            <button id="btn-confirm-subs" class="btn btn-warning">Confirmar subsanación</button>
+        </div>
+    {% endif %}
+
+</div>
+<!-- Asignar TÃ©cnico: solo Coordinador (segÃºn tu condiciÃ³n actual por id) -->
+{% if expediente.estado.id == 2 and is_coord %}
+    <div class="card mb-4">
+        <div class="card-header bg-body-tertiary">
+            <h5 class="mb-0">Asignar Técnico</h5>
+        </div>
+        <div class="card-body">
+            <form method="post"
+                  action="{% url 'expediente_asignar_tecnico' expediente.pk %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="tecnico">Seleccionar Técnico:</label>
+                    <select name="tecnico_id" id="tecnico" class="form-control">
+                        {% for tecnico in tecnicos %}
+                            <option value="{{ tecnico.id }}">{{ tecnico.get_full_name|default:tecnico.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary mt-2">Asignar</button>
+            </form>
+        </div>
+    </div>
+{% endif %}
+<!-- Modal: subir/editar archivo de legajo (individual por campo) -->
+<div class="modal fade"
+     id="modalSubirArchivo"
+     tabindex="-1"
+     aria-labelledby="modalSubirArchivoLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="form-subir-archivo" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalSubirArchivoLabel">Subir/Editar archivo del legajo</h5>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="modal-alertas" class="mb-2"></div>
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <label class="form-label">Seleccionar archivo a actualizar</label>
+                            <select name="campo" id="campo-archivo" class="form-select" required>
+                                <option value="archivo2" id="opt-archivo2">Biopsia / Constancia médica</option>
+                                <option value="archivo3" id="opt-archivo3">Documento</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label for="id_archivo" class="form-label">PDF o imagen</label>
+                            <input type="file"
+                                   name="archivo"
+                                   id="id_archivo"
+                                   class="form-control"
+                                   required
+                                   accept=".pdf,.jpg,.jpeg,.png" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- Modal: pedir SUBSANACIÃ“N -->
+<div class="modal fade"
+     id="modalSubsanar"
+     tabindex="-1"
+     aria-labelledby="modalSubsanarLabel"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <form class="modal-content" id="form-subsanar" method="post">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalSubsanarLabel">Solicitud de subsanación</h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="accion" value="SUBSANAR" />
+                <input type="hidden" id="subsanar-legajo-id" name="legajo_id" value="" />
+                <div class="mb-2">
+                    <label for="subsanar-motivo" class="form-label">Indicar el motivo</label>
+                    <textarea id="subsanar-motivo"
+                              name="motivo"
+                              class="form-control"
+                              rows="3"
+                              required
+                              maxlength="500"></textarea>
+                </div>
+                <small class="text-muted d-block">
+                    El legajo quedará en estado <strong>SUBSANAR</strong> y la provincia podrá actualizar los archivos.
+                </small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-warning" id="btn-confirm-subsanar">Confirmar</button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- Modal: cruce CUIT/DNI -->
+<div class="modal fade"
+     id="modalCruceCuit"
+     tabindex="-1"
+     aria-labelledby="modalCruceCuitLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="form-cruce-cuit" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalCruceCuitLabel">Subir Excel de Documentos (con encabezado)</h5>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="cruce-alertas" class="mb-2"></div>
+                    <div class="form-group">
+                        <label for="id_excel_cuit">
+                            Archivo Excel (.xlsx) con columna <code>documento</code>
+                        </label>
+                        <input type="file"
+                               name="excel_cuit"
+                               id="id_excel_cuit"
+                               class="form-control"
+                               required
+                               accept=".xlsx,.xls,.csv" />
+                        <small id="cruce-help" class="text-muted">
+                            Debe incluir encabezado; columna valida: <strong>documento</strong>.
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success" id="btn-cruce-submit">Ejecutar Cruce</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- Modal: Respuesta subsanacion Renaper -->
+<div class="modal fade"
+     id="modalRespuestaSubsanacionRenaper"
+     tabindex="-1"
+     aria-labelledby="modalRespuestaSubsanacionRenaperLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="form-respuesta-subsanacion-renaper"
+                  method="post"
+                  enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalRespuestaSubsanacionRenaperLabel">Respuesta a subsanación</h5>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="modal-alertas-renaper" class="mb-2"></div>
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <label for="comentario-respuesta-renaper" class="form-label">Comentario de respuesta</label>
+                            <textarea id="comentario-respuesta-renaper"
+                                      name="comentario"
+                                      class="form-control"
+                                      rows="3"
+                                      placeholder="Explique las correcciones realizadas..."
+                                      required></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label for="archivo-respuesta-renaper" class="form-label">Archivo de respuesta *</label>
+                            <input type="file"
+                                   name="archivo"
+                                   id="archivo-respuesta-renaper"
+                                   class="form-control"
+                                   required
+                                   accept=".pdf,.jpg,.jpeg,.png" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Enviar Respuesta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- Modal: Validacion Renaper -->
+<div class="modal fade"
+     id="modalValidarRenaper"
+     tabindex="-1"
+     aria-labelledby="modalValidarRenaperLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalValidarRenaperLabel">Validación Renaper</h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="renaper-alertas" class="mb-3"></div>
+                <div id="renaper-loading" class="text-center py-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Consultando Renaper...</span>
+                    </div>
+                    <p class="mt-2">Consultando datos en Renaper...</p>
+                </div>
+                <div id="renaper-comparacion" style="display: none;">
+                    <h6 class="mb-3">
+                        Comparación de datos: <span id="ciudadano-nombre"></span>
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0">Datos de la Provincia</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm mb-0">
+                                        <tbody id="datos-provincia">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0">Datos de Renaper</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm mb-0">
+                                        <tbody id="datos-renaper">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+ 
+<!-- Modal: Estructura Familiar -->
+<div class="modal fade"
+     id="modalEstructuraFamiliar"
+     tabindex="-1"
+     aria-labelledby="modalEstructuraFamiliarLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content"
+             style="background-color: #2c3e50;
+                    color: #e0e0e0">
+            <div class="modal-header" style="border-bottom: 1px solid #495057;">
+                <h5 class="modal-title" id="modalEstructuraFamiliarLabel">
+                    <i class="fas fa-users"></i> Estructura Familiar
+                </h5>
+                <button type="button"
+                        class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>DNI</th>
+                                <th>Rol</th>
+                                <th>Relación</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for leg in legajos %}
+                                <tr>
+                                    <td class="fw-semibold">{{ leg.ciudadano.nombre }} {{ leg.ciudadano.apellido }}</td>
+                                    <td>{{ leg.ciudadano.documento }}</td>
+                                    <td>
+                                        {% if leg.es_responsable %}
+                                            <span class="badge bg-info">👨👩👧👦 Responsable</span>
+                                        {% else %}
+                                            <span class="badge bg-success">👶 Beneficiario</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if leg.es_responsable %}
+                                            {% if leg.hijos_a_cargo %}
+                                                A cargo de:
+                                                {% for hijo in leg.hijos_a_cargo %}
+                                                    {{ hijo.nombre }} {{ hijo.apellido }}
+                                                    {% if not forloop.last %},{% endif %}
+                                                {% endfor %}
+                                            {% else %}
+                                                Sin hijos a cargo
+                                            {% endif %}
+                                        {% else %}
+                                            {% for otro_leg in legajos %}
+                                                {% if otro_leg.es_responsable %}
+                                                    {% for hijo in otro_leg.hijos_a_cargo %}
+                                                        {% if hijo.id == leg.ciudadano.id %}
+                                                            Responsable: {{ otro_leg.ciudadano.nombre }} {{ otro_leg.ciudadano.apellido }}
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if leg.revision_tecnico == 'APROBADO' %}
+                                            <span class="badge bg-success">Aprobado</span>
+                                        {% elif leg.revision_tecnico == 'RECHAZADO' or leg.estado_validacion_renaper == 2 %}
+                                            <span class="badge bg-danger">Rechazado</span>
+                                        {% elif leg.revision_tecnico == 'SUBSANAR' %}
+                                            <span class="badge bg-warning text-dark">Subsanar</span>
+                                        {% elif leg.revision_tecnico == 'SUBSANADO' %}
+                                            <span class="badge bg-info text-dark">Subsanado</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Pendiente</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid #495057;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Confirmar Reprocesar Errores -->
+<div class="modal fade"
+     id="modalConfirmarReprocesar"
+     tabindex="-1"
+     aria-labelledby="modalConfirmarReprocesarLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalConfirmarReprocesarLabel">
+                    <i class="fas fa-exclamation-triangle text-warning"></i> Confirmar Reprocesamiento
+                </h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de reprocesar todos los registros erróneos?</p>
+                <p class="text-muted mb-0">Esta acción intentará crear los legajos con los datos corregidos.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" id="btn-confirmar-reprocesar">
+                    <i class="fas fa-sync"></i> Reprocesar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Historial de Estados -->
+<div class="modal fade"
+     id="modalHistorial"
+     tabindex="-1"
+     aria-labelledby="modalHistorialLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalHistorialLabel">
+                    <i class="fas fa-history"></i> Historial de Estados
+                </h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Estado Anterior</th>
+                                <th>Estado Nuevo</th>
+                                <th>Usuario</th>
+                                <th>Observaciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for h in historial_page_obj %}
+                                <tr>
+                                    <td>{{ h.fecha|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ h.estado_anterior.display_name }}</td>
+                                    <td>{{ h.estado_nuevo.display_name }}</td>
+                                    <td>{{ h.usuario.get_full_name|default:h.usuario.username|default:"-" }}</td>
+                                    <td>{{ h.observaciones|default:"-" }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">Sin cambios de estado</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endwith %}
+{% endblock %}
+{% block customCSS %}
+    <link rel="stylesheet"
+          href="{% static 'custom/css/expediente_detail.css' %}" />
+    <link rel="stylesheet" href="{% static 'custom/css/familia_bubbles.css' %}" />
+    <link rel="stylesheet"
+          href="{% static 'custom/css/registros_erroneos.css' %}" />
+{% endblock %}
+{% block customJS %}
+    <!-- Meta tags para configuración -->
+    <meta name="process-url"
+          content="{% url 'expediente_procesar' expediente.pk %}" />
+    <meta name="confirm-url"
+          content="{% url 'expediente_confirm' expediente.pk %}" />
+    <meta name="cruce-url"
+          content="{% url 'expediente_cruce_cuit' expediente.pk %}" />
+    <meta name="csrf-token" content="{{ csrf_token }}" />
+    <meta name="revisar-url-template"
+          content="{% url 'legajo_revisar' expediente.pk 0 %}" />
+    <meta name="confirm-subs-url"
+          content="{% url 'expediente_confirm_subsanacion' expediente.pk %}" />
+    <meta name="validar-renaper-url-template"
+          content="{% url 'legajo_validar_renaper' expediente.pk 0 %}" />
+    <meta name="reprocesar-errores-url"
+          content="{% url 'registros_erroneos_reprocesar' expediente.pk %}" />
+    <meta name="actualizar-error-url-template"
+          content="{% url 'registro_erroneo_actualizar' expediente.pk 0 %}" />
+    <meta name="eliminar-error-url-template"
+          content="{% url 'registro_erroneo_eliminar' expediente.pk 0 %}" />
+    <script src="{% static 'custom/js/expediente_detail_config.js' %}"></script>
+    <script src="{% static 'custom/js/registros_erroneos.js' %}"></script>
+    <script src="{% static 'custom/js/utils.js' %}"></script>
+    <script src="{% static 'custom/js/expediente_detail.js' %}"></script>
+    <script src="{% static 'custom/js/global_pagination.js' %}"></script>
+{% endblock %}
