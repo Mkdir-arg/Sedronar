@@ -4,14 +4,12 @@ from django.contrib.auth.models import Group
 from django.core.management.base import BaseCommand
 
 
-def crear_usuario_con_grupos(
-    username, email, password, grupos=None, is_superuser=False
-):
+def crear_usuario_con_grupos(username, email, password, grupos=None, is_superuser=False):
     user_model = get_user_model()
     user_qs = user_model.objects.filter(username=username)
     if user_qs.exists():
         user = user_qs.first()
-        user.email = email  # actualiza email por si cambió
+        user.email = email
         user.set_password(password)
         user.save()
         creado = False
@@ -25,6 +23,7 @@ def crear_usuario_con_grupos(
                 username=username, email=email, password=password
             )
         creado = True
+    
     # Asignar grupos si es necesario
     if grupos:
         for group_name in grupos:
@@ -34,7 +33,7 @@ def crear_usuario_con_grupos(
 
 
 class Command(BaseCommand):
-    help = "Crea usuarios de testing y sus grupos solo si DEBUG=True"
+    help = "Crea usuarios básicos de testing solo si DEBUG=True"
 
     def handle(self, *args, **kwargs):
         if settings.DEBUG:
@@ -42,145 +41,18 @@ class Command(BaseCommand):
 
             usuarios = [
                 {
-                    "username": "1",
-                    "email": "1@gmail.com",
-                    "password": "1",
+                    "username": "admin",
+                    "email": "admin@sedronar.gov.ar",
+                    "password": "admin123",
                     "is_superuser": True,
-                    "grupos": [],
+                    "grupos": ["Administrador"],
                 },
                 {
-                    "username": "abogadoqa",
-                    "email": "abogadoqa@example.com",
-                    "password": "qa1234",
+                    "username": "ciudadanos",
+                    "email": "ciudadanos@sedronar.gov.ar",
+                    "password": "ciudadanos123",
                     "is_superuser": False,
-                    "grupos": [
-                        "Abogado Dupla",
-                        "Acompanamiento Detalle",
-                        "Acompanamiento Listar",
-                        "Comedores",
-                        "Comedores Intervencion Crear",
-                        "Comedores Intervencion Editar",
-                        "Comedores Intervencion Ver",
-                        "Comedores Intervenciones Detalle",
-                        "Comedores Listar",
-                    ],
-                },
-                {
-                    "username": "tecnicoqa",
-                    "email": "tecnicoqa@example.com",
-                    "password": "qa1234",
-                    "is_superuser": False,
-                    "grupos": [
-                        "Acompanamiento Detalle",
-                        "Acompanamiento Listar",
-                        "Comedores",
-                        "Comedores Editar",
-                        "Comedores Intervencion Crear",
-                        "Comedores Intervencion Editar",
-                        "Comedores Intervencion Ver",
-                        "Comedores Intervenciones Detalle",
-                        "Comedores Listar",
-                        "Comedores Observaciones Crear",
-                        "Comedores Observaciones Detalle",
-                        "Comedores Observaciones Editar",
-                        "Comedores Observaciones Eliminar",
-                        "Comedores Relevamiento Detalle",
-                        "Comedores Ver",
-                        "Tecnico Comedor",
-                    ],
-                },
-                {
-                    "username": "legalesqa",
-                    "email": "legalesqa@example.com",
-                    "password": "qa1234",
-                    "is_superuser": False,
-                    "grupos": [
-                        "Comedores",
-                        "Area Legales",
-                        "Comedores Relevamiento Ver",
-                        "Comedores Relevamiento Detalle",
-                        "Comedores Observaciones Detalle",
-                        "Comedores Intervencion Ver",
-                        "Comedores Intervenciones Detalle",
-                        "Comedores Nomina Ver",
-                        "Acompanamiento Detalle",
-                        "Acompanamiento Listar",
-                    ],
-                },
-                {
-                    "username": "contableqa",
-                    "email": "contableqa@example.com",
-                    "password": "qa1234",
-                    "is_superuser": False,
-                    "grupos": [
-                        "Comedores",
-                        "Area Contable",
-                        "Comedores Relevamiento Ver",
-                        "Comedores Relevamiento Detalle",
-                        "Comedores Observaciones Detalle",
-                        "Comedores Intervencion Ver",
-                        "Comedores Intervenciones Detalle",
-                        "Comedores Nomina Ver",
-                        "Acompanamiento Detalle",
-                        "Acompanamiento Listar",
-                    ],
-                },
-                # Usuarios de Centro de Familia (ReferenteCentro + Ciudadanos):
-                {
-                    "username": "CDF SSE",
-                    "email": "rubenarellano@example.com",
-                    "password": "8392017",
-                    "is_superuser": False,
-                    "grupos": ["CDF SSE", "Ciudadanos"],
-                },
-                {
-                    "username": "FARO",
-                    "email": "natashabraga@example.com",
-                    "password": "5823109",
-                    "is_superuser": False,
-                    "grupos": ["ReferenteCentro", "Ciudadanos"],
-                },
-                {
-                    "username": "AD",
-                    "email": "natashabraga@example.com",
-                    "password": "5823109",
-                    "is_superuser": False,
-                    "grupos": ["ReferenteCentro", "Ciudadanos"],
-                },
-                {
-                    "username": "TecnicoCeliaquia",
-                    "email": "natashabraga@example.com",
-                    "password": "1",
-                    "is_superuser": False,
-                    "grupos": ["TecnicoCeliaquia", "Ciudadanos"],
-                },
-                {
-                    "username": "TecnicoCeliaquia2",
-                    "email": "natashabraga@example.com",
-                    "password": "1",
-                    "is_superuser": False,
-                    "grupos": ["TecnicoCeliaquia", "Ciudadanos"],
-                },
-                {
-                    "username": "TecnicoCeliaquia3",
-                    "email": "natashabraga@example.com",
-                    "password": "1",
-                    "is_superuser": False,
-                    "grupos": ["TecnicoCeliaquia", "Ciudadanos"],
-                },
-                {
-                    "username": "CoordinadorCeliaquia",
-                    "email": "natashabraga@example.com",
-                    "password": "1",
-                    "is_superuser": False,
-                    "grupos": ["CoordinadorCeliaquia", "Ciudadanos"],
-                },
-                {
-                    "username": "ProvinciaCeliaquia",
-                    "email": "natashabraga@example.com",
-                    "password": "1",
-                    "is_superuser": False,
-                    "grupos": ["ProvinciaCeliaquia", "Ciudadanos"],
+                    "grupos": ["Ciudadanos"],
                 },
             ]
 

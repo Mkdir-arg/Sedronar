@@ -1,14 +1,36 @@
 {% load static %}
-<aside class="app-sidebar shadow">
-    <div class="sidebar-wrapper">
-        <nav class="mt-2">
-            <ul class="nav sidebar-menu flex-column"
-                data-lte-toggle="treeview"
-                role="menu"
-                data-accordion="false">
-                {% include 'includes/sidebar/opciones.html' %}
-                {% block menu-adicional %}{% endblock %}
-            </ul>
+<!-- Mobile sidebar overlay -->
+<div class="relative z-50 lg:hidden" x-show="sidebarOpen" style="display: none;">
+    <div class="fixed inset-0 bg-gray-900/80" @click="sidebarOpen = false"></div>
+    <div class="fixed inset-0 flex">
+        <div class="relative mr-16 flex w-full max-w-xs flex-1">
+            <div class="absolute left-full top-0 flex w-16 justify-center pt-5">
+                <button type="button" class="-m-2.5 p-2.5" @click="sidebarOpen = false">
+                    <span class="sr-only">Cerrar sidebar</span>
+                    <i class="fas fa-times h-6 w-6 text-white"></i>
+                </button>
+            </div>
+            <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-arg-azul px-6 pb-4">
+                <div class="flex h-16 shrink-0 items-center">
+                    <img class="h-8 w-auto" src="{% static 'custom/img/sisoc_logo.png' %}" alt="SEDRONAR">
+                </div>
+                <nav class="flex flex-1 flex-col">
+                    {% include 'includes/sidebar/opciones.html' %}
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Desktop sidebar -->
+<div class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
+    <div class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-arg-azul px-6 pb-4">
+        <div class="flex h-16 shrink-0 items-center">
+            <img class="h-8 w-auto" src="{% static 'custom/img/sisoc_logo.png' %}" alt="SEDRONAR">
+            <span class="ml-3 text-xl font-lora font-semibold text-white">SEDRONAR</span>
+        </div>
+        <nav class="flex flex-1 flex-col">
+            {% include 'includes/sidebar/opciones.html' %}
         </nav>
     </div>
-</aside>
+</div>

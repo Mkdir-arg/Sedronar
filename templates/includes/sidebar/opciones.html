@@ -1,97 +1,76 @@
 {% load static custom_filters %}
 {% with pagina_actual=request.resolver_match.route %}
-    <!-- INFORMACIÓN DE USUARIO -->
-    <li class="nav-item user-info mb-2 mt-2">
-        <div class="user-panel d-flex align-items-center p-3">
-            <div class="user-avatar me-3">
-                <div class="avatar-circle d-flex align-items-center justify-content-center bg-primary text-white rounded-circle"
-                     style="width: 45px;
-                            height: 45px;
-                            font-size: 16px;
-                            font-weight: 600">
-                    {{ request.user.username|first|upper }}
+    <ul role="list" class="flex flex-1 flex-col gap-y-7">
+        <li>
+            <!-- User info -->
+            <div class="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-white">
+                <div class="h-8 w-8 rounded-full bg-arg-secundario flex items-center justify-center">
+                    <span class="text-sm font-medium text-white">{{ request.user.username|first|upper }}</span>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-white">{{ request.user.get_full_name|default:request.user.username }}</p>
+                    <p class="text-xs text-gray-300">
+                        {% if request.user.groups.all %}
+                            {{ request.user.groups.first.name }}
+                        {% else %}
+                            Sin grupo
+                        {% endif %}
+                    </p>
                 </div>
             </div>
-            <div class="info flex-grow-1">
-                <p class="mb-1 text-white fw-bold">{{ request.user.get_full_name|default:request.user.username }}</p>
-                <p class="mb-0 text-white-50 small">
-                    {% if request.user.groups.all %}
-                        {{ request.user.groups.first.name }}
-                    {% else %}
-                        Sin grupo
-                    {% endif %}
-                </p>
-            </div>
-        </div>
-    </li>
-    
-    <!-- INICIO -->
-    <li class="nav-item nav-main-item">
-        <a href="{% url 'inicio' %}"
-           class="nav-link {% if 'inicio' in pagina_actual %}active{% endif %}">
-            <img src="{% static 'custom/img/iconos_sidebar/inicio.svg' %}" alt="" />
-            <p>Inicio</p>
-        </a>
-    </li>
-    
-    <!-- ADMINISTRACIÓN -->
-    {% if request.user|has_group:"Administrador" %}
-        <li class="nav-item nav-main-item">
-            <a href="#" class="nav-link">
-                <img src="{% static 'custom/img/iconos_sidebar/administracion.svg' %}" alt="" />
-                <p>
-                    Administración
-                    <i class="nav-arrow bi bi-chevron-right"></i>
-                </p>
-            </a>
-            <ul class="nav nav-treeview">
-                <li class="nav-item">
-                    <a href="{% url 'usuarios' %}"
-                       class="nav-link nav-dot ms-2 {% if 'usuarios' in pagina_actual or 'password' in pagina_actual %}active{% endif %}">
-                        <p>Usuarios</p>
+        </li>
+        
+        <li>
+            <ul role="list" class="-mx-2 space-y-1">
+                <!-- Inicio -->
+                <li>
+                    <a href="{% url 'inicio' %}" class="{% if 'inicio' in pagina_actual %}bg-arg-secundario text-white{% else %}text-gray-300 hover:text-white hover:bg-arg-secundario{% endif %} group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold">
+                        <i class="fas fa-home h-6 w-6 shrink-0"></i>
+                        Inicio
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a href="{% url 'grupos' %}"
-                       class="nav-link nav-dot ms-2 {% if 'grupos' in pagina_actual %}active{% endif %}">
-                        <p>Grupos</p>
-                    </a>
-                </li>
+
+                <!-- Administración -->
+                {% if request.user|has_group:"Administrador" %}
+                    <li x-data="{ open: {% if 'usuarios' in pagina_actual or 'grupos' in pagina_actual %}true{% else %}false{% endif %} }">
+                        <button @click="open = !open" class="text-gray-300 hover:text-white hover:bg-arg-secundario group flex w-full items-center gap-x-3 rounded-md p-2 text-left text-sm leading-6 font-semibold">
+                            <i class="fas fa-cog h-6 w-6 shrink-0"></i>
+                            Administración
+                            <i class="ml-auto h-5 w-5 shrink-0 fas fa-chevron-right transition-transform text-gray-300" :class="{ 'rotate-90': open }"></i>
+                        </button>
+                        <ul x-show="open" class="mt-1 px-2">
+                            <li>
+                                <a href="{% url 'usuarios' %}" class="{% if 'usuarios' in pagina_actual or 'password' in pagina_actual %}bg-arg-secundario text-white{% else %}text-gray-300 hover:text-white hover:bg-arg-secundario{% endif %} block rounded-md py-2 pl-9 pr-2 text-sm leading-6">
+                                    Usuarios
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{% url 'grupos' %}" class="{% if 'grupos' in pagina_actual %}bg-arg-secundario text-white{% else %}text-gray-300 hover:text-white hover:bg-arg-secundario{% endif %} block rounded-md py-2 pl-9 pr-2 text-sm leading-6">
+                                    Grupos
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                {% endif %}
+
+                <!-- Legajos -->
+                {% if request.user|has_group:"Ciudadanos" %}
+                    <li x-data="{ open: {% if 'ciudadanos' in pagina_actual %}true{% else %}false{% endif %} }">
+                        <button @click="open = !open" class="text-gray-300 hover:text-white hover:bg-arg-secundario group flex w-full items-center gap-x-3 rounded-md p-2 text-left text-sm leading-6 font-semibold">
+                            <i class="fas fa-users h-6 w-6 shrink-0"></i>
+                            Legajos
+                            <i class="ml-auto h-5 w-5 shrink-0 fas fa-chevron-right transition-transform text-gray-300" :class="{ 'rotate-90': open }"></i>
+                        </button>
+                        <ul x-show="open" class="mt-1 px-2">
+                            <li>
+                                <a href="{% url 'ciudadanos' %}" class="{% if 'ciudadanos/listar' in pagina_actual %}bg-arg-secundario text-white{% else %}text-gray-300 hover:text-white hover:bg-arg-secundario{% endif %} block rounded-md py-2 pl-9 pr-2 text-sm leading-6">
+                                    Ciudadanos
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                {% endif %}
             </ul>
         </li>
-    {% endif %}
-    
-    <!-- LEGAJOS -->
-    <li class="nav-item nav-main-item {% if 'ciudadanos' in pagina_actual %}menu-open{% endif %}">
-        <a href="#" class="nav-link">
-            <img src="{% static 'custom/img/iconos_sidebar/legajos.svg' %}" alt="" />
-            <p>
-                Legajos
-                <i class="nav-arrow bi bi-chevron-right"></i>
-            </p>
-        </a>
-        <ul class="nav nav-treeview">
-            <!-- CIUDADANOS -->
-            {% if request.user|has_group:"Ciudadanos" %}
-                <li class="nav-item {% if 'ciudadanos' in pagina_actual %}menu-open{% endif %}">
-                    <a href="#"
-                       class="nav-link nav-dot ms-2 {% if 'ciudadanos' in pagina_actual %}active{% endif %}">
-                        <p>
-                            Ciudadanos
-                            <i class="nav-arrow bi bi-chevron-right"></i>
-                        </p>
-                    </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="{% url 'ciudadanos' %}"
-                               class="nav-link ms-4 {% if 'ciudadanos/listar' in pagina_actual %}active{% endif %}">
-                                <i class="nav-icon bi bi-arrow-return-right"></i>
-                                <p>Búsqueda</p>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-            {% endif %}
-        </ul>
-    </li>
+    </ul>
 {% endwith %}

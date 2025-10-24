@@ -15,9 +15,7 @@ urlpatterns = [
     path("", include("healthcheck.urls")),
 ]
 
-if settings.DEBUG:
-    urlpatterns += [path("__debug__/", include("debug_toolbar.urls"))]
-    urlpatterns += [path("silk/", include("silk.urls", namespace="silk"))]
+# URLs de desarrollo se pueden agregar aquí si es necesario
 
 urlpatterns += staticfiles_urlpatterns()
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
