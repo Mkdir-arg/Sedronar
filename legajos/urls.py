@@ -14,5 +14,6 @@ urlpatterns = [
     path('admision/paso1/', views.AdmisionPaso1View.as_view(), name='admision_paso1'),
     path('admision/paso2/', views.AdmisionPaso2View.as_view(), name='admision_paso2'),
     path('admision/paso3/', views.AdmisionPaso3View.as_view(), name='admision_paso3'),
+    path('<uuid:legajo_id>/evaluacion/', views.EvaluacionInicialView.as_view(), name='evaluacion'),
     path('<uuid:pk>/', views.LegajoDetailView.as_view(), name='detalle'),
 ]

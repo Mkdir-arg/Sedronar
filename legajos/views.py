@@ -5,9 +5,9 @@ from django.urls import reverse_lazy
 from django.db.models import Q
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import Ciudadano, LegajoAtencion
+from .models import Ciudadano, LegajoAtencion, EvaluacionInicial
 from core.models import DispositivoRed
-from .forms import ConsultaRenaperForm, CiudadanoForm, BuscarCiudadanoForm, AdmisionLegajoForm, ConsentimientoForm
+from .forms import ConsultaRenaperForm, CiudadanoForm, BuscarCiudadanoForm, AdmisionLegajoForm, ConsentimientoForm, EvaluacionInicialForm
 from .services.consulta_renaper import consultar_datos_renaper
 
 
@@ -45,24 +45,6 @@ class CiudadanoCreateView(LoginRequiredMixin, FormView):
     template_name = 'legajos/ciudadano_renaper_form.html'
     form_class = ConsultaRenaperForm
     
-    def form_valid(self, form):
-        cuit = form.cleaned_data['cuit']
-        sexo = form.cleaned_data['sexo']
-        
-        # Extraer DNI del CUIT (quitar prefijo y dígito verificador)
-        dni = self.extraer_dni_de_cuit(cuit)
-        if not dni:
-            messages.error(self.request, 'CUIT inválido. Formato esperado: XX-XXXXXXXX-X')
-            return self.form_invalid(form)
-        
-        # Verificar si el ciudadano ya existe
-        if Ciudadano.objects.filter(dni=dni).exists():
-            messages.error(self.request, f'Ya existe un ciudadano con DNI {dni}')
-            return self.form_invalid(form)
-        
-        # Consultar RENAPER
-        resultado = consultar_datos_renaper(cuit, sexo)
-        
     def extraer_dni_de_cuit(self, cuit):
         """Extrae el DNI del CUIT (formato XX-XXXXXXXX-X)"""
         import re
@@ -81,12 +63,24 @@ class CiudadanoCreateView(LoginRequiredMixin, FormView):
             return None
             
         return dni
+    
+    def form_valid(self, form):
+        dni = form.cleaned_data['dni']
+        sexo = form.cleaned_data['sexo']
+        
+        # Verificar si el ciudadano ya existe
+        if Ciudadano.objects.filter(dni=dni).exists():
+            messages.error(self.request, f'Ya existe un ciudadano con DNI {dni}')
+            return self.form_invalid(form)
+        
+        # Consultar RENAPER
+        resultado = consultar_datos_renaper(dni, sexo)
         
         if not resultado['success']:
             # Guardar datos para mostrar opción manual
             context = self.get_context_data(form=form)
             context['renaper_error'] = True
-            context['cuit_consultado'] = cuit
+            context['dni_consultado'] = dni
             context['sexo_consultado'] = sexo
             
             if resultado.get('fallecido'):
@@ -292,3 +286,30 @@ class AdmisionPaso3View(LoginRequiredMixin, FormView):
             return redirect('legajos:detalle', pk=legajo.id)
         
         return super().get(request, *args, **kwargs)
+
+
+class EvaluacionInicialView(LoginRequiredMixin, UpdateView):
+    """Vista para crear/editar evaluación inicial"""
+    model = EvaluacionInicial
+    form_class = EvaluacionInicialForm
+    template_name = 'legajos/evaluacion_form.html'
+    
+    def get_object(self, queryset=None):
+        legajo_id = self.kwargs.get('legajo_id')
+        legajo = get_object_or_404(LegajoAtencion, id=legajo_id)
+        
+        # Crear evaluación si no existe (OneToOne)
+        evaluacion, created = EvaluacionInicial.objects.get_or_create(
+            legajo=legajo,
+            defaults={}
+        )
+        return evaluacion
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.object.legajo
+        return context
+    
+    def get_success_url(self):
+        messages.success(self.request, 'Evaluación inicial guardada exitosamente.')
+        return reverse_lazy('legajos:detalle', kwargs={'pk': self.object.legajo.id})

@@ -114,3 +114,75 @@ class Consentimiento(TimeStamped):
     
     def __str__(self):
         return f"Consentimiento {self.ciudadano} - {self.fecha_firma}"
+
+
+class EvaluacionInicial(TimeStamped):
+    """Evaluación inicial clínico-psicosocial del legajo"""
+    
+    legajo = models.OneToOneField(
+        LegajoAtencion, 
+        on_delete=models.CASCADE, 
+        related_name="evaluacion"
+    )
+    situacion_consumo = models.TextField(
+        blank=True,
+        verbose_name="Situación de Consumo",
+        help_text="Descripción de la situación actual de consumo"
+    )
+    antecedentes = models.TextField(
+        blank=True,
+        verbose_name="Antecedentes",
+        help_text="Antecedentes médicos, psiquiátricos y de consumo"
+    )
+    red_apoyo = models.TextField(
+        blank=True,
+        verbose_name="Red de Apoyo",
+        help_text="Descripción de la red de apoyo familiar y social"
+    )
+    condicion_social = models.TextField(
+        blank=True,
+        verbose_name="Condición Social",
+        help_text="Situación socioeconómica, vivienda, trabajo, educación"
+    )
+    tamizajes = models.JSONField(
+        blank=True, 
+        null=True,
+        verbose_name="Tamizajes",
+        help_text="Resultados de tamizajes aplicados (ej: ASSIST, PHQ-9)"
+    )
+    riesgo_suicida = models.BooleanField(
+        default=False,
+        verbose_name="Riesgo Suicida",
+        help_text="Indica si presenta riesgo suicida"
+    )
+    violencia = models.BooleanField(
+        default=False,
+        verbose_name="Situación de Violencia",
+        help_text="Indica si presenta situación de violencia"
+    )
+    
+    class Meta:
+        verbose_name = "Evaluación Inicial"
+        verbose_name_plural = "Evaluaciones Iniciales"
+        indexes = [
+            models.Index(fields=["riesgo_suicida"]),
+            models.Index(fields=["violencia"]),
+        ]
+    
+    def __str__(self):
+        return f"Evaluación - {self.legajo.codigo}"
+    
+    @property
+    def tiene_riesgos(self):
+        """Indica si tiene algún tipo de riesgo identificado"""
+        return self.riesgo_suicida or self.violencia
+    
+    @property
+    def riesgos_identificados(self):
+        """Lista de riesgos identificados"""
+        riesgos = []
+        if self.riesgo_suicida:
+            riesgos.append("Riesgo Suicida")
+        if self.violencia:
+            riesgos.append("Violencia")
+        return riesgos

@@ -25,6 +25,21 @@
                     {% else %}bg-green-100 text-green-800{% endif %}">
                     Riesgo {{ legajo.get_nivel_riesgo_display }}
                 </span>
+                
+                <!-- Badges de riesgo de evaluación -->
+                {% if legajo.evaluacion.riesgo_suicida %}
+                    <span class="px-3 py-2 rounded-lg text-sm font-medium bg-red-100 text-red-800">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        Riesgo Suicida
+                    </span>
+                {% endif %}
+                
+                {% if legajo.evaluacion.violencia %}
+                    <span class="px-3 py-2 rounded-lg text-sm font-medium bg-red-100 text-red-800">
+                        <i class="fas fa-fist-raised mr-1"></i>
+                        Violencia
+                    </span>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -126,13 +141,13 @@
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <h2 class="text-xl font-semibold text-gray-900 mb-4">Gestión del Legajo</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="border border-gray-200 rounded-lg p-4 text-center">
-                        <i class="fas fa-clipboard-list text-3xl text-gray-400 mb-3"></i>
+                    <div class="border border-purple-200 rounded-lg p-4 text-center">
+                        <i class="fas fa-clipboard-list text-3xl text-purple-500 mb-3"></i>
                         <h3 class="font-semibold text-gray-900 mb-2">Evaluación Inicial</h3>
                         <p class="text-sm text-gray-600 mb-3">Registrar evaluación y tamizajes</p>
-                        <button class="bg-gray-100 text-gray-500 px-4 py-2 rounded-lg cursor-not-allowed" disabled>
-                            Próximamente
-                        </button>
+                        <a href="{% url 'legajos:evaluacion' legajo.pk %}" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                            {% if legajo.evaluacion %}Editar Evaluación{% else %}Crear Evaluación{% endif %}
+                        </a>
                     </div>
                     
                     <div class="border border-gray-200 rounded-lg p-4 text-center">
@@ -167,10 +182,10 @@
                     <div class="flex">
                         <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
                         <div>
-                            <h4 class="text-sm font-semibold text-blue-900">Fase 0 - Funcionalidad Básica</h4>
+                            <h4 class="text-sm font-semibold text-blue-900">Fase 1-2 - Admisión y Evaluación</h4>
                             <p class="text-sm text-blue-700 mt-1">
-                                Esta es la implementación inicial del sistema de legajos. 
-                                Las funcionalidades de evaluación, planes y seguimientos se implementarán en las próximas fases.
+                                Sistema de legajos con admisión completa y evaluación inicial implementada. 
+                                Planes de intervención y seguimientos estarán disponibles en próximas fases.
                             </p>
                         </div>
                     </div>

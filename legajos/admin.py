@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Ciudadano, Profesional, LegajoAtencion, Consentimiento
+from .models import Ciudadano, Profesional, LegajoAtencion, Consentimiento, EvaluacionInicial
 
 
 @admin.register(Ciudadano)
@@ -67,3 +67,30 @@ class ConsentimientoAdmin(admin.ModelAdmin):
     list_filter = ("vigente", "fecha_firma")
     search_fields = ("ciudadano__dni", "ciudadano__apellido", "ciudadano__nombre")
     readonly_fields = ("creado", "modificado")
+
+
+@admin.register(EvaluacionInicial)
+class EvaluacionInicialAdmin(admin.ModelAdmin):
+    list_display = ("legajo", "riesgo_suicida", "violencia", "creado")
+    list_filter = ("riesgo_suicida", "violencia", "creado")
+    search_fields = ("legajo__codigo", "legajo__ciudadano__dni", "legajo__ciudadano__apellido")
+    readonly_fields = ("creado", "modificado")
+    
+    fieldsets = (
+        ("Información Básica", {
+            "fields": ("legajo",)
+        }),
+        ("Evaluación Clínica", {
+            "fields": ("situacion_consumo", "antecedentes")
+        }),
+        ("Evaluación Psicosocial", {
+            "fields": ("red_apoyo", "condicion_social")
+        }),
+        ("Tamizajes y Riesgos", {
+            "fields": ("tamizajes", "riesgo_suicida", "violencia")
+        }),
+        ("Auditoría", {
+            "fields": ("creado", "modificado"),
+            "classes": ("collapse",)
+        }),
+    )
