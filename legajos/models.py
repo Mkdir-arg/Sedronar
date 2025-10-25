@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.core.exceptions import ValidationError
 from core.models import TimeStamped, LegajoBase, DispositivoRed
 
 
@@ -96,6 +99,70 @@ class LegajoAtencion(LegajoBase):
     
     def __str__(self):
         return f"Legajo {self.codigo} - {self.ciudadano}"
+    
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('legajos:detalle', kwargs={'pk': self.pk})
+    
+    def puede_cerrar(self):
+        """Verifica si el legajo puede cerrarse"""
+        from datetime import datetime, timedelta
+        if self.estado == 'CERRADO':
+            return False, "El legajo ya está cerrado"
+        
+        # Verificar seguimiento reciente (últimos 30 días)
+        fecha_limite = datetime.now().date() - timedelta(days=30)
+        tiene_seguimiento_reciente = self.seguimientos.filter(
+            creado__date__gte=fecha_limite
+        ).exists()
+        
+        if self.plan_vigente and not tiene_seguimiento_reciente:
+            return False, "Requiere seguimiento reciente o justificación para cerrar"
+        
+        return True, "Puede cerrarse"
+    
+    def cerrar(self, motivo_cierre=None, usuario=None):
+        """Cierra el legajo"""
+        puede, mensaje = self.puede_cerrar()
+        if not puede and not motivo_cierre:
+            raise ValidationError(mensaje)
+        
+        self.estado = 'CERRADO'
+        self.fecha_cierre = datetime.now().date()
+        if motivo_cierre:
+            if not self.notas:
+                self.notas = f"Motivo de cierre: {motivo_cierre}"
+            else:
+                self.notas += f"\n\nMotivo de cierre: {motivo_cierre}"
+        self.save()
+    
+    def reabrir(self, motivo_reapertura=None, usuario=None):
+        """Reabre el legajo"""
+        if self.estado != 'CERRADO':
+            raise ValidationError("Solo se pueden reabrir legajos cerrados")
+        
+        self.estado = 'EN_SEGUIMIENTO'
+        self.fecha_cierre = None
+        if motivo_reapertura:
+            if not self.notas:
+                self.notas = f"Motivo de reapertura: {motivo_reapertura}"
+            else:
+                self.notas += f"\n\nMotivo de reapertura: {motivo_reapertura}"
+        self.save()
+    
+    @property
+    def dias_desde_admision(self):
+        """Días transcurridos desde la admisión"""
+        from datetime import datetime
+        return (datetime.now().date() - self.fecha_admision).days
+    
+    @property
+    def tiempo_primer_contacto(self):
+        """Días hasta el primer seguimiento"""
+        primer_seguimiento = self.seguimientos.order_by('creado').first()
+        if primer_seguimiento:
+            return (primer_seguimiento.creado.date() - self.fecha_admision).days
+        return None
 
 
 class Consentimiento(TimeStamped):
@@ -186,3 +253,250 @@ class EvaluacionInicial(TimeStamped):
         if self.violencia:
             riesgos.append("Violencia")
         return riesgos
+    
+    @property
+    def tiene_eventos_criticos(self):
+        """Indica si el legajo tiene eventos críticos recientes"""
+        from datetime import datetime, timedelta
+        fecha_limite = datetime.now().date() - timedelta(days=30)
+        return self.legajo.eventos.filter(creado__date__gte=fecha_limite).exists()
+
+
+class Objetivo(models.Model):
+    """Objetivos del plan de intervención"""
+    
+    legajo = models.ForeignKey(
+        LegajoAtencion, 
+        on_delete=models.CASCADE, 
+        related_name="objetivos"
+    )
+    descripcion = models.CharField(max_length=240)
+    indicador_exito = models.CharField(max_length=240, blank=True)
+    cumplido = models.BooleanField(default=False)
+    
+    class Meta:
+        verbose_name = "Objetivo"
+        verbose_name_plural = "Objetivos"
+    
+    def __str__(self):
+        return f"Objetivo - {self.descripcion[:50]}"
+
+
+class PlanIntervencion(TimeStamped):
+    """Plan de intervención para el legajo"""
+    
+    legajo = models.ForeignKey(
+        LegajoAtencion, 
+        on_delete=models.CASCADE, 
+        related_name="planes"
+    )
+    profesional = models.ForeignKey(
+        Profesional, 
+        on_delete=models.PROTECT
+    )
+    vigente = models.BooleanField(default=True)
+    actividades = models.JSONField(
+        blank=True, 
+        null=True,
+        help_text="Lista de actividades: [{\"accion\":\"Entrevista\",\"freq\":\"semanal\",\"responsable\":\"operador\"}]"
+    )
+    
+    class Meta:
+        verbose_name = "Plan de Intervención"
+        verbose_name_plural = "Planes de Intervención"
+        indexes = [
+            models.Index(fields=["legajo", "vigente"]),
+        ]
+    
+    def __str__(self):
+        return f"Plan {self.legajo.codigo} - {'Vigente' if self.vigente else 'Histórico'}"
+    
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.vigente and PlanIntervencion.objects.filter(
+            legajo=self.legajo, vigente=True
+        ).exclude(pk=self.pk).exists():
+            raise ValidationError("Ya existe un plan vigente para este legajo.")
+    
+    def save(self, *args, **kwargs):
+        from django.db import transaction
+        self.clean()
+        with transaction.atomic():
+            if self.vigente:
+                PlanIntervencion.objects.select_for_update().filter(
+                    legajo=self.legajo, vigente=True
+                ).exclude(pk=self.pk).update(vigente=False)
+                LegajoAtencion.objects.filter(pk=self.legajo_id).update(plan_vigente=True)
+            super().save(*args, **kwargs)
+
+
+class SeguimientoContacto(TimeStamped):
+    """Contactos y seguimientos del legajo"""
+    
+    class TipoContacto(models.TextChoices):
+        ENTREVISTA = "ENTREVISTA", "Entrevista"
+        VISITA = "VISITA", "Visita"
+        LLAMADA = "LLAMADA", "Llamada"
+        TALLER = "TALLER", "Taller"
+    
+    class Adherencia(models.TextChoices):
+        ADECUADA = "ADECUADA", "Adecuada"
+        PARCIAL = "PARCIAL", "Parcial"
+        NULA = "NULA", "Nula"
+    
+    legajo = models.ForeignKey(
+        LegajoAtencion, 
+        on_delete=models.CASCADE, 
+        related_name="seguimientos"
+    )
+    profesional = models.ForeignKey(
+        Profesional, 
+        on_delete=models.PROTECT
+    )
+    tipo = models.CharField(
+        max_length=40, 
+        choices=TipoContacto.choices
+    )
+    descripcion = models.TextField()
+    adherencia = models.CharField(
+        max_length=20, 
+        choices=Adherencia.choices,
+        blank=True
+    )
+    adjuntos = models.FileField(
+        upload_to="seguimientos/", 
+        blank=True, 
+        null=True
+    )
+    
+    class Meta:
+        verbose_name = "Seguimiento"
+        verbose_name_plural = "Seguimientos"
+        ordering = ["-creado"]
+        indexes = [
+            models.Index(fields=["legajo", "-creado"]),
+            models.Index(fields=["tipo"]),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_tipo_display()} - {self.legajo.codigo} ({self.creado.date()})"
+
+
+class Derivacion(TimeStamped):
+    """Derivaciones entre dispositivos"""
+    
+    class Urgencia(models.TextChoices):
+        BAJA = "BAJA", "Baja"
+        MEDIA = "MEDIA", "Media"
+        ALTA = "ALTA", "Alta"
+    
+    class Estado(models.TextChoices):
+        PENDIENTE = "PENDIENTE", "Pendiente"
+        ACEPTADA = "ACEPTADA", "Aceptada"
+        RECHAZADA = "RECHAZADA", "Rechazada"
+    
+    legajo = models.ForeignKey(
+        LegajoAtencion, 
+        on_delete=models.CASCADE, 
+        related_name="derivaciones"
+    )
+    origen = models.ForeignKey(
+        DispositivoRed, 
+        on_delete=models.PROTECT, 
+        related_name="derivaciones_origen"
+    )
+    destino = models.ForeignKey(
+        DispositivoRed, 
+        on_delete=models.PROTECT, 
+        related_name="derivaciones_destino"
+    )
+    motivo = models.TextField()
+    urgencia = models.CharField(
+        max_length=20, 
+        choices=Urgencia.choices, 
+        default=Urgencia.MEDIA
+    )
+    estado = models.CharField(
+        max_length=20,
+        choices=Estado.choices,
+        default=Estado.PENDIENTE
+    )
+    respuesta = models.CharField(max_length=120, blank=True)
+    fecha_aceptacion = models.DateField(null=True, blank=True)
+    
+    class Meta:
+        verbose_name = "Derivación"
+        verbose_name_plural = "Derivaciones"
+        ordering = ["-creado"]
+        indexes = [
+            models.Index(fields=["legajo", "estado"]),
+            models.Index(fields=["urgencia"]),
+        ]
+    
+    def __str__(self):
+        return f"Derivación {self.origen.nombre} → {self.destino.nombre}"
+    
+    def clean(self):
+        if not self.destino.activo:
+            raise ValidationError("No es posible derivar a un dispositivo inactivo.")
+        if self.origen == self.destino:
+            raise ValidationError("No se puede derivar al mismo dispositivo.")
+
+
+class EventoCritico(TimeStamped):
+    """Eventos críticos del legajo"""
+    
+    class TipoEvento(models.TextChoices):
+        SOBREDOSIS = "SOBREDOSIS", "Sobredosis"
+        CRISIS = "CRISIS", "Crisis aguda"
+        VIOLENCIA = "VIOLENCIA", "Violencia"
+        INTERNACION = "INTERNACION", "Internación"
+    
+    legajo = models.ForeignKey(
+        LegajoAtencion, 
+        on_delete=models.CASCADE, 
+        related_name="eventos"
+    )
+    tipo = models.CharField(
+        max_length=40, 
+        choices=TipoEvento.choices
+    )
+    detalle = models.TextField()
+    notificado_a = models.JSONField(
+        blank=True, 
+        null=True,
+        help_text="Lista de familiares/autoridades notificadas"
+    )
+    
+    class Meta:
+        verbose_name = "Evento Crítico"
+        verbose_name_plural = "Eventos Críticos"
+        ordering = ["-creado"]
+        indexes = [
+            models.Index(fields=["legajo", "tipo"]),
+            models.Index(fields=["-creado"]),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_tipo_display()} - {self.legajo.codigo} ({self.creado.date()})"
+
+
+class Adjunto(TimeStamped):
+    """Adjuntos genéricos para cualquier modelo"""
+    
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.UUIDField()
+    content_object = GenericForeignKey("content_type", "object_id")
+    archivo = models.FileField(upload_to="adjuntos/")
+    etiqueta = models.CharField(max_length=120, blank=True)
+    
+    class Meta:
+        verbose_name = "Adjunto"
+        verbose_name_plural = "Adjuntos"
+        ordering = ["-creado"]
+        indexes = [
+            models.Index(fields=["content_type", "object_id"]),
+        ]
+    
+    def __str__(self):
+        return f"Adjunto - {self.etiqueta or self.archivo.name}"

@@ -10,9 +10,15 @@
             <h1 class="text-3xl font-lora font-bold text-gray-900">Legajos de Atención</h1>
             <p class="text-gray-600 mt-2">Gestión de legajos individuales de ciudadanos</p>
         </div>
-        <a href="{% url 'legajos:admision_paso1' %}" class="bg-arg-azul text-white px-6 py-3 rounded-xl hover:bg-arg-secundario transition-colors font-medium">
-            <i class="fas fa-plus mr-2"></i>Nuevo Legajo
-        </a>
+        <div class="flex gap-3">
+            <a href="{% url 'legajos:exportar_csv' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" 
+               class="bg-green-600 text-white px-4 py-3 rounded-xl hover:bg-green-700 transition-colors font-medium">
+                <i class="fas fa-file-csv mr-2"></i>Exportar CSV
+            </a>
+            <a href="{% url 'legajos:admision_paso1' %}" class="bg-arg-azul text-white px-6 py-3 rounded-xl hover:bg-arg-secundario transition-colors font-medium">
+                <i class="fas fa-plus mr-2"></i>Nuevo Legajo
+            </a>
+        </div>
     </div>
 
     <!-- Filtros -->

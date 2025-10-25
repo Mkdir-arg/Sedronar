@@ -1,13 +1,14 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView, TemplateView, View
 from django.urls import reverse_lazy
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.contrib import messages
-from django.http import JsonResponse
-from .models import Ciudadano, LegajoAtencion, EvaluacionInicial
+from django.http import JsonResponse, HttpResponse
+import csv
+from .models import Ciudadano, LegajoAtencion, EvaluacionInicial, PlanIntervencion, SeguimientoContacto, Profesional, Derivacion, EventoCritico
 from core.models import DispositivoRed
-from .forms import ConsultaRenaperForm, CiudadanoForm, BuscarCiudadanoForm, AdmisionLegajoForm, ConsentimientoForm, EvaluacionInicialForm
+from .forms import ConsultaRenaperForm, CiudadanoForm, BuscarCiudadanoForm, AdmisionLegajoForm, ConsentimientoForm, EvaluacionInicialForm, PlanIntervencionForm, SeguimientoForm, DerivacionForm, EventoCriticoForm
 from .services.consulta_renaper import consultar_datos_renaper
 
 
@@ -196,6 +197,28 @@ class LegajoDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'legajo'
 
 
+class LegajoCreateView(LoginRequiredMixin, CreateView):
+    """Vista para crear legajo directamente"""
+    model = LegajoAtencion
+    template_name = 'legajos/legajo_form.html'
+    fields = ['ciudadano', 'dispositivo', 'via_ingreso', 'nivel_riesgo', 'confidencialidad', 'notas']
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['ciudadanos'] = Ciudadano.objects.filter(activo=True).order_by('apellido', 'nombre')
+        context['dispositivos'] = DispositivoRed.objects.filter(activo=True).order_by('nombre')
+        return context
+    
+    def form_valid(self, form):
+        form.instance.responsable = self.request.user
+        response = super().form_valid(form)
+        messages.success(self.request, f'Legajo {self.object.codigo} creado exitosamente.')
+        return response
+    
+    def get_success_url(self):
+        return reverse_lazy('legajos:detalle', kwargs={'pk': self.object.pk})
+
+
 class AdmisionPaso1View(LoginRequiredMixin, FormView):
     """Paso 1: Buscar ciudadano"""
     template_name = 'legajos/admision_paso1.html'
@@ -253,7 +276,7 @@ class AdmisionPaso2View(LoginRequiredMixin, CreateView):
         
         # Limpiar sesión y guardar ID del legajo para paso 3
         self.request.session.pop('admision_ciudadano_id', None)
-        self.request.session['admision_legajo_id'] = self.object.id
+        self.request.session['admision_legajo_id'] = str(self.object.id)
         
         return redirect('legajos:admision_paso3')
 
@@ -325,3 +348,369 @@ class EvaluacionInicialView(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         messages.success(self.request, 'Evaluación inicial guardada exitosamente.')
         return reverse_lazy('legajos:detalle', kwargs={'pk': self.object.legajo.id})
+
+
+class PlanIntervencionView(LoginRequiredMixin, CreateView):
+    """Vista para crear plan de intervención"""
+    model = PlanIntervencion
+    form_class = PlanIntervencionForm
+    template_name = 'legajos/plan_form.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.legajo = get_object_or_404(LegajoAtencion, id=kwargs['legajo_id'])
+        if not hasattr(self.legajo, 'evaluacion'):
+            messages.error(request, 'Debe completar la evaluación inicial antes de crear un plan.')
+            return redirect('legajos:evaluacion', legajo_id=self.legajo.id)
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.legajo
+        return context
+    
+    def form_valid(self, form):
+        form.instance.legajo = self.legajo
+        profesional, created = Profesional.objects.get_or_create(
+            usuario=self.request.user,
+            defaults={'rol': 'Operador'}
+        )
+        form.instance.profesional = profesional
+        response = super().form_valid(form)
+        messages.success(self.request, 'Plan de intervención creado exitosamente.')
+        return response
+    
+    def get_success_url(self):
+        return reverse_lazy('legajos:detalle', kwargs={'pk': self.legajo.id})
+
+
+class SeguimientoCreateView(LoginRequiredMixin, CreateView):
+    """Vista para crear seguimiento"""
+    model = SeguimientoContacto
+    form_class = SeguimientoForm
+    template_name = 'legajos/seguimiento_form.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.legajo = get_object_or_404(LegajoAtencion, id=kwargs['legajo_id'])
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.legajo
+        return context
+    
+    def form_valid(self, form):
+        form.instance.legajo = self.legajo
+        profesional, created = Profesional.objects.get_or_create(
+            usuario=self.request.user,
+            defaults={'rol': 'Operador'}
+        )
+        form.instance.profesional = profesional
+        response = super().form_valid(form)
+        messages.success(self.request, 'Seguimiento registrado exitosamente.')
+        return response
+    
+    def get_success_url(self):
+        return reverse_lazy('legajos:detalle', kwargs={'pk': self.legajo.id})
+
+
+class SeguimientoListView(LoginRequiredMixin, ListView):
+    """Vista para listar seguimientos"""
+    model = SeguimientoContacto
+    template_name = 'legajos/seguimiento_list.html'
+    context_object_name = 'seguimientos'
+    paginate_by = 20
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.legajo = get_object_or_404(LegajoAtencion, id=kwargs['legajo_id'])
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_queryset(self):
+        queryset = self.legajo.seguimientos.select_related('profesional__usuario')
+        tipo = self.request.GET.get('tipo')
+        if tipo:
+            queryset = queryset.filter(tipo=tipo)
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.legajo
+        context['tipos'] = SeguimientoContacto.TipoContacto.choices
+        return context
+
+
+class DerivacionCreateView(LoginRequiredMixin, CreateView):
+    """Vista para crear derivación"""
+    model = Derivacion
+    form_class = DerivacionForm
+    template_name = 'legajos/derivacion_form.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.legajo = get_object_or_404(LegajoAtencion, id=kwargs['legajo_id'])
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['legajo'] = self.legajo
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.legajo
+        return context
+    
+    def form_valid(self, form):
+        form.instance.legajo = self.legajo
+        form.instance.origen = self.legajo.dispositivo
+        response = super().form_valid(form)
+        messages.success(self.request, 'Derivación creada exitosamente.')
+        return response
+    
+    def get_success_url(self):
+        return reverse_lazy('legajos:detalle', kwargs={'pk': self.legajo.id})
+
+
+class EventoCriticoCreateView(LoginRequiredMixin, CreateView):
+    """Vista para registrar evento crítico"""
+    model = EventoCritico
+    form_class = EventoCriticoForm
+    template_name = 'legajos/evento_form.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.legajo = get_object_or_404(LegajoAtencion, id=kwargs['legajo_id'])
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.legajo
+        return context
+    
+    def form_valid(self, form):
+        form.instance.legajo = self.legajo
+        response = super().form_valid(form)
+        messages.warning(self.request, f'Evento crítico registrado: {form.instance.get_tipo_display()}')
+        return response
+    
+    def get_success_url(self):
+        return reverse_lazy('legajos:detalle', kwargs={'pk': self.legajo.id})
+
+
+class DerivacionListView(LoginRequiredMixin, ListView):
+    """Vista para listar derivaciones"""
+    model = Derivacion
+    template_name = 'legajos/derivacion_list.html'
+    context_object_name = 'derivaciones'
+    paginate_by = 20
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.legajo = get_object_or_404(LegajoAtencion, id=kwargs['legajo_id'])
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_queryset(self):
+        queryset = self.legajo.derivaciones.select_related('origen', 'destino')
+        estado = self.request.GET.get('estado')
+        if estado:
+            queryset = queryset.filter(estado=estado)
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.legajo
+        context['estados'] = Derivacion.Estado.choices
+        return context
+
+
+class LegajoCerrarView(LoginRequiredMixin, FormView):
+    """Vista para cerrar legajo"""
+    template_name = 'legajos/legajo_cerrar.html'
+    
+    def get_object(self):
+        return get_object_or_404(LegajoAtencion, pk=self.kwargs['pk'])
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        legajo = self.get_object()
+        puede, mensaje = legajo.puede_cerrar()
+        context['legajo'] = legajo
+        context['puede_cerrar'] = puede
+        context['mensaje'] = mensaje
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        legajo = self.get_object()
+        motivo = request.POST.get('motivo_cierre', '')
+        
+        try:
+            legajo.cerrar(motivo_cierre=motivo, usuario=request.user)
+            messages.success(request, f'Legajo {legajo.codigo} cerrado exitosamente.')
+            return redirect('legajos:detalle', pk=legajo.pk)
+        except ValidationError as e:
+            messages.error(request, str(e))
+            return self.get(request, *args, **kwargs)
+
+
+class LegajoReabrirView(LoginRequiredMixin, FormView):
+    """Vista para reabrir legajo"""
+    template_name = 'legajos/legajo_reabrir.html'
+    
+    def get_object(self):
+        return get_object_or_404(LegajoAtencion, pk=self.kwargs['pk'])
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.get_object()
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        legajo = self.get_object()
+        motivo = request.POST.get('motivo_reapertura', '')
+        
+        try:
+            legajo.reabrir(motivo_reapertura=motivo, usuario=request.user)
+            messages.success(request, f'Legajo {legajo.codigo} reabierto exitosamente.')
+            return redirect('legajos:detalle', pk=legajo.pk)
+        except ValidationError as e:
+            messages.error(request, str(e))
+            return self.get(request, *args, **kwargs)
+
+
+class ReportesView(LoginRequiredMixin, TemplateView):
+    """Vista para mostrar reportes y estadísticas"""
+    template_name = 'legajos/reportes.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from django.db.models import Count
+        from datetime import datetime, timedelta
+        
+        # Estadísticas generales
+        stats = {
+            'total_legajos': LegajoAtencion.objects.count(),
+            'legajos_activos': LegajoAtencion.objects.filter(estado__in=['ABIERTO', 'EN_SEGUIMIENTO']).count(),
+            'riesgo_alto': LegajoAtencion.objects.filter(nivel_riesgo='ALTO').count(),
+            'nuevos_semana': LegajoAtencion.objects.filter(
+                fecha_apertura__gte=datetime.now().date() - timedelta(days=7)
+            ).count(),
+        }
+        
+        # Estadísticas por estado
+        stats['por_estado'] = LegajoAtencion.objects.values('estado').annotate(
+            total=Count('id')
+        ).order_by('-total')
+        
+        # Estadísticas por nivel de riesgo
+        stats['por_riesgo'] = LegajoAtencion.objects.values('nivel_riesgo').annotate(
+            total=Count('id')
+        ).order_by('-total')
+        
+        # Estadísticas por dispositivo
+        stats['por_dispositivo'] = LegajoAtencion.objects.values(
+            'dispositivo__nombre', 'dispositivo__tipo'
+        ).annotate(total=Count('id')).order_by('-total')[:10]
+        
+        # Actividad por mes (últimos 6 meses)
+        fecha_limite = datetime.now().date() - timedelta(days=180)
+        stats['por_mes'] = LegajoAtencion.objects.filter(
+            fecha_apertura__gte=fecha_limite
+        ).extra(
+            select={'mes': "DATE_TRUNC('month', fecha_apertura)"}
+        ).values('mes').annotate(total=Count('id')).order_by('-mes')[:6]
+        
+        # Métricas de calidad
+        legajos_con_seguimiento = LegajoAtencion.objects.filter(
+            seguimientos__isnull=False
+        ).distinct().count()
+        
+        stats['metricas_calidad'] = {
+            'ttr_promedio': self._calcular_ttr_promedio(),
+            'adherencia_adecuada': self._calcular_adherencia(),
+            'tasa_derivacion': self._calcular_tasa_derivacion(),
+            'eventos_por_100': self._calcular_eventos_por_100(),
+            'cobertura_seguimiento': round((legajos_con_seguimiento / max(stats['total_legajos'], 1)) * 100, 1)
+        }
+        
+        context['stats'] = stats
+        return context
+    
+    def _calcular_ttr_promedio(self):
+        """Tiempo promedio admisión → primer seguimiento"""
+        legajos_con_seguimiento = LegajoAtencion.objects.filter(
+            seguimientos__isnull=False
+        ).distinct()
+        
+        tiempos = []
+        for legajo in legajos_con_seguimiento:
+            tiempo = legajo.tiempo_primer_contacto
+            if tiempo is not None:
+                tiempos.append(tiempo)
+        
+        return round(sum(tiempos) / len(tiempos), 1) if tiempos else 0
+    
+    def _calcular_adherencia(self):
+        """Porcentaje de seguimientos con adherencia adecuada"""
+        total_seguimientos = SeguimientoContacto.objects.count()
+        adherencia_adecuada = SeguimientoContacto.objects.filter(
+            adherencia='ADECUADA'
+        ).count()
+        
+        return round((adherencia_adecuada / max(total_seguimientos, 1)) * 100, 1)
+    
+    def _calcular_tasa_derivacion(self):
+        """Porcentaje de derivaciones aceptadas"""
+        total_derivaciones = Derivacion.objects.count()
+        derivaciones_aceptadas = Derivacion.objects.filter(
+            estado='ACEPTADA'
+        ).count()
+        
+        return round((derivaciones_aceptadas / max(total_derivaciones, 1)) * 100, 1)
+    
+    def _calcular_eventos_por_100(self):
+        """Eventos críticos por cada 100 legajos"""
+        from legajos.models import EventoCritico
+        total_legajos = LegajoAtencion.objects.count()
+        total_eventos = EventoCritico.objects.count()
+        
+        return round((total_eventos / max(total_legajos, 1)) * 100, 1)
+
+
+class ExportarCSVView(LoginRequiredMixin, View):
+    """Vista para exportar legajos a CSV"""
+    
+    def get(self, request, *args, **kwargs):
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="legajos_export.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow([
+            'Codigo', 'Ciudadano_DNI', 'Ciudadano_Nombre', 'Ciudadano_Apellido',
+            'Dispositivo', 'Estado', 'Nivel_Riesgo', 'Via_Ingreso', 
+            'Fecha_Apertura', 'Fecha_Cierre', 'Dias_Admision', 'Plan_Vigente'
+        ])
+        
+        # Aplicar filtros de la request
+        queryset = LegajoAtencion.objects.select_related('ciudadano', 'dispositivo')
+        
+        estado = request.GET.get('estado')
+        if estado:
+            queryset = queryset.filter(estado=estado)
+            
+        riesgo = request.GET.get('riesgo')
+        if riesgo:
+            queryset = queryset.filter(nivel_riesgo=riesgo)
+        
+        for legajo in queryset:
+            writer.writerow([
+                legajo.codigo,
+                legajo.ciudadano.dni,
+                legajo.ciudadano.nombre,
+                legajo.ciudadano.apellido,
+                legajo.dispositivo.nombre,
+                legajo.get_estado_display(),
+                legajo.get_nivel_riesgo_display(),
+                legajo.get_via_ingreso_display(),
+                legajo.fecha_apertura.strftime('%d/%m/%Y'),
+                legajo.fecha_cierre.strftime('%d/%m/%Y') if legajo.fecha_cierre else '',
+                legajo.dias_desde_admision,
+                'Sí' if legajo.plan_vigente else 'No'
+            ])
+        
+        return response

@@ -94,6 +94,9 @@
                                 <a href="{% url 'legajos:admision_paso1' %}" class="text-blue-200 hover:text-white hover:bg-white/10 block rounded-lg py-2 px-3 text-sm transition-colors">
                                     <i class="fas fa-folder-plus mr-2 text-xs"></i>Legajo de Atención
                                 </a>
+                                <a href="{% url 'legajos:reportes' %}" class="{% if 'reportes' in pagina_actual %}bg-white/20 text-white{% else %}text-blue-200 hover:text-white hover:bg-white/10{% endif %} block rounded-lg py-2 px-3 text-sm transition-colors">
+                                    <i class="fas fa-chart-bar mr-2 text-xs"></i>Reportes
+                                </a>
                             </div>
                         </div>
                     </template>

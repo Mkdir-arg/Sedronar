@@ -1,10 +1,10 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="es" class="h-full bg-gray-50">
+<html lang="es" class="h-full">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Login - SEDRONAR</title>
+        <title>SEDRONAR - Sistema de Gestión</title>
         
         <!-- Tailwind CSS -->
         <script src="https://cdn.tailwindcss.com"></script>
@@ -13,115 +13,254 @@
                 theme: {
                     extend: {
                         colors: {
-                            'arg-azul': '#232D4F',
-                            'arg-secundario': '#3E5A7E',
+                            'primary': '#1e40af',
+                            'secondary': '#3b82f6',
+                            'accent': '#06b6d4',
+                            'surface': 'rgba(255, 255, 255, 0.1)',
                         },
                         fontFamily: {
-                            'lora': ['Lora', 'serif'],
-                            'montserrat': ['Montserrat', 'sans-serif'],
+                            'inter': ['Inter', 'sans-serif'],
+                        },
+                        animation: {
+                            'float': 'float 6s ease-in-out infinite',
+                            'glow': 'glow 2s ease-in-out infinite alternate',
                         }
                     }
                 }
             }
         </script>
+        <style>
+            @keyframes float {
+                0%, 100% { transform: translateY(0px); }
+                50% { transform: translateY(-20px); }
+            }
+            @keyframes glow {
+                from { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+                to { box-shadow: 0 0 30px rgba(59, 130, 246, 0.8); }
+            }
+            .glass {
+                background: rgba(255, 255, 255, 0.1);
+                backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+        </style>
         
         <!-- Google Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
         
         <!-- Font Awesome -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     </head>
-    <body class="h-full bg-gray-50 font-montserrat">
-        <div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
-            <div class="sm:mx-auto sm:w-full sm:max-w-md">
-                <div class="flex justify-center">
-                    <img class="h-12 w-auto" src="{% static 'custom/img/sisoc_logo.png' %}" alt="SEDRONAR">
+    <body class="h-full bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 font-inter overflow-hidden">
+        <!-- Animated Background -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="absolute -top-40 -right-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float"></div>
+            <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float" style="animation-delay: 2s;"></div>
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float" style="animation-delay: 4s;"></div>
+        </div>
+        
+        <!-- Header Minimalista -->
+        <div class="relative z-10 glass border-b border-white/10">
+            <div class="max-w-7xl mx-auto px-6 lg:px-8">
+                <div class="flex items-center justify-between h-20">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                            <img class="h-6 w-6" src="{% static 'custom/img/escudo_nacional.png' %}" alt="Escudo">
+                        </div>
+                        <div class="text-white">
+                            <div class="text-sm font-semibold">Presidencia de la Nación</div>
+                            <div class="text-xs text-white/70">República Argentina</div>
+                        </div>
+                    </div>
+                    <div class="text-white text-right">
+                        <div class="text-lg font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">SEDRONAR</div>
+                        <div class="text-xs text-white/70">Sistema de Gestión</div>
+                    </div>
                 </div>
-                <h1 class="mt-6 text-center text-3xl font-lora font-bold tracking-tight text-gray-900">
-                    Iniciar sesión
-                </h1>
-                <p class="mt-2 text-center text-sm text-gray-600">
-                    Ingresa al Sistema con Usuario y Contraseña
-                </p>
+            </div>
+        </div>
+
+        <div class="relative z-10 flex min-h-screen">
+            <!-- Panel Izquierdo - Información Institucional -->
+            <div class="hidden lg:flex lg:w-1/2 items-center justify-center p-12">
+                <div class="max-w-md">
+                    <div class="text-center mb-12">
+                        <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl mb-6 animate-glow">
+                            <img class="h-12 w-12" src="{% static 'custom/img/sisoc_logo.png' %}" alt="SEDRONAR">
+                        </div>
+                        <h1 class="text-5xl font-bold text-white mb-4 bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
+                            SEDRONAR
+                        </h1>
+                        <p class="text-xl text-white/80 leading-relaxed">
+                            Secretaría Nacional de Políticas<br>
+                            Integrales sobre Drogas
+                        </p>
+                    </div>
+                    
+                    <div class="glass rounded-2xl p-8 text-white">
+                        <h3 class="text-xl font-bold mb-6 text-center">Sistema de Gestión Integral</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="text-center p-4 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300">
+                                <i class="fas fa-users text-2xl text-cyan-400 mb-2"></i>
+                                <p class="text-sm font-medium">Gestión de Ciudadanos</p>
+                            </div>
+                            <div class="text-center p-4 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300">
+                                <i class="fas fa-shield-alt text-2xl text-blue-400 mb-2"></i>
+                                <p class="text-sm font-medium">Seguridad y Control</p>
+                            </div>
+                            <div class="text-center p-4 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300">
+                                <i class="fas fa-chart-line text-2xl text-indigo-400 mb-2"></i>
+                                <p class="text-sm font-medium">Reportes y Analytics</p>
+                            </div>
+                            <div class="text-center p-4 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300">
+                                <i class="fas fa-file-alt text-2xl text-purple-400 mb-2"></i>
+                                <p class="text-sm font-medium">Gestión Documental</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-                    <form class="space-y-6" method="post" id="form-login">
-                        {% csrf_token %}
-                        
-                        {% if form.errors %}
-                            <div class="rounded-md bg-red-50 p-4">
-                                <div class="flex">
-                                    <div class="flex-shrink-0">
-                                        <i class="fas fa-exclamation-circle h-5 w-5 text-red-400"></i>
+            <!-- Panel Derecho - Formulario de Login -->
+            <div class="flex-1 flex items-center justify-center p-6">
+                <div class="w-full max-w-md">
+                    <!-- Logo Mobile -->
+                    <div class="text-center lg:hidden mb-8">
+                        <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl mb-4">
+                            <img class="h-10 w-10" src="{% static 'custom/img/sisoc_logo.png' %}" alt="SEDRONAR">
+                        </div>
+                        <h2 class="text-3xl font-bold text-white">SEDRONAR</h2>
+                    </div>
+
+                    <!-- Formulario Moderno -->
+                    <div class="glass rounded-3xl p-8 shadow-2xl border border-white/20">
+                        <div class="text-center mb-8">
+                            <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl mb-4 animate-pulse">
+                                <i class="fas fa-fingerprint text-2xl text-white"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-white mb-2">Acceso Seguro</h3>
+                            <p class="text-white/70">Autenticación biométrica del sistema</p>
+                        </div>
+
+                        <form class="space-y-6" method="post" id="form-login">
+                            {% csrf_token %}
+                            
+                            {% if form.errors %}
+                                <div class="bg-red-500/20 border border-red-500/50 backdrop-blur-sm p-4 rounded-2xl">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-exclamation-circle text-red-400 mr-3"></i>
+                                        <p class="text-sm text-red-200">
+                                            <strong>Error de autenticación:</strong> Credenciales inválidas
+                                        </p>
                                     </div>
-                                    <div class="ml-3">
-                                        <h3 class="text-sm font-medium text-red-800">
-                                            Error en el inicio de sesión
-                                        </h3>
-                                        <div class="mt-2 text-sm text-red-700">
-                                            <p>Usuario o contraseña incorrectos.</p>
+                                </div>
+                            {% endif %}
+
+                            <div class="space-y-5">
+                                <div class="group">
+                                    <label for="id_username" class="block text-sm font-medium text-white/90 mb-2">
+                                        Usuario
+                                    </label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                            <i class="fas fa-user text-white/50 group-focus-within:text-cyan-400 transition-colors"></i>
                                         </div>
+                                        <input id="id_username" 
+                                               name="username" 
+                                               type="text" 
+                                               required 
+                                               class="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:bg-white/20 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50 transition-all duration-300 backdrop-blur-sm" 
+                                               placeholder="Ingrese su usuario">
+                                    </div>
+                                </div>
+
+                                <div class="group">
+                                    <label for="id_password" class="block text-sm font-medium text-white/90 mb-2">
+                                        Contraseña
+                                    </label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                            <i class="fas fa-lock text-white/50 group-focus-within:text-cyan-400 transition-colors"></i>
+                                        </div>
+                                        <input id="id_password" 
+                                               name="password" 
+                                               type="password" 
+                                               required 
+                                               class="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:bg-white/20 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50 transition-all duration-300 backdrop-blur-sm" 
+                                               placeholder="Ingrese su contraseña">
                                     </div>
                                 </div>
                             </div>
-                        {% endif %}
 
-                        <div>
-                            <label for="id_username" class="block text-sm font-medium text-gray-700">Usuario</label>
-                            <div class="mt-1 relative">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <i class="fas fa-user h-5 w-5 text-gray-400"></i>
-                                </div>
-                                <input id="id_username" 
-                                       name="username" 
-                                       type="text" 
-                                       required 
-                                       class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-arg-azul focus:border-arg-azul sm:text-sm" 
-                                       placeholder="Ingresa tu usuario">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label for="id_password" class="block text-sm font-medium text-gray-700">Contraseña</label>
-                            <div class="mt-1 relative">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <i class="fas fa-lock h-5 w-5 text-gray-400"></i>
-                                </div>
-                                <input id="id_password" 
-                                       name="password" 
-                                       type="password" 
-                                       required 
-                                       class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-arg-azul focus:border-arg-azul sm:text-sm" 
-                                       placeholder="Ingresa tu contraseña">
-                            </div>
-                        </div>
-
-                        <div>
-                            <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-arg-azul hover:bg-arg-secundario focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-arg-azul transition duration-150 ease-in-out">
-                                <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-                                    <i class="fas fa-sign-in-alt h-5 w-5 text-gray-300 group-hover:text-gray-200"></i>
-                                </span>
-                                Ingresar
+                            <button type="submit" 
+                                    class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl shadow-lg border border-white/20 backdrop-blur-sm group">
+                                <i class="fas fa-rocket mr-2 group-hover:animate-bounce"></i>
+                                Acceder al Sistema
                             </button>
-                        </div>
-                    </form>
+                        </form>
 
-                    <div class="mt-6">
-                        <div class="text-center">
-                            <p class="text-xs text-gray-500">
-                                Secretaría Nacional de Políticas Integrales sobre Drogas
-                            </p>
-                            <p class="text-xs text-gray-500 mt-1">
-                                Presidencia de la Nación
-                            </p>
+                        <div class="mt-8 pt-6 border-t border-white/20">
+                            <div class="text-center text-xs text-white/60 space-y-1">
+                                <p class="font-medium text-white/80">Secretaría Nacional de Políticas Integrales sobre Drogas</p>
+                                <p>Presidencia de la Nación - República Argentina</p>
+                                <div class="flex items-center justify-center mt-3 space-x-2">
+                                    <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                    <p class="text-green-400 font-medium text-xs">Sistema Seguro y Encriptado</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Footer Moderno -->
+        <div class="relative z-10 glass border-t border-white/10">
+            <div class="max-w-7xl mx-auto px-6 lg:px-8 py-6">
+                <div class="flex flex-col sm:flex-row items-center justify-between">
+                    <div class="flex items-center space-x-4 mb-4 sm:mb-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                            <img class="h-5 w-5" src="{% static 'custom/img/presidencia_logo.svg' %}" alt="Presidencia">
+                        </div>
+                        <div class="text-white text-xs">
+                            <div class="font-medium">© 2024 Presidencia de la Nación</div>
+                            <div class="text-white/60">Todos los derechos reservados</div>
+                        </div>
+                    </div>
+                    <div class="text-white text-xs text-center sm:text-right">
+                        <div class="font-medium flex items-center justify-center sm:justify-end">
+                            <i class="fas fa-headset mr-2 text-cyan-400"></i>
+                            Mesa de Ayuda: 0800-SEDRONAR
+                        </div>
+                        <div class="text-white/60 flex items-center justify-center sm:justify-end mt-1">
+                            <i class="fas fa-clock mr-2 text-blue-400"></i>
+                            Lunes a Viernes de 8:00 a 18:00 hs
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Particles Effect -->
+        <script>
+            // Efecto de partículas flotantes
+            function createParticle() {
+                const particle = document.createElement('div');
+                particle.className = 'absolute w-1 h-1 bg-white/20 rounded-full animate-float';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                particle.style.animationDelay = Math.random() * 2 + 's';
+                document.body.appendChild(particle);
+                
+                setTimeout(() => {
+                    particle.remove();
+                }, 5000);
+            }
+            
+            // Crear partículas cada 500ms
+            setInterval(createParticle, 500);
+        </script>
     </body>
 </html>

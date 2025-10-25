@@ -1,0 +1,104 @@
+[
+  {
+    "model": "core.dispositivored",
+    "pk": 1,
+    "fields": {
+      "nombre": "DTC Buenos Aires Centro",
+      "tipo": "DTC",
+      "direccion": "Av. Corrientes 1234",
+      "telefono": "011-4567-8901",
+      "email": "dtc.bsas.centro@sedronar.gob.ar",
+      "provincia": 1,
+      "municipio": 1,
+      "localidad": 1,
+      "activo": true,
+      "creado": "2024-01-15T10:00:00Z",
+      "modificado": "2024-01-15T10:00:00Z"
+    }
+  },
+  {
+    "model": "core.dispositivored",
+    "pk": 2,
+    "fields": {
+      "nombre": "CAAC La Plata",
+      "tipo": "CAAC",
+      "direccion": "Calle 7 entre 47 y 48",
+      "telefono": "0221-456-7890",
+      "email": "caac.laplata@sedronar.gob.ar",
+      "provincia": 1,
+      "municipio": 135,
+      "localidad": 135,
+      "activo": true,
+      "creado": "2024-01-15T10:00:00Z",
+      "modificado": "2024-01-15T10:00:00Z"
+    }
+  },
+  {
+    "model": "core.dispositivored",
+    "pk": 3,
+    "fields": {
+      "nombre": "CAI Buenos Aires Sur",
+      "tipo": "CAI",
+      "direccion": "Ramón Carrillo 375",
+      "telefono": "011-4305-0061",
+      "email": "cai.bsas.sur@sedronar.gob.ar",
+      "provincia": 1,
+      "municipio": 1,
+      "localidad": 1,
+      "activo": true,
+      "creado": "2024-01-15T10:00:00Z",
+      "modificado": "2024-01-15T10:00:00Z"
+    }
+  },
+  {
+    "model": "core.dispositivored",
+    "pk": 4,
+    "fields": {
+      "nombre": "DTC Córdoba Capital",
+      "tipo": "DTC",
+      "direccion": "Av. Colón 1456",
+      "telefono": "0351-234-5678",
+      "email": "dtc.cordoba@sedronar.gob.ar",
+      "provincia": 5,
+      "municipio": 134,
+      "localidad": 134,
+      "activo": true,
+      "creado": "2024-01-15T10:00:00Z",
+      "modificado": "2024-01-15T10:00:00Z"
+    }
+  },
+  {
+    "model": "core.dispositivored",
+    "pk": 5,
+    "fields": {
+      "nombre": "CAAC Rosario",
+      "tipo": "CAAC",
+      "direccion": "Bv. Oroño 789",
+      "telefono": "0341-567-8901",
+      "email": "caac.rosario@sedronar.gob.ar",
+      "provincia": 21,
+      "municipio": 368,
+      "localidad": 368,
+      "activo": true,
+      "creado": "2024-01-15T10:00:00Z",
+      "modificado": "2024-01-15T10:00:00Z"
+    }
+  },
+  {
+    "model": "core.dispositivored",
+    "pk": 6,
+    "fields": {
+      "nombre": "CCC Mendoza",
+      "tipo": "CCC",
+      "direccion": "San Martín 234",
+      "telefono": "0261-345-6789",
+      "email": "ccc.mendoza@sedronar.gob.ar",
+      "provincia": 13,
+      "municipio": 244,
+      "localidad": 244,
+      "activo": true,
+      "creado": "2024-01-15T10:00:00Z",
+      "modificado": "2024-01-15T10:00:00Z"
+    }
+  }
+]

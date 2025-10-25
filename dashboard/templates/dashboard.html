@@ -16,7 +16,7 @@
 
     <!-- Stats cards -->
     <div class="mt-8">
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <!-- Card 1 -->
             <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
                 <div class="flex items-center">
@@ -44,7 +44,7 @@
                     </div>
                     <div class="ml-5 w-0 flex-1">
                         <dl>
-                            <dt class="truncate text-sm font-medium text-gray-500">Ciudadanos Registrados</dt>
+                            <dt class="truncate text-sm font-medium text-gray-500">Ciudadanos</dt>
                             <dd class="text-lg font-medium text-gray-900">{{ total_ciudadanos|default:"0" }}</dd>
                         </dl>
                     </div>
@@ -55,14 +55,154 @@
             <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
-                        <div class="flex h-8 w-8 items-center justify-center rounded-md bg-yellow-500 text-white">
-                            <i class="fas fa-chart-line text-sm"></i>
+                        <div class="flex h-8 w-8 items-center justify-center rounded-md bg-blue-500 text-white">
+                            <i class="fas fa-folder-open text-sm"></i>
                         </div>
                     </div>
                     <div class="ml-5 w-0 flex-1">
                         <dl>
-                            <dt class="truncate text-sm font-medium text-gray-500">Actividad del Sistema</dt>
-                            <dd class="text-lg font-medium text-gray-900">Activo</dd>
+                            <dt class="truncate text-sm font-medium text-gray-500">Legajos Totales</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ total_legajos|default:"0" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-md bg-orange-500 text-white">
+                            <i class="fas fa-exclamation-triangle text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="truncate text-sm font-medium text-gray-500">Riesgo Alto</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ legajos_riesgo_alto|default:"0" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legajos stats -->
+    <div class="mt-8">
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-md bg-green-600 text-white">
+                            <i class="fas fa-folder text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="truncate text-sm font-medium text-gray-500">Legajos Abiertos</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ legajos_abiertos|default:"0" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-md bg-blue-600 text-white">
+                            <i class="fas fa-heartbeat text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="truncate text-sm font-medium text-gray-500">En Seguimiento</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ legajos_seguimiento|default:"0" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-md bg-yellow-600 text-white">
+                            <i class="fas fa-clock text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="truncate text-sm font-medium text-gray-500">Derivaciones Pendientes</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ derivaciones_pendientes|default:"0" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Métricas de calidad -->
+    <div class="mt-8">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Métricas de Calidad</h3>
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-md bg-indigo-500 text-white">
+                            <i class="fas fa-clock text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="truncate text-sm font-medium text-gray-500">TTR Promedio</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ ttr_promedio|default:"0" }} días</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-md bg-green-600 text-white">
+                            <i class="fas fa-check-circle text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="truncate text-sm font-medium text-gray-500">Adherencia</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ adherencia_adecuada|default:"0" }}%</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-md bg-purple-500 text-white">
+                            <i class="fas fa-calendar-week text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="truncate text-sm font-medium text-gray-500">Nuevos Esta Semana</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ legajos_nuevos_semana|default:"0" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-md bg-red-500 text-white">
+                            <i class="fas fa-exclamation-triangle text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="truncate text-sm font-medium text-gray-500">Seguimientos Semana</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ seguimientos_semana|default:"0" }}</dd>
                         </dl>
                     </div>
                 </div>
@@ -84,18 +224,14 @@
                     </p>
                     <div class="mt-6">
                         <div class="flex justify-center space-x-6">
-                            {% if request.user|has_group:"Ciudadanos" %}
-                                <a href="{% url 'ciudadanos' %}" class="inline-flex items-center rounded-md border border-transparent bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
-                                    <i class="fas fa-users mr-2"></i>
-                                    Gestionar Ciudadanos
-                                </a>
-                            {% endif %}
-                            {% if request.user|has_group:"Administrador" %}
-                                <a href="{% url 'usuarios' %}" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
-                                    <i class="fas fa-cog mr-2"></i>
-                                    Administrar Sistema
-                                </a>
-                            {% endif %}
+                            <a href="{% url 'legajos:ciudadanos' %}" class="inline-flex items-center rounded-md border border-transparent bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                                <i class="fas fa-users mr-2"></i>
+                                Gestionar Ciudadanos
+                            </a>
+                            <a href="{% url 'legajos:lista' %}" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                                <i class="fas fa-folder mr-2"></i>
+                                Ver Legajos
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -103,43 +239,104 @@
         </div>
     </div>
 
+    <!-- Legajos recientes -->
+    {% if legajos_recientes %}
+    <div class="mt-8">
+        <h3 class="text-lg font-medium text-gray-900">Legajos Recientes</h3>
+        <div class="mt-4 overflow-hidden bg-white shadow sm:rounded-md">
+            <ul class="divide-y divide-gray-200">
+                {% for legajo in legajos_recientes %}
+                <li>
+                    <a href="{% url 'legajos:detalle' legajo.pk %}" class="block hover:bg-gray-50">
+                        <div class="px-4 py-4 sm:px-6">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-500">
+                                            <span class="text-xs font-medium leading-none text-white">{{ legajo.ciudadano.nombre|first }}{{ legajo.ciudadano.apellido|first }}</span>
+                                        </span>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="flex items-center">
+                                            <p class="text-sm font-medium text-gray-900">{{ legajo.ciudadano.apellido }}, {{ legajo.ciudadano.nombre }}</p>
+                                            <span class="ml-2 inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                                                {{ legajo.codigo|slice:":8" }}...
+                                            </span>
+                                        </div>
+                                        <p class="text-sm text-gray-500">{{ legajo.dispositivo.nombre }} • {{ legajo.fecha_apertura|date:"d/m/Y" }}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                                        {% if legajo.estado == 'ABIERTO' %}bg-green-100 text-green-800
+                                        {% elif legajo.estado == 'EN_SEGUIMIENTO' %}bg-blue-100 text-blue-800
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ legajo.get_estado_display }}
+                                    </span>
+                                    {% if legajo.nivel_riesgo == 'ALTO' %}
+                                    <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+                                        Riesgo Alto
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Quick actions -->
     <div class="mt-8">
         <h3 class="text-lg font-medium text-gray-900">Acciones Rápidas</h3>
-        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {% if request.user|has_group:"Ciudadanos" %}
-                <div class="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm hover:border-gray-400">
-                    <div class="flex items-center space-x-3">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-plus h-6 w-6 text-primary"></i>
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <a href="{% url 'ciudadanos' %}" class="focus:outline-none">
-                                <span class="absolute inset-0" aria-hidden="true"></span>
-                                <p class="text-sm font-medium text-gray-900">Nuevo Ciudadano</p>
-                                <p class="truncate text-sm text-gray-500">Registrar un nuevo ciudadano en el sistema</p>
-                            </a>
-                        </div>
+        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div class="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm hover:border-gray-400">
+                <div class="flex items-center space-x-3">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-user-plus h-6 w-6 text-primary"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <a href="{% url 'legajos:ciudadano_nuevo' %}" class="focus:outline-none">
+                            <span class="absolute inset-0" aria-hidden="true"></span>
+                            <p class="text-sm font-medium text-gray-900">Nuevo Ciudadano</p>
+                            <p class="truncate text-sm text-gray-500">Registrar ciudadano con RENAPER</p>
+                        </a>
                     </div>
                 </div>
-            {% endif %}
+            </div>
 
-            {% if request.user|has_group:"Administrador" %}
-                <div class="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm hover:border-gray-400">
-                    <div class="flex items-center space-x-3">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-user-plus h-6 w-6 text-primary"></i>
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <a href="{% url 'usuarios' %}" class="focus:outline-none">
-                                <span class="absolute inset-0" aria-hidden="true"></span>
-                                <p class="text-sm font-medium text-gray-900">Nuevo Usuario</p>
-                                <p class="truncate text-sm text-gray-500">Crear un nuevo usuario del sistema</p>
-                            </a>
-                        </div>
+            <div class="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm hover:border-gray-400">
+                <div class="flex items-center space-x-3">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-folder-plus h-6 w-6 text-green-600"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <a href="{% url 'legajos:admision_paso1' %}" class="focus:outline-none">
+                            <span class="absolute inset-0" aria-hidden="true"></span>
+                            <p class="text-sm font-medium text-gray-900">Nueva Admisión</p>
+                            <p class="truncate text-sm text-gray-500">Proceso completo de admisión</p>
+                        </a>
                     </div>
                 </div>
-            {% endif %}
+            </div>
+
+            <div class="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm hover:border-gray-400">
+                <div class="flex items-center space-x-3">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-list h-6 w-6 text-blue-600"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <a href="{% url 'legajos:lista' %}" class="focus:outline-none">
+                            <span class="absolute inset-0" aria-hidden="true"></span>
+                            <p class="text-sm font-medium text-gray-900">Ver Legajos</p>
+                            <p class="truncate text-sm text-gray-500">Gestionar legajos existentes</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

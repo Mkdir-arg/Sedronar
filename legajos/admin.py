@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Ciudadano, Profesional, LegajoAtencion, Consentimiento, EvaluacionInicial
+from .models import Ciudadano, Profesional, LegajoAtencion, Consentimiento, EvaluacionInicial, Objetivo, PlanIntervencion, SeguimientoContacto, Derivacion, EventoCritico, Adjunto
 
 
 @admin.register(Ciudadano)
@@ -36,10 +36,14 @@ class ProfesionalAdmin(admin.ModelAdmin):
 
 @admin.register(LegajoAtencion)
 class LegajoAtencionAdmin(admin.ModelAdmin):
-    list_display = ("codigo", "ciudadano", "dispositivo", "estado", "nivel_riesgo", "plan_vigente")
-    list_filter = ("estado", "nivel_riesgo", "dispositivo__tipo", "via_ingreso")
+    list_display = ("codigo_corto", "ciudadano", "dispositivo", "estado", "nivel_riesgo", "plan_vigente", "fecha_apertura")
+    list_filter = ("estado", "nivel_riesgo", "dispositivo__provincia", "dispositivo__tipo", "via_ingreso", "plan_vigente")
     search_fields = ("codigo", "ciudadano__dni", "ciudadano__apellido", "ciudadano__nombre")
-    readonly_fields = ("id", "codigo", "creado", "modificado", "fecha_apertura")
+    readonly_fields = ("id", "codigo", "creado", "modificado", "fecha_apertura", "dias_desde_admision")
+    
+    def codigo_corto(self, obj):
+        return f"{obj.codigo[:8]}..."
+    codigo_corto.short_description = 'Código'
     
     fieldsets = (
         ("Información Básica", {
@@ -94,3 +98,47 @@ class EvaluacionInicialAdmin(admin.ModelAdmin):
             "classes": ("collapse",)
         }),
     )
+
+
+@admin.register(Objetivo)
+class ObjetivoAdmin(admin.ModelAdmin):
+    list_display = ['descripcion', 'legajo', 'cumplido']
+    list_filter = ['cumplido']
+    search_fields = ['descripcion', 'legajo__codigo']
+
+
+@admin.register(PlanIntervencion)
+class PlanIntervencionAdmin(admin.ModelAdmin):
+    list_display = ['legajo', 'profesional', 'vigente', 'creado']
+    list_filter = ['vigente', 'creado']
+    search_fields = ['legajo__codigo']
+
+
+@admin.register(SeguimientoContacto)
+class SeguimientoContactoAdmin(admin.ModelAdmin):
+    list_display = ['legajo', 'tipo', 'profesional', 'adherencia', 'creado']
+    list_filter = ['tipo', 'adherencia', 'creado']
+    search_fields = ['legajo__codigo', 'descripcion', 'profesional__usuario__username']
+    date_hierarchy = 'creado'
+
+
+@admin.register(Derivacion)
+class DerivacionAdmin(admin.ModelAdmin):
+    list_display = ['legajo', 'origen', 'destino', 'urgencia', 'estado', 'creado']
+    list_filter = ['urgencia', 'estado', 'origen__provincia', 'destino__provincia', 'creado']
+    search_fields = ['legajo__codigo', 'motivo', 'origen__nombre', 'destino__nombre']
+    date_hierarchy = 'creado'
+
+
+@admin.register(EventoCritico)
+class EventoCriticoAdmin(admin.ModelAdmin):
+    list_display = ['legajo', 'tipo', 'creado']
+    list_filter = ['tipo', 'creado']
+    search_fields = ['legajo__codigo', 'detalle']
+
+
+@admin.register(Adjunto)
+class AdjuntoAdmin(admin.ModelAdmin):
+    list_display = ['etiqueta', 'content_type', 'object_id', 'creado']
+    list_filter = ['content_type', 'creado']
+    search_fields = ['etiqueta']
