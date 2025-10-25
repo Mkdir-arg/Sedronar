@@ -201,6 +201,18 @@ class AdmisionPaso1View(LoginRequiredMixin, FormView):
     template_name = 'legajos/admision_paso1.html'
     form_class = BuscarCiudadanoForm
     
+    def get(self, request, *args, **kwargs):
+        # Si viene con ciudadano preseleccionado, ir directo al paso 2
+        ciudadano_id = request.GET.get('ciudadano')
+        if ciudadano_id:
+            try:
+                ciudadano = Ciudadano.objects.get(id=ciudadano_id, activo=True)
+                request.session['admision_ciudadano_id'] = ciudadano.id
+                return redirect('legajos:admision_paso2')
+            except Ciudadano.DoesNotExist:
+                messages.error(request, 'Ciudadano no encontrado')
+        return super().get(request, *args, **kwargs)
+    
     def form_valid(self, form):
         dni = form.cleaned_data['dni']
         
