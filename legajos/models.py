@@ -6,11 +6,16 @@ from core.models import TimeStamped, LegajoBase, DispositivoRed
 class Ciudadano(TimeStamped):
     """Modelo para ciudadanos del sistema de legajos"""
     
+    class Genero(models.TextChoices):
+        MASCULINO = "M", "Masculino"
+        FEMENINO = "F", "Femenino"
+        NO_BINARIO = "X", "No binario"
+    
     dni = models.CharField(max_length=20, unique=True, db_index=True)
     nombre = models.CharField(max_length=120)
     apellido = models.CharField(max_length=120, db_index=True)
     fecha_nacimiento = models.DateField(null=True, blank=True)
-    genero = models.CharField(max_length=20, blank=True)
+    genero = models.CharField(max_length=1, choices=Genero.choices, blank=True)
     telefono = models.CharField(max_length=40, blank=True)
     email = models.EmailField(blank=True)
     domicilio = models.CharField(max_length=240, blank=True)

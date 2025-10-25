@@ -46,7 +46,7 @@ class APIClient:
             self.login()
         return self.token
 
-    def consultar_ciudadano(self, dni, sexo):
+    def consultar_ciudadano(self, cuit, sexo):
         try:
             token = self.get_token()
         except Exception as e:
@@ -56,7 +56,7 @@ class APIClient:
             return {"success": False, "error": "Error interno al obtener token"}
 
         headers = {"Authorization": f"Bearer {token}"}
-        params = {"dni": dni, "sexo": sexo.upper()}
+        params = {"cuit": cuit, "sexo": sexo.upper()}
 
         try:
             response = requests.get(
@@ -125,10 +125,10 @@ def normalizar(texto):
     return texto.strip()
 
 
-def consultar_datos_renaper(dni, sexo):
+def consultar_datos_renaper(cuit, sexo):
     try:
         client = APIClient()
-        response = client.consultar_ciudadano(dni, sexo)
+        response = client.consultar_ciudadano(cuit, sexo)
 
         if not response["success"]:
             return {
@@ -163,6 +163,11 @@ def consultar_datos_renaper(dni, sexo):
                 provincia = prov
                 break
 
+        # Extraer DNI del CUIT
+        import re
+        cuit_limpio = re.sub(r'[^0-9]', '', cuit)
+        dni = cuit_limpio[2:10] if len(cuit_limpio) == 11 else cuit
+        
         datos_mapeados = {
             "dni": dni,
             "nombre": datos.get("nombres"),
