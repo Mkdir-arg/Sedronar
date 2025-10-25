@@ -369,15 +369,36 @@ class PlanIntervencionView(LoginRequiredMixin, CreateView):
         return context
     
     def form_valid(self, form):
-        form.instance.legajo = self.legajo
+        # Crear el plan sin guardar aún
+        plan = form.save(commit=False)
+        plan.legajo = self.legajo
         profesional, created = Profesional.objects.get_or_create(
             usuario=self.request.user,
             defaults={'rol': 'Operador'}
         )
-        form.instance.profesional = profesional
-        response = super().form_valid(form)
+        plan.profesional = profesional
+        
+        # Procesar actividades dinámicas
+        actividades = []
+        i = 1
+        while f'actividad_{i}' in self.request.POST:
+            accion = self.request.POST.get(f'actividad_{i}')
+            freq = self.request.POST.get(f'frecuencia_{i}')
+            responsable = self.request.POST.get(f'responsable_{i}')
+            
+            if accion:
+                actividades.append({
+                    'accion': accion,
+                    'freq': freq or '',
+                    'responsable': responsable or ''
+                })
+            i += 1
+        
+        plan.actividades = actividades if actividades else None
+        plan.save()
+        
         messages.success(self.request, 'Plan de intervención creado exitosamente.')
-        return response
+        return redirect(self.get_success_url())
     
     def get_success_url(self):
         return reverse_lazy('legajos:detalle', kwargs={'pk': self.legajo.id})
@@ -608,11 +629,14 @@ class ReportesView(LoginRequiredMixin, TemplateView):
         ).annotate(total=Count('id')).order_by('-total')[:10]
         
         # Actividad por mes (últimos 6 meses)
+        from django.db.models import DateTimeField
+        from django.db.models.functions import TruncMonth
+        
         fecha_limite = datetime.now().date() - timedelta(days=180)
         stats['por_mes'] = LegajoAtencion.objects.filter(
             fecha_apertura__gte=fecha_limite
-        ).extra(
-            select={'mes': "DATE_TRUNC('month', fecha_apertura)"}
+        ).annotate(
+            mes=TruncMonth('fecha_apertura')
         ).values('mes').annotate(total=Count('id')).order_by('-mes')[:6]
         
         # Métricas de calidad

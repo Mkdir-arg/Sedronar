@@ -277,20 +277,7 @@ class PlanIntervencionForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
         
-        actividades = []
-        for i in range(1, 4):
-            accion = self.cleaned_data.get(f'actividad_{i}')
-            freq = self.cleaned_data.get(f'frecuencia_{i}')
-            responsable = self.cleaned_data.get(f'responsable_{i}')
-            
-            if accion:
-                actividades.append({
-                    'accion': accion,
-                    'freq': freq or '',
-                    'responsable': responsable or ''
-                })
-        
-        instance.actividades = actividades if actividades else None
+        # No procesar actividades aquí, se hace en la vista
         
         if commit:
             instance.save()

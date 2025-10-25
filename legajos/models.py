@@ -75,6 +75,16 @@ class LegajoAtencion(LegajoBase):
         on_delete=models.PROTECT, 
         related_name="legajos"
     )
+    responsable = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="legajos_responsable",
+        limit_choices_to={'groups__name': 'Responsable'},
+        verbose_name="Responsable",
+        help_text="Usuario con rol de Responsable asignado al legajo"
+    )
     via_ingreso = models.CharField(
         max_length=20, 
         choices=ViaIngreso.choices, 
@@ -313,7 +323,8 @@ class PlanIntervencion(TimeStamped):
     
     def clean(self):
         from django.core.exceptions import ValidationError
-        if self.vigente and PlanIntervencion.objects.filter(
+        # Solo validar si el legajo ya está asignado
+        if self.vigente and hasattr(self, 'legajo') and self.legajo and PlanIntervencion.objects.filter(
             legajo=self.legajo, vigente=True
         ).exclude(pk=self.pk).exists():
             raise ValidationError("Ya existe un plan vigente para este legajo.")

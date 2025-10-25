@@ -36,73 +36,114 @@
     </div>
 
     <!-- Timeline -->
-    <div class="bg-white rounded-xl shadow-lg p-6">
+    <div class="space-y-6">
         {% if seguimientos %}
-            <div class="space-y-6">
-                {% for seguimiento in seguimientos %}
-                <div class="flex">
-                    <!-- Timeline line -->
-                    <div class="flex flex-col items-center mr-6">
-                        <div class="w-4 h-4 rounded-full 
-                            {% if seguimiento.tipo == 'ENTREVISTA' %}bg-blue-500
-                            {% elif seguimiento.tipo == 'VISITA' %}bg-green-500
-                            {% elif seguimiento.tipo == 'LLAMADA' %}bg-yellow-500
-                            {% else %}bg-purple-500{% endif %}">
+            {% for seguimiento in seguimientos %}
+            <div class="relative">
+                <!-- Timeline connector -->
+                {% if not forloop.last %}
+                <div class="absolute left-6 top-16 w-0.5 h-full bg-gradient-to-b from-gray-300 to-transparent z-0"></div>
+                {% endif %}
+                
+                <!-- Card -->
+                <div class="relative bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden">
+                    <!-- Header with icon and type -->
+                    <div class="bg-gradient-to-r 
+                        {% if seguimiento.tipo == 'ENTREVISTA' %}from-blue-500 to-blue-600
+                        {% elif seguimiento.tipo == 'VISITA' %}from-green-500 to-green-600
+                        {% elif seguimiento.tipo == 'LLAMADA' %}from-yellow-500 to-yellow-600
+                        {% else %}from-purple-500 to-purple-600{% endif %} p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                    <i class="fas 
+                                        {% if seguimiento.tipo == 'ENTREVISTA' %}fa-user-friends
+                                        {% elif seguimiento.tipo == 'VISITA' %}fa-home
+                                        {% elif seguimiento.tipo == 'LLAMADA' %}fa-phone
+                                        {% else %}fa-clipboard-list{% endif %} text-white text-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-white font-semibold text-lg">{{ seguimiento.get_tipo_display }}</h3>
+                                    <p class="text-white text-opacity-90 text-sm">
+                                        {{ seguimiento.creado|date:"l, d \d\e F \d\e Y" }} a las {{ seguimiento.creado|date:"H:i" }}
+                                    </p>
+                                </div>
+                            </div>
+                            {% if seguimiento.adherencia %}
+                            <div class="bg-white bg-opacity-20 rounded-lg px-3 py-1">
+                                <span class="text-white text-sm font-medium">
+                                    {{ seguimiento.get_adherencia_display }}
+                                </span>
+                            </div>
+                            {% endif %}
                         </div>
-                        {% if not forloop.last %}
-                            <div class="w-0.5 h-16 bg-gray-200 mt-2"></div>
-                        {% endif %}
                     </div>
                     
                     <!-- Content -->
-                    <div class="flex-1 pb-8">
-                        <div class="bg-gray-50 rounded-lg p-4">
-                            <div class="flex justify-between items-start mb-3">
-                                <div>
-                                    <h3 class="font-semibold text-gray-900">{{ seguimiento.get_tipo_display }}</h3>
-                                    <p class="text-sm text-gray-600">
-                                        {{ seguimiento.profesional.usuario.get_full_name|default:seguimiento.profesional.usuario.username }} - 
-                                        {{ seguimiento.creado|date:"d/m/Y H:i" }}
-                                    </p>
-                                </div>
-                                {% if seguimiento.adherencia %}
-                                    <span class="px-2 py-1 rounded-full text-xs font-medium
-                                        {% if seguimiento.adherencia == 'ADECUADA' %}bg-green-100 text-green-800
-                                        {% elif seguimiento.adherencia == 'PARCIAL' %}bg-yellow-100 text-yellow-800
-                                        {% else %}bg-red-100 text-red-800{% endif %}">
-                                        {{ seguimiento.get_adherencia_display }}
-                                    </span>
-                                {% endif %}
+                    <div class="p-6">
+                        <!-- Professional info -->
+                        <div class="flex items-center space-x-3 mb-4 p-3 bg-gray-50 rounded-lg">
+                            <div class="w-10 h-10 bg-arg-azul rounded-full flex items-center justify-center">
+                                <i class="fas fa-user text-white"></i>
                             </div>
-                            
-                            <div class="text-gray-700 mb-3">
+                            <div>
+                                <p class="font-medium text-gray-900">
+                                    {{ seguimiento.profesional.usuario.get_full_name|default:seguimiento.profesional.usuario.username }}
+                                </p>
+                                <p class="text-sm text-gray-600">{{ seguimiento.profesional.rol|default:"Profesional" }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="mb-4">
+                            <h4 class="font-medium text-gray-900 mb-2">Descripción del contacto:</h4>
+                            <div class="text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-lg">
                                 {{ seguimiento.descripcion|linebreaks }}
                             </div>
+                        </div>
+                        
+                        <!-- Additional info -->
+                        <div class="flex flex-wrap gap-4 text-sm">
+                            {% if seguimiento.adherencia %}
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 rounded-full 
+                                    {% if seguimiento.adherencia == 'ADECUADA' %}bg-green-500
+                                    {% elif seguimiento.adherencia == 'PARCIAL' %}bg-yellow-500
+                                    {% else %}bg-red-500{% endif %}"></div>
+                                <span class="text-gray-600">Adherencia: {{ seguimiento.get_adherencia_display }}</span>
+                            </div>
+                            {% endif %}
                             
                             {% if seguimiento.adjuntos %}
-                                <div class="flex items-center text-sm text-gray-600">
-                                    <i class="fas fa-paperclip mr-2"></i>
-                                    <a href="{{ seguimiento.adjuntos.url }}" target="_blank" 
-                                       class="text-arg-azul hover:text-arg-secundario">
-                                        Ver adjunto
-                                    </a>
-                                </div>
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-paperclip text-gray-400"></i>
+                                <a href="{{ seguimiento.adjuntos.url }}" target="_blank" 
+                                   class="text-arg-azul hover:text-arg-secundario font-medium">
+                                    Ver documento adjunto
+                                </a>
+                            </div>
                             {% endif %}
                         </div>
                     </div>
                 </div>
-                {% endfor %}
             </div>
+            {% endfor %}
         {% else %}
-            <div class="text-center py-12">
-                <i class="fas fa-comments text-6xl text-gray-300 mb-4"></i>
-                <h3 class="text-xl font-semibold text-gray-900 mb-2">Sin seguimientos registrados</h3>
-                <p class="text-gray-600 mb-6">Comienza registrando el primer contacto o actividad</p>
+        <div class="bg-white rounded-xl shadow-lg p-12">
+            <div class="text-center">
+                <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-comments text-4xl text-gray-400"></i>
+                </div>
+                <h3 class="text-2xl font-semibold text-gray-900 mb-3">Sin seguimientos registrados</h3>
+                <p class="text-gray-600 mb-8 max-w-md mx-auto">
+                    Comienza registrando el primer contacto o actividad para crear un historial completo del legajo
+                </p>
                 <a href="{% url 'legajos:seguimiento_nuevo' legajo.pk %}" 
-                   class="bg-arg-azul text-white px-6 py-3 rounded-xl hover:bg-arg-secundario transition-colors">
-                    <i class="fas fa-plus mr-2"></i>Primer Seguimiento
+                   class="inline-flex items-center bg-arg-azul text-white px-8 py-4 rounded-xl hover:bg-arg-secundario transition-all duration-300 shadow-lg hover:shadow-xl">
+                    <i class="fas fa-plus mr-3"></i>Crear Primer Seguimiento
                 </a>
             </div>
+        </div>
         {% endif %}
     </div>
 </div>

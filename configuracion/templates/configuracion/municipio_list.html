@@ -1,0 +1,45 @@
+{% extends "includes/main.html" %}
+{% load static %}
+
+{% block title %}Municipios{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Municipios</h1>
+        <a href="{% url 'configuracion:municipio_crear' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+            <i class="fas fa-plus mr-2"></i>Nuevo Municipio
+        </a>
+    </div>
+
+    <div class="bg-white rounded-lg shadow">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provincia</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for municipio in municipios %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ municipio.nombre }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ municipio.provincia.nombre }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="{% url 'configuracion:municipio_editar' municipio.pk %}" class="text-indigo-600 hover:text-indigo-900 mr-3">Editar</a>
+                            <a href="{% url 'configuracion:municipio_eliminar' municipio.pk %}" class="text-red-600 hover:text-red-900">Eliminar</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="px-6 py-4 text-center text-gray-500">No hay municipios registrados</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
