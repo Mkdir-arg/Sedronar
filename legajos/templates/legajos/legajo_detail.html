@@ -27,14 +27,14 @@
                 </span>
                 
                 <!-- Badges de riesgo de evaluación -->
-                {% if legajo.evaluacion.riesgo_suicida %}
+                {% if legajo.evaluacion and legajo.evaluacion.riesgo_suicida %}
                     <span class="px-3 py-2 rounded-lg text-sm font-medium bg-red-100 text-red-800">
                         <i class="fas fa-exclamation-triangle mr-1"></i>
                         Riesgo Suicida
                     </span>
                 {% endif %}
                 
-                {% if legajo.evaluacion.violencia %}
+                {% if legajo.evaluacion and legajo.evaluacion.violencia %}
                     <span class="px-3 py-2 rounded-lg text-sm font-medium bg-red-100 text-red-800">
                         <i class="fas fa-fist-raised mr-1"></i>
                         Violencia
