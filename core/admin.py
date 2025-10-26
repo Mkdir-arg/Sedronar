@@ -48,6 +48,9 @@ class DispositivoRedAdmin(admin.ModelAdmin):
         ("Contacto", {
             "fields": ("telefono", "email")
         }),
+        ("Personal", {
+            "fields": ("encargados",)
+        }),
         ("Registro", {
             "fields": ("nro_registro", "resolucion", "fecha_alta")
         }),
@@ -55,3 +58,5 @@ class DispositivoRedAdmin(admin.ModelAdmin):
             "fields": ("descripcion",)
         }),
     )
+    
+    filter_horizontal = ('encargados',)

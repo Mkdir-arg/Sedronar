@@ -29,9 +29,9 @@ urlpatterns = [
         name="usuario_editar",
     ),
     path(
-        "usuarios/borrar/<int:pk>/",
+        "usuarios/eliminar/<int:pk>/",
         group_required(["Usuario Eliminar"])(UserDeleteView.as_view()),
-        name="usuario_borrar",
+        name="usuario_eliminar",
     ),
     path(
         "grupos/",

@@ -6,25 +6,48 @@ from .models import Profile
 
 
 class UserCreationForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput, label="Contraseña")
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'placeholder': 'Ingrese la contraseña'
+        }), 
+        label="Contraseña"
+    )
     groups = forms.ModelMultipleChoiceField(
         queryset=Group.objects.all(),
         required=False,
-        widget=forms.SelectMultiple(attrs={"class": "select2"}),
+        widget=forms.SelectMultiple(attrs={
+            'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'id': 'id_groups',
+            'size': '4'
+        }),
         label="Grupos",
     )
     es_usuario_provincial = forms.BooleanField(
         required=False,
         label="Es usuario provincial",
+        widget=forms.CheckboxInput(attrs={
+            'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
+        })
     )
     provincia = forms.ModelChoiceField(
         queryset=Provincia.objects.all(),
         required=False,
-        widget=forms.Select(attrs={"class": "select"}),
+        widget=forms.Select(attrs={
+            'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+        }),
         label="Provincia",
     )
 
-    rol = forms.CharField(max_length=100, required=False, label="Rol")
+    rol = forms.CharField(
+        max_length=100, 
+        required=False, 
+        label="Rol",
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'placeholder': 'Ingrese el rol'
+        })
+    )
 
     class Meta:
         model = User
@@ -39,6 +62,24 @@ class UserCreationForm(forms.ModelForm):
             "first_name",
             "rol",
         ]
+        widgets = {
+            'username': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                'placeholder': 'Ingrese el nombre de usuario'
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                'placeholder': 'Ingrese el email'
+            }),
+            'first_name': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                'placeholder': 'Ingrese el nombre'
+            }),
+            'last_name': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                'placeholder': 'Ingrese el apellido'
+            }),
+        }
 
     def clean(self):
         cleaned = super().clean()
@@ -71,27 +112,47 @@ class UserCreationForm(forms.ModelForm):
 
 class CustomUserChangeForm(forms.ModelForm):
     password = forms.CharField(
-        widget=forms.PasswordInput,
+        widget=forms.PasswordInput(attrs={
+            'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'placeholder': 'Dejar en blanco para no cambiar'
+        }),
         label="Contraseña (dejar en blanco para no cambiarla)",
         required=False,
     )
     groups = forms.ModelMultipleChoiceField(
         queryset=Group.objects.all(),
         required=False,
-        widget=forms.SelectMultiple(attrs={"class": "select2"}),
+        widget=forms.SelectMultiple(attrs={
+            'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'id': 'id_groups_edit',
+            'size': '4'
+        }),
         label="Grupos",
     )
     es_usuario_provincial = forms.BooleanField(
         required=False,
         label="Es usuario provincial",
+        widget=forms.CheckboxInput(attrs={
+            'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
+        })
     )
     provincia = forms.ModelChoiceField(
         queryset=Provincia.objects.all(),
         required=False,
-        widget=forms.Select(attrs={"class": "select2"}),
+        widget=forms.Select(attrs={
+            'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+        }),
         label="Provincia",
     )
-    rol = forms.CharField(max_length=100, required=False, label="Rol")
+    rol = forms.CharField(
+        max_length=100, 
+        required=False, 
+        label="Rol",
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'placeholder': 'Ingrese el rol'
+        })
+    )
 
     class Meta:
         model = User
@@ -106,6 +167,24 @@ class CustomUserChangeForm(forms.ModelForm):
             "first_name",
             "rol",
         ]
+        widgets = {
+            'username': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                'placeholder': 'Ingrese el nombre de usuario'
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                'placeholder': 'Ingrese el email'
+            }),
+            'first_name': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                'placeholder': 'Ingrese el nombre'
+            }),
+            'last_name': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                'placeholder': 'Ingrese el apellido'
+            }),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

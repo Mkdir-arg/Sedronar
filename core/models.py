@@ -194,6 +194,13 @@ class DispositivoRed(TimeStamped):
     resolucion = models.CharField(max_length=120, blank=True)
     fecha_alta = models.DateField(auto_now_add=True)
     descripcion = models.TextField(blank=True)
+    encargados = models.ManyToManyField(
+        'auth.User',
+        blank=True,
+        limit_choices_to={'groups__name': 'EncargadoDispositivo'},
+        related_name='dispositivos_encargados',
+        verbose_name='Encargados del Dispositivo'
+    )
     
     class Meta:
         verbose_name = "Dispositivo de Red"

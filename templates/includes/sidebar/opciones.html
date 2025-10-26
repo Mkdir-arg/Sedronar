@@ -151,6 +151,44 @@
                     </div>
                 </div>
             {% endif %}
+
+            <!-- Dispositivos -->
+            {% if request.user|has_group:"EncargadoDispositivo" %}
+                <div x-data="{ open: {% if 'dispositivo' in pagina_actual %}true{% else %}false{% endif %} }" class="relative">
+                    <template x-if="!sidebarCollapsed">
+                        <div>
+                            <button @click="open = !open" class="text-blue-100 hover:text-white hover:bg-white/10 group flex w-full items-center gap-x-3 rounded-xl p-3 text-left text-sm font-medium transition-all duration-200">
+                                <i class="fas fa-network-wired text-base"></i>
+                                <span class="flex-1">Dispositivos</span>
+                                <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+                            </button>
+                            <div x-show="open" x-transition class="mt-1 ml-6 space-y-1">
+                                {% for dispositivo in request.user.dispositivos_encargados.all %}
+                                    {% if dispositivo.activo %}
+                                        <a href="{% url 'legajos:dispositivo_derivaciones' dispositivo.id %}" class="{% if request.resolver_match.kwargs.dispositivo_id == dispositivo.id|stringformat:'s' %}bg-white/20 text-white{% else %}text-blue-200 hover:text-white hover:bg-white/10{% endif %} block rounded-lg py-2 px-3 text-sm transition-colors">
+                                            <i class="fas fa-building mr-2 text-xs"></i>{{ dispositivo.nombre|truncatechars:25 }}
+                                        </a>
+                                    {% endif %}
+                                {% empty %}
+                                    <span class="text-blue-300 block py-2 px-3 text-xs italic">
+                                        Sin dispositivos asignados
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </template>
+                    
+                    <template x-if="sidebarCollapsed">
+                        <div class="group flex items-center justify-center rounded-xl p-3 text-sm font-medium transition-all duration-200 text-blue-100 hover:text-white hover:bg-white/10">
+                            <i class="fas fa-network-wired text-base"></i>
+                        </div>
+                    </template>
+                    
+                    <div x-show="sidebarCollapsed" class="absolute left-full ml-6 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                        Dispositivos
+                    </div>
+                </div>
+            {% endif %}
         </nav>
     </div>
 {% endwith %}

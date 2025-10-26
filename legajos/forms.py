@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth.models import User
 from .models import Ciudadano, LegajoAtencion, Consentimiento, EvaluacionInicial, Objetivo, PlanIntervencion, SeguimientoContacto, Derivacion, EventoCritico
 from core.models import DispositivoRed
 import json
@@ -100,9 +101,15 @@ class AdmisionLegajoForm(forms.ModelForm):
     
     class Meta:
         model = LegajoAtencion
-        fields = ['dispositivo', 'via_ingreso', 'nivel_riesgo', 'notas']
+        fields = ['ciudadano', 'dispositivo', 'responsable', 'via_ingreso', 'nivel_riesgo', 'notas']
         widgets = {
+            'ciudadano': forms.Select(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'
+            }),
             'dispositivo': forms.Select(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'
+            }),
+            'responsable': forms.Select(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'
             }),
             'via_ingreso': forms.Select(attrs={
@@ -117,6 +124,34 @@ class AdmisionLegajoForm(forms.ModelForm):
                 'placeholder': 'Observaciones iniciales (opcional)'
             }),
         }
+    
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filtrar ciudadanos activos
+        self.fields['ciudadano'].queryset = Ciudadano.objects.filter(activo=True).order_by('apellido', 'nombre')
+        self.fields['ciudadano'].empty_label = "Seleccionar ciudadano"
+        
+        # Filtrar solo usuarios del grupo Responsable
+        self.fields['responsable'].queryset = User.objects.filter(groups__name='Responsable')
+        self.fields['responsable'].empty_label = "Seleccionar responsable (opcional)"
+        
+        # Filtrar dispositivos según el usuario
+        if user and user.is_superuser:
+            # Superusuario ve todos los dispositivos
+            self.fields['dispositivo'].queryset = DispositivoRed.objects.filter(activo=True)
+        elif user:
+            # Usuario normal ve solo dispositivos donde es encargado
+            self.fields['dispositivo'].queryset = DispositivoRed.objects.filter(
+                activo=True,
+                encargados=user
+            )
+        else:
+            # Sin usuario, mostrar todos (fallback)
+            self.fields['dispositivo'].queryset = DispositivoRed.objects.filter(activo=True)
+        
+        self.fields['dispositivo'].empty_label = "Seleccionar dispositivo"
 
 
 class ConsentimientoForm(forms.ModelForm):

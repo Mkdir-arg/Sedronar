@@ -448,9 +448,9 @@ class Derivacion(TimeStamped):
         return f"Derivación {self.origen.nombre} → {self.destino.nombre}"
     
     def clean(self):
-        if not self.destino.activo:
+        if hasattr(self, 'destino') and self.destino and not self.destino.activo:
             raise ValidationError("No es posible derivar a un dispositivo inactivo.")
-        if self.origen == self.destino:
+        if hasattr(self, 'origen') and self.origen and hasattr(self, 'destino') and self.destino and self.origen == self.destino:
             raise ValidationError("No se puede derivar al mismo dispositivo.")
 
 
@@ -511,3 +511,30 @@ class Adjunto(TimeStamped):
     
     def __str__(self):
         return f"Adjunto - {self.etiqueta or self.archivo.name}"
+
+
+class AlertaEventoCritico(TimeStamped):
+    """Registro de alertas vistas por responsables"""
+    
+    evento = models.ForeignKey(
+        EventoCritico,
+        on_delete=models.CASCADE,
+        related_name="alertas_vistas"
+    )
+    responsable = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="alertas_eventos_vistas"
+    )
+    fecha_cierre = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Alerta Evento Crítico"
+        verbose_name_plural = "Alertas Eventos Críticos"
+        unique_together = ["evento", "responsable"]
+        indexes = [
+            models.Index(fields=["responsable", "fecha_cierre"]),
+        ]
+    
+    def __str__(self):
+        return f"Alerta {self.evento.tipo} vista por {self.responsable.username}"

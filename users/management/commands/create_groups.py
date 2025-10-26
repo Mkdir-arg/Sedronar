@@ -9,6 +9,7 @@ class Command(BaseCommand):
         groups = [
             "Administrador",
             "Ciudadanos",
+            "EncargadoDispositivo",
         ]
         self.stdout.write(self.style.SUCCESS("Creando grupos de usuario..."))
         for group_name in groups:

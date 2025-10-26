@@ -121,6 +121,15 @@
                         <p class="mt-1 text-sm text-gray-500">Seleccione el dispositivo donde se atenderá al ciudadano</p>
                     </div>
 
+                    <!-- Responsable -->
+                    <div>
+                        <label for="{{ form.responsable.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.responsable.label }}
+                        </label>
+                        {{ form.responsable }}
+                        <p class="mt-1 text-sm text-gray-500">Usuario responsable del legajo (opcional)</p>
+                    </div>
+
                     <!-- Vía de Ingreso -->
                     <div>
                         <label for="{{ form.via_ingreso.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">

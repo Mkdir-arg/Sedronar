@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Ciudadano, Profesional, LegajoAtencion, Consentimiento, EvaluacionInicial, Objetivo, PlanIntervencion, SeguimientoContacto, Derivacion, EventoCritico, Adjunto
+from .models import Ciudadano, Profesional, LegajoAtencion, Consentimiento, EvaluacionInicial, Objetivo, PlanIntervencion, SeguimientoContacto, Derivacion, EventoCritico, Adjunto, AlertaEventoCritico
 
 
 @admin.register(Ciudadano)
@@ -142,3 +142,11 @@ class AdjuntoAdmin(admin.ModelAdmin):
     list_display = ['etiqueta', 'content_type', 'object_id', 'creado']
     list_filter = ['content_type', 'creado']
     search_fields = ['etiqueta']
+
+
+@admin.register(AlertaEventoCritico)
+class AlertaEventoCriticoAdmin(admin.ModelAdmin):
+    list_display = ['evento', 'responsable', 'fecha_cierre']
+    list_filter = ['fecha_cierre', 'evento__tipo']
+    search_fields = ['evento__legajo__codigo', 'responsable__username']
+    readonly_fields = ['fecha_cierre']

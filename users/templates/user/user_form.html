@@ -1,54 +1,193 @@
-{% extends "includes/main.html" %}
+{% extends "includes/base.html" %}
 {% load static %}
-{% load crispy_forms_tags %}
-{% block title %}Usuarios{% endblock %}
-{% block titulo-pagina %}Usuarios{% endblock %}
-;
-{% block breadcrumb %}
-    <ol class="breadcrumb float-sm-right ">
-        <li class="breadcrumb-item ">Administración</li>
-        <li class="breadcrumb-item">
-            <a href="{% url 'usuarios' %}">Usuarios</a>
-        </li>
-        <li class="breadcrumb-item active">Agregar</li>
-    </ol>
-{% endblock %}
-;
-{% load crispy_forms_tags %}
+
+{% block title %}{% if object %}Editar{% else %}Nuevo{% endif %} Usuario{% endblock %}
+
 {% block content %}
-    <link rel="stylesheet" href="{% static 'admin/css/select2templated.css' %}" />
-    <div class="row">
-        <div class="col">
-            <form class="needs-validation"
-                  novalidate
-                  method="POST"
-                  enctype="multipart/form-data"
-                  autocomplete="off">
-                {% csrf_token %}
-                {{ form.username | as_crispy_field }}
-                {{ form.email | as_crispy_field }}
-                {{ form.password | as_crispy_field }}
-                {{ form.groups | as_crispy_field }}
-                {{ form.first_name|as_crispy_field }}
-                {{ form.last_name|as_crispy_field }}
-                {{ form.rol|as_crispy_field }}
-                {{ form.es_usuario_provincial|as_crispy_field }}
-                {{ form.provincia|as_crispy_field }}
-                {% include 'components/form_buttons.html' with cancel_url='usuarios' default_save=True save_text='Confirmar' layout='start' %}
-            </form>
-        </div>
+<div class="p-6">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">{% if object %}Editar{% else %}Nuevo{% endif %} Usuario</h1>
     </div>
-{% endblock content %}
-{% block customJS %}
-    <script>
-  id_imagen.setAttribute('accept', 'image/png,image/jpeg');
-  id_imagen.onchange = (evt) => {
-    const [file] = id_imagen.files;
-    if (file) {
-      blah.src = URL.createObjectURL(file);
-      document.querySelector('#label_id_imagen').innerText = 'Cambiar imagen';
+
+    <div class="bg-white rounded-lg shadow p-6">
+        <form method="post">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Nombre de usuario</label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.username.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.email.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.first_name.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Apellido</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.last_name.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                {% if not object %}
+                <div class="md:col-span-2">
+                    <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+                    {{ form.password }}
+                    {% if form.password.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.password.errors }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <div>
+                    <label style="display: block; font-size: 14px; font-weight: 500; color: #374151; margin-bottom: 8px;">Grupos</label>
+                    <div style="position: relative;">
+                        <select id="custom-groups-select" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; outline: none; font-size: 14px;">
+                            <option value="">Seleccionar grupo...</option>
+                            <option value="1">Administrador</option>
+                            <option value="2">Ciudadanos</option>
+                            <option value="3">Responsable</option>
+                        </select>
+                    </div>
+                    <div id="selected-tags" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                    {{ form.groups.as_hidden }}
+                    {% if form.groups.errors %}
+                        <div style="color: #dc2626; font-size: 12px; margin-top: 4px;">{{ form.groups.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                {% if form.rol %}
+                <div>
+                    <label for="{{ form.rol.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Rol</label>
+                    {{ form.rol }}
+                    {% if form.rol.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.rol.errors }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                {% if form.es_usuario_provincial %}
+                <div class="md:col-span-2">
+                    <label class="flex items-center">
+                        {{ form.es_usuario_provincial }}
+                        <span class="ml-2 text-sm text-gray-700">Es usuario provincial</span>
+                    </label>
+                    {% if form.es_usuario_provincial.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.es_usuario_provincial.errors }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                {% if form.provincia %}
+                <div>
+                    <label for="{{ form.provincia.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Provincia</label>
+                    {{ form.provincia }}
+                    {% if form.provincia.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.provincia.errors }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <a href="{% url 'usuarios' %}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">Cancelar</a>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="{% static 'custom/js/usuarioprovincial.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const customSelect = document.getElementById('custom-groups-select');
+    const tagsContainer = document.getElementById('selected-tags');
+    const hiddenField = document.getElementById('{{ form.groups.id_for_label }}');
+    let selectedGroups = [];
+    
+    // Mapeo de grupos
+    const groupsMap = {
+        '1': 'Administrador',
+        '2': 'Ciudadanos', 
+        '3': 'Responsable'
+    };
+    
+    // Inicializar con valores existentes
+    if (hiddenField) {
+        Array.from(hiddenField.selectedOptions).forEach(option => {
+            if (option.value && groupsMap[option.value]) {
+                selectedGroups.push({
+                    id: option.value,
+                    name: groupsMap[option.value]
+                });
+            }
+        });
+        updateDisplay();
     }
-  };
-    </script>
-    <script src="{% static 'custom/js/usuarioprovincial.js' %}"></script>
-{% endblock customJS %}
+    
+    customSelect.addEventListener('change', function() {
+        const value = this.value;
+        const name = groupsMap[value];
+        
+        if (value && name && !selectedGroups.find(g => g.id === value)) {
+            selectedGroups.push({ id: value, name: name });
+            updateDisplay();
+        }
+        
+        this.value = '';
+    });
+    
+    function updateDisplay() {
+        // Actualizar etiquetas
+        tagsContainer.innerHTML = '';
+        selectedGroups.forEach(group => {
+            const tag = document.createElement('span');
+            tag.style.cssText = 'display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; background-color: #dbeafe; color: #1e40af; margin-right: 4px;';
+            tag.innerHTML = `
+                ${group.name}
+                <button type="button" style="margin-left: 8px; color: #1e40af; background: none; border: none; cursor: pointer; font-size: 10px;" onclick="removeGroup('${group.id}')">
+                    ✕
+                </button>
+            `;
+            tagsContainer.appendChild(tag);
+        });
+        
+        // Ocultar opciones seleccionadas
+        Array.from(customSelect.options).forEach(option => {
+            if (option.value) {
+                const isSelected = selectedGroups.find(g => g.id === option.value);
+                option.style.display = isSelected ? 'none' : 'block';
+            }
+        });
+        
+        // Actualizar campo oculto
+        if (hiddenField) {
+            Array.from(hiddenField.options).forEach(option => {
+                option.selected = selectedGroups.find(g => g.id === option.value) !== undefined;
+            });
+        }
+    }
+    
+    window.removeGroup = function(groupId) {
+        selectedGroups = selectedGroups.filter(g => g.id !== groupId);
+        updateDisplay();
+    };
+});
+</script>
+{% endblock %}

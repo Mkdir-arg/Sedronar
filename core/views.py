@@ -36,7 +36,30 @@ def load_localidad(request):
 @login_required
 def inicio_view(request):
     """Vista para la página de inicio del sistema"""
-    return render(request, "inicio.html")
+    from django.contrib.auth.models import User
+    from legajos.models import Ciudadano
+    from datetime import datetime, timedelta
+    
+    # Estadísticas básicas
+    total_ciudadanos = Ciudadano.objects.count()
+    usuarios_activos = User.objects.filter(is_active=True).count()
+    
+    # Registros del mes actual
+    inicio_mes = datetime.now().replace(day=1)
+    registros_mes = Ciudadano.objects.filter(creado__gte=inicio_mes).count()
+    
+    # Actividad de hoy
+    hoy = datetime.now().date()
+    actividad_hoy = Ciudadano.objects.filter(creado__date=hoy).count()
+    
+    context = {
+        'total_ciudadanos': total_ciudadanos,
+        'usuarios_activos': usuarios_activos,
+        'registros_mes': registros_mes,
+        'actividad_hoy': actividad_hoy,
+    }
+    
+    return render(request, "inicio.html", context)
 
 
 def error_500_view(request):

@@ -39,12 +39,21 @@
         <!-- Alpine.js for interactivity -->
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
         
+        <!-- Custom CSS Files -->
+        <link rel="stylesheet" href="{% static 'custom/css/main.css' %}" />
+        <link rel="stylesheet" href="{% static 'custom/css/custom.css' %}" />
+        <link rel="stylesheet" href="{% static 'custom/css/utils.css' %}" />
+        <link rel="stylesheet" href="{% static 'custom/css/override.css' %}" />
+        
+        <!-- Page specific CSS -->
+        {% block page_css %}{% endblock %}
+        
         <!-- Custom styles -->
         {% block head %}{% endblock %}
         
         <title>SEDRONAR - {% block title %}{% endblock %}</title>
     </head>
-    <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 font-montserrat" x-data="{ sidebarOpen: false, sidebarCollapsed: false }">
+    <body class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 font-montserrat" x-data="{ sidebarOpen: false, sidebarCollapsed: false }">
         <div class="min-h-full">
             {% include 'includes/navbar.html' %}
             {% include 'includes/sidebar/base.html' %}
@@ -79,6 +88,12 @@
                 </main>
             </div>
         </div>
+        
+        <!-- Alertas de Eventos Críticos -->
+        {% include 'components/alertas_eventos.html' %}
+        
+        <!-- CSRF Token para AJAX -->
+        {% csrf_token %}
         
         {% block customJS %}{% endblock %}
     </body>

@@ -25,6 +25,9 @@ urlpatterns = [
     path('<uuid:pk>/', views.LegajoDetailView.as_view(), name='detalle'),
     path('<uuid:pk>/cerrar/', views.LegajoCerrarView.as_view(), name='cerrar'),
     path('<uuid:pk>/reabrir/', views.LegajoReabrirView.as_view(), name='reabrir'),
+    path('<uuid:pk>/cambiar-responsable/', views.CambiarResponsableView.as_view(), name='cambiar_responsable'),
     path('reportes/', views.ReportesView.as_view(), name='reportes'),
     path('exportar-csv/', views.ExportarCSVView.as_view(), name='exportar_csv'),
+    path('dispositivo/<int:dispositivo_id>/derivaciones/', views.DispositivoDerivacionesView.as_view(), name='dispositivo_derivaciones'),
+    path('cerrar-alerta/', views.CerrarAlertaEventoView.as_view(), name='cerrar_alerta'),
 ]

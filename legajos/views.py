@@ -6,7 +6,7 @@ from django.db.models import Q, Count
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 import csv
-from .models import Ciudadano, LegajoAtencion, EvaluacionInicial, PlanIntervencion, SeguimientoContacto, Profesional, Derivacion, EventoCritico
+from .models import Ciudadano, LegajoAtencion, EvaluacionInicial, PlanIntervencion, SeguimientoContacto, Profesional, Derivacion, EventoCritico, AlertaEventoCritico
 from core.models import DispositivoRed
 from .forms import ConsultaRenaperForm, CiudadanoForm, BuscarCiudadanoForm, AdmisionLegajoForm, ConsentimientoForm, EvaluacionInicialForm, PlanIntervencionForm, SeguimientoForm, DerivacionForm, EventoCriticoForm
 from .services.consulta_renaper import consultar_datos_renaper
@@ -200,13 +200,17 @@ class LegajoDetailView(LoginRequiredMixin, DetailView):
 class LegajoCreateView(LoginRequiredMixin, CreateView):
     """Vista para crear legajo directamente"""
     model = LegajoAtencion
+    form_class = AdmisionLegajoForm
     template_name = 'legajos/legajo_form.html'
-    fields = ['ciudadano', 'dispositivo', 'via_ingreso', 'nivel_riesgo', 'confidencialidad', 'notas']
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['ciudadanos'] = Ciudadano.objects.filter(activo=True).order_by('apellido', 'nombre')
-        context['dispositivos'] = DispositivoRed.objects.filter(activo=True).order_by('nombre')
         return context
     
     def form_valid(self, form):
@@ -260,11 +264,15 @@ class AdmisionPaso2View(LoginRequiredMixin, CreateView):
             return redirect('legajos:admision_paso1')
         return super().dispatch(request, *args, **kwargs)
     
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         ciudadano_id = self.request.session.get('admision_ciudadano_id')
         context['ciudadano'] = get_object_or_404(Ciudadano, id=ciudadano_id)
-        context['dispositivos'] = DispositivoRed.objects.filter(activo=True).order_by('nombre')
         return context
     
     def form_valid(self, form):
@@ -696,6 +704,35 @@ class ReportesView(LoginRequiredMixin, TemplateView):
         return round((total_eventos / max(total_legajos, 1)) * 100, 1)
 
 
+class DispositivoDerivacionesView(LoginRequiredMixin, ListView):
+    """Vista para mostrar derivaciones de un dispositivo específico"""
+    model = Derivacion
+    template_name = 'legajos/dispositivo_derivaciones.html'
+    context_object_name = 'derivaciones'
+    paginate_by = 20
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.dispositivo = get_object_or_404(DispositivoRed, pk=kwargs['dispositivo_id'])
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_queryset(self):
+        queryset = Derivacion.objects.filter(
+            destino=self.dispositivo
+        ).select_related('legajo__ciudadano', 'origen')
+        
+        estado = self.request.GET.get('estado')
+        if estado:
+            queryset = queryset.filter(estado=estado)
+        
+        return queryset.order_by('-creado')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['dispositivo'] = self.dispositivo
+        context['estados'] = Derivacion.Estado.choices
+        return context
+
+
 class ExportarCSVView(LoginRequiredMixin, View):
     """Vista para exportar legajos a CSV"""
     
@@ -738,3 +775,98 @@ class ExportarCSVView(LoginRequiredMixin, View):
             ])
         
         return response
+
+
+class CerrarAlertaEventoView(LoginRequiredMixin, View):
+    """Vista AJAX para cerrar alertas de eventos críticos"""
+    
+    def post(self, request, *args, **kwargs):
+        evento_id = request.POST.get('evento_id')
+        
+        try:
+            evento = EventoCritico.objects.get(id=evento_id)
+            
+            # Verificar que el usuario sea responsable del legajo
+            if evento.legajo.responsable != request.user:
+                return JsonResponse({'success': False, 'error': 'No autorizado'})
+            
+            # Crear registro de alerta vista
+            AlertaEventoCritico.objects.get_or_create(
+                evento=evento,
+                responsable=request.user
+            )
+            
+            return JsonResponse({'success': True})
+            
+        except EventoCritico.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Evento no encontrado'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+
+class CambiarResponsableView(LoginRequiredMixin, View):
+    """Vista AJAX para cambiar responsable del legajo"""
+    
+    def get(self, request, *args, **kwargs):
+        """Obtener lista de usuarios con rol correspondiente"""
+        from django.contrib.auth.models import User
+        from django.contrib.auth.models import Group
+        
+        # Obtener usuarios del grupo Ciudadanos (que pueden ser responsables)
+        grupo_ciudadanos = Group.objects.get(name='Ciudadanos')
+        usuarios = User.objects.filter(
+            groups=grupo_ciudadanos,
+            is_active=True
+        ).values('id', 'username', 'first_name', 'last_name')
+        
+        usuarios_list = []
+        for usuario in usuarios:
+            nombre_completo = f"{usuario['first_name']} {usuario['last_name']}".strip()
+            if not nombre_completo:
+                nombre_completo = usuario['username']
+            usuarios_list.append({
+                'id': usuario['id'],
+                'nombre': nombre_completo
+            })
+        
+        return JsonResponse({'usuarios': usuarios_list})
+    
+    def post(self, request, *args, **kwargs):
+        """Cambiar responsable del legajo"""
+        legajo_id = kwargs.get('pk')
+        nuevo_responsable_id = request.POST.get('responsable_id')
+        
+        try:
+            legajo = get_object_or_404(LegajoAtencion, pk=legajo_id)
+            
+            # Verificar permisos (solo administradores o el responsable actual)
+            if not (request.user.groups.filter(name='Administrador').exists() or 
+                   legajo.responsable == request.user):
+                return JsonResponse({'success': False, 'error': 'No tiene permisos para cambiar el responsable'})
+            
+            from django.contrib.auth.models import User
+            nuevo_responsable = get_object_or_404(User, pk=nuevo_responsable_id)
+            
+            # Verificar que el nuevo responsable tenga el rol adecuado
+            if not nuevo_responsable.groups.filter(name='Ciudadanos').exists():
+                return JsonResponse({'success': False, 'error': 'El usuario seleccionado no tiene el rol adecuado'})
+            
+            responsable_anterior = legajo.responsable
+            legajo.responsable = nuevo_responsable
+            legajo.save()
+            
+            # Registrar el cambio en las notas del legajo
+            nota_cambio = f"Responsable cambiado de {responsable_anterior.get_full_name() or responsable_anterior.username} a {nuevo_responsable.get_full_name() or nuevo_responsable.username} por {request.user.get_full_name() or request.user.username}"
+            if legajo.notas:
+                legajo.notas += f"\n\n{nota_cambio}"
+            else:
+                legajo.notas = nota_cambio
+            legajo.save()
+            
+            return JsonResponse({
+                'success': True, 
+                'nuevo_responsable': nuevo_responsable.get_full_name() or nuevo_responsable.username
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
