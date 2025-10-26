@@ -1,0 +1,52 @@
+[
+  {
+    "model": "chatbot.chatbotknowledge",
+    "pk": 1,
+    "fields": {
+      "title": "¿Qué es SEDRONAR?",
+      "content": "SEDRONAR es la Secretaría Nacional de Políticas Integrales sobre Drogas. Es el organismo encargado de diseñar, coordinar y ejecutar las políticas públicas en materia de prevención del consumo de drogas, asistencia y reinserción social de personas con consumos problemáticos.",
+      "category": "Información General",
+      "is_active": true
+    }
+  },
+  {
+    "model": "chatbot.chatbotknowledge",
+    "pk": 2,
+    "fields": {
+      "title": "Gestión de Ciudadanos",
+      "content": "El módulo de Ciudadanos permite registrar y gestionar información de personas que requieren atención. Incluye datos personales, contacto, situación familiar y seguimiento de casos.",
+      "category": "Funcionalidades",
+      "is_active": true
+    }
+  },
+  {
+    "model": "chatbot.chatbotknowledge",
+    "pk": 3,
+    "fields": {
+      "title": "Legajos de Atención",
+      "content": "Los legajos contienen el historial completo de atención de cada ciudadano, incluyendo evaluaciones, planes de intervención, seguimientos y derivaciones a dispositivos especializados.",
+      "category": "Funcionalidades",
+      "is_active": true
+    }
+  },
+  {
+    "model": "chatbot.chatbotknowledge",
+    "pk": 4,
+    "fields": {
+      "title": "Usuarios del Sistema",
+      "content": "El sistema maneja diferentes tipos de usuarios: Administradores (acceso completo), personal de Ciudadanos (gestión de casos) y Encargados de Dispositivo (gestión de derivaciones).",
+      "category": "Usuarios",
+      "is_active": true
+    }
+  },
+  {
+    "model": "chatbot.chatbotknowledge",
+    "pk": 5,
+    "fields": {
+      "title": "Reportes y Estadísticas",
+      "content": "El sistema genera reportes automáticos sobre cantidad de ciudadanos atendidos, tipos de consumo, derivaciones realizadas y estadísticas por dispositivo y región.",
+      "category": "Reportes",
+      "is_active": true
+    }
+  }
+]

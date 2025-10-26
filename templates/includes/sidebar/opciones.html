@@ -41,6 +41,17 @@
                 </div>
             </div>
 
+            <!-- Chatbot -->
+            <div class="relative">
+                <a href="{% url 'chatbot:chat_interface' %}" class="{% if 'chatbot' in pagina_actual %}bg-white/20 text-white{% else %}text-blue-100 hover:text-white hover:bg-white/10{% endif %} group flex items-center rounded-xl p-3 text-sm font-medium transition-all duration-200" :class="sidebarCollapsed ? 'justify-center' : 'gap-x-3'">
+                    <i class="fas fa-robot text-base"></i>
+                    <span x-show="!sidebarCollapsed" class="ml-3">Chatbot</span>
+                </a>
+                <div x-show="sidebarCollapsed" class="absolute left-full ml-6 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                    Chatbot
+                </div>
+            </div>
+
             <!-- Administración -->
             {% if request.user|has_group:"Administrador" %}
                 <div x-data="{ open: {% if 'usuarios' in pagina_actual or 'grupos' in pagina_actual %}true{% else %}false{% endif %} }" class="relative">

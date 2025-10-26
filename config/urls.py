@@ -13,6 +13,7 @@ urlpatterns = [
     path("", include("dashboard.urls")),
     path("legajos/", include("legajos.urls")),
     path("configuracion/", include("configuracion.urls")),
+    path("chatbot/", include("chatbot.urls")),
     path("", include("healthcheck.urls")),
 ]
 

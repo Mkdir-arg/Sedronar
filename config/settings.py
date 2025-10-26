@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "dashboard",
     "legajos",
     "configuracion",
+    "chatbot",
 ]
 
 # Middleware (orden CORS correcto)
@@ -173,6 +174,9 @@ DOMINIO = os.environ.get("DOMINIO", "localhost:8001")
 RENAPER_API_USERNAME = os.getenv("RENAPER_API_USERNAME")
 RENAPER_API_PASSWORD = os.getenv("RENAPER_API_PASSWORD")
 RENAPER_API_URL = os.getenv("RENAPER_API_URL")
+
+# OpenAI Configuration
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 

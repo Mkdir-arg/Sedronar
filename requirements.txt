@@ -17,3 +17,6 @@ debugpy==1.8.5
 # Utilities básicas
 requests==2.32.4
 Pillow==10.3.0
+
+# AI/ML
+openai==0.28.1

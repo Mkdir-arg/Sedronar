@@ -1,0 +1,84 @@
+{% extends 'includes/base.html' %}
+{% load static %}
+
+{% block title %}Chatbot SEDRONAR{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'chatbot/css/chat.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="flex h-screen bg-gray-100">
+    <!-- Sidebar con conversaciones -->
+    <div class="w-1/4 bg-white border-r border-gray-200 flex flex-col">
+        <div class="p-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800">Conversaciones</h2>
+            <button id="new-conversation" class="mt-2 w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                Nueva Conversación
+            </button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto">
+            <div id="conversations-list" class="p-2">
+                {% for conversation in conversations %}
+                <div class="conversation-item p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100" 
+                     data-conversation-id="{{ conversation.id }}">
+                    <div class="font-medium text-sm text-gray-800 truncate">{{ conversation.title }}</div>
+                    <div class="text-xs text-gray-500 mt-1">{{ conversation.updated_at|date:"d/m/Y H:i" }}</div>
+                </div>
+                {% empty %}
+                <div class="p-4 text-center text-gray-500">
+                    No hay conversaciones
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Área principal del chat -->
+    <div class="flex-1 flex flex-col">
+        <!-- Header del chat -->
+        <div class="bg-white border-b border-gray-200 p-4">
+            <div class="flex items-center justify-between">
+                <h1 class="text-xl font-semibold text-gray-800">Asistente Virtual SEDRONAR</h1>
+                {% if user.is_staff %}
+                <a href="{% url 'chatbot:admin_panel' %}" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                    Panel Admin
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Área de mensajes -->
+        <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-4">
+            <div id="welcome-message" class="text-center text-gray-500 mt-20">
+                <div class="text-6xl mb-4">🤖</div>
+                <h3 class="text-xl font-semibold mb-2">¡Hola! Soy tu asistente virtual</h3>
+                <p>Puedo ayudarte con información sobre el sistema SEDRONAR.</p>
+                <p class="text-sm mt-2">Pregúntame sobre ciudadanos, legajos, usuarios o cualquier funcionalidad del sistema.</p>
+            </div>
+        </div>
+
+        <!-- Área de entrada de mensaje -->
+        <div class="bg-white border-t border-gray-200 p-4">
+            <div class="flex space-x-4">
+                <input type="text" 
+                       id="message-input" 
+                       placeholder="Escribe tu mensaje aquí..." 
+                       class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <button id="send-button" 
+                        class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Enviar
+                </button>
+            </div>
+            <div id="typing-indicator" class="hidden mt-2 text-sm text-gray-500">
+                <span class="animate-pulse">El asistente está escribiendo...</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'chatbot/js/chat.js' %}"></script>
+{% endblock %}
