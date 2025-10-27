@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "legajos",
     "configuracion",
     "chatbot",
+    "conversaciones",
 ]
 
 # Middleware (orden CORS correcto)
@@ -92,6 +93,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "legajos.context_processors.alertas_eventos_criticos",
+                "core.context_processors.dispositivos_context",
             ],
         },
     },
@@ -174,6 +176,7 @@ DOMINIO = os.environ.get("DOMINIO", "localhost:8001")
 RENAPER_API_USERNAME = os.getenv("RENAPER_API_USERNAME")
 RENAPER_API_PASSWORD = os.getenv("RENAPER_API_PASSWORD")
 RENAPER_API_URL = os.getenv("RENAPER_API_URL")
+RENAPER_TEST_MODE = os.getenv("RENAPER_TEST_MODE", "False") == "True"
 
 # OpenAI Configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")

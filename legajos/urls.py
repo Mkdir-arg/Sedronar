@@ -15,13 +15,29 @@ urlpatterns = [
     path('admision/paso1/', views.AdmisionPaso1View.as_view(), name='admision_paso1'),
     path('admision/paso2/', views.AdmisionPaso2View.as_view(), name='admision_paso2'),
     path('admision/paso3/', views.AdmisionPaso3View.as_view(), name='admision_paso3'),
+    # Evaluaciones
+    path('<uuid:legajo_id>/evaluaciones/', views.EvaluacionListView.as_view(), name='evaluaciones'),
     path('<uuid:legajo_id>/evaluacion/', views.EvaluacionInicialView.as_view(), name='evaluacion'),
+    
+    # Planes de Intervención
+    path('<uuid:legajo_id>/planes/', views.PlanListView.as_view(), name='planes'),
     path('<uuid:legajo_id>/plan/', views.PlanIntervencionView.as_view(), name='plan'),
-    path('<uuid:legajo_id>/seguimiento/', views.SeguimientoCreateView.as_view(), name='seguimiento_nuevo'),
+    path('plan/<int:pk>/editar/', views.PlanUpdateView.as_view(), name='plan_editar'),
+    
+    # Seguimientos
     path('<uuid:legajo_id>/seguimientos/', views.SeguimientoListView.as_view(), name='seguimientos'),
-    path('<uuid:legajo_id>/derivacion/', views.DerivacionCreateView.as_view(), name='derivacion_nueva'),
+    path('<uuid:legajo_id>/seguimiento/', views.SeguimientoCreateView.as_view(), name='seguimiento_nuevo'),
+    path('seguimiento/<int:pk>/editar/', views.SeguimientoUpdateView.as_view(), name='seguimiento_editar'),
+    
+    # Derivaciones
     path('<uuid:legajo_id>/derivaciones/', views.DerivacionListView.as_view(), name='derivaciones'),
+    path('<uuid:legajo_id>/derivacion/', views.DerivacionCreateView.as_view(), name='derivacion_nueva'),
+    path('derivacion/<int:pk>/editar/', views.DerivacionUpdateView.as_view(), name='derivacion_editar'),
+    
+    # Eventos Críticos
+    path('<uuid:legajo_id>/eventos/', views.EventoListView.as_view(), name='eventos'),
     path('<uuid:legajo_id>/evento/', views.EventoCriticoCreateView.as_view(), name='evento_nuevo'),
+    path('evento/<int:pk>/editar/', views.EventoUpdateView.as_view(), name='evento_editar'),
     path('<uuid:pk>/', views.LegajoDetailView.as_view(), name='detalle'),
     path('<uuid:pk>/cerrar/', views.LegajoCerrarView.as_view(), name='cerrar'),
     path('<uuid:pk>/reabrir/', views.LegajoReabrirView.as_view(), name='reabrir'),

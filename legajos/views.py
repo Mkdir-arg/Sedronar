@@ -5,7 +5,9 @@ from django.urls import reverse_lazy
 from django.db.models import Q, Count
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
+from django.core.exceptions import ValidationError
 import csv
+from datetime import datetime
 from .models import Ciudadano, LegajoAtencion, EvaluacionInicial, PlanIntervencion, SeguimientoContacto, Profesional, Derivacion, EventoCritico, AlertaEventoCritico
 from core.models import DispositivoRed
 from .forms import ConsultaRenaperForm, CiudadanoForm, BuscarCiudadanoForm, AdmisionLegajoForm, ConsentimientoForm, EvaluacionInicialForm, PlanIntervencionForm, SeguimientoForm, DerivacionForm, EventoCriticoForm
@@ -273,20 +275,34 @@ class AdmisionPaso2View(LoginRequiredMixin, CreateView):
         context = super().get_context_data(**kwargs)
         ciudadano_id = self.request.session.get('admision_ciudadano_id')
         context['ciudadano'] = get_object_or_404(Ciudadano, id=ciudadano_id)
+        
+        # Agregar información de debug para dispositivos disponibles
+        if self.request.user.is_superuser:
+            context['debug_dispositivos'] = True
+            context['total_dispositivos'] = DispositivoRed.objects.filter(activo=True).count()
+        
         return context
     
     def form_valid(self, form):
         ciudadano_id = self.request.session.get('admision_ciudadano_id')
         form.instance.ciudadano_id = ciudadano_id
-        form.instance.responsable = self.request.user
         
-        response = super().form_valid(form)
+        # Si no se especificó responsable, usar el usuario actual
+        if not form.instance.responsable:
+            form.instance.responsable = self.request.user
         
-        # Limpiar sesión y guardar ID del legajo para paso 3
-        self.request.session.pop('admision_ciudadano_id', None)
-        self.request.session['admision_legajo_id'] = str(self.object.id)
-        
-        return redirect('legajos:admision_paso3')
+        try:
+            response = super().form_valid(form)
+            
+            # Limpiar sesión y guardar ID del legajo para paso 3
+            self.request.session.pop('admision_ciudadano_id', None)
+            self.request.session['admision_legajo_id'] = str(self.object.id)
+            
+            return redirect('legajos:admision_paso3')
+        except Exception as e:
+            # En caso de error, agregar mensaje y volver a mostrar el formulario
+            messages.error(self.request, f'Error al crear el legajo: {str(e)}')
+            return self.form_invalid(form)
 
 
 class AdmisionPaso3View(LoginRequiredMixin, FormView):
@@ -409,7 +425,7 @@ class PlanIntervencionView(LoginRequiredMixin, CreateView):
         return redirect(self.get_success_url())
     
     def get_success_url(self):
-        return reverse_lazy('legajos:detalle', kwargs={'pk': self.legajo.id})
+        return reverse_lazy('legajos:planes', kwargs={'legajo_id': self.legajo.id})
 
 
 class SeguimientoCreateView(LoginRequiredMixin, CreateView):
@@ -439,7 +455,7 @@ class SeguimientoCreateView(LoginRequiredMixin, CreateView):
         return response
     
     def get_success_url(self):
-        return reverse_lazy('legajos:detalle', kwargs={'pk': self.legajo.id})
+        return reverse_lazy('legajos:seguimientos', kwargs={'legajo_id': self.legajo.id})
 
 
 class SeguimientoListView(LoginRequiredMixin, ListView):
@@ -495,7 +511,7 @@ class DerivacionCreateView(LoginRequiredMixin, CreateView):
         return response
     
     def get_success_url(self):
-        return reverse_lazy('legajos:detalle', kwargs={'pk': self.legajo.id})
+        return reverse_lazy('legajos:derivaciones', kwargs={'legajo_id': self.legajo.id})
 
 
 class EventoCriticoCreateView(LoginRequiredMixin, CreateView):
@@ -520,7 +536,7 @@ class EventoCriticoCreateView(LoginRequiredMixin, CreateView):
         return response
     
     def get_success_url(self):
-        return reverse_lazy('legajos:detalle', kwargs={'pk': self.legajo.id})
+        return reverse_lazy('legajos:eventos', kwargs={'legajo_id': self.legajo.id})
 
 
 class DerivacionListView(LoginRequiredMixin, ListView):
@@ -870,3 +886,139 @@ class CambiarResponsableView(LoginRequiredMixin, View):
             
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
+
+
+# Nuevas vistas de detalle tipo tabla
+
+class EvaluacionListView(LoginRequiredMixin, TemplateView):
+    """Vista de detalle para evaluaciones"""
+    template_name = 'legajos/evaluacion_list.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.legajo = get_object_or_404(LegajoAtencion, id=kwargs['legajo_id'])
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.legajo
+        context['evaluacion'] = getattr(self.legajo, 'evaluacion', None)
+        return context
+
+
+class PlanListView(LoginRequiredMixin, ListView):
+    """Vista de detalle para planes de intervención"""
+    model = PlanIntervencion
+    template_name = 'legajos/plan_list.html'
+    context_object_name = 'planes'
+    paginate_by = 20
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.legajo = get_object_or_404(LegajoAtencion, id=kwargs['legajo_id'])
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_queryset(self):
+        return self.legajo.planes.select_related('profesional__usuario').order_by('-creado')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.legajo
+        context['plan_vigente'] = self.legajo.plan_vigente
+        return context
+
+
+class PlanUpdateView(LoginRequiredMixin, UpdateView):
+    """Vista para editar plan de intervención"""
+    model = PlanIntervencion
+    form_class = PlanIntervencionForm
+    template_name = 'legajos/plan_form.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.object.legajo
+        context['editando'] = True
+        return context
+    
+    def get_success_url(self):
+        messages.success(self.request, 'Plan de intervención actualizado exitosamente.')
+        return reverse_lazy('legajos:planes', kwargs={'legajo_id': self.object.legajo.id})
+
+
+class SeguimientoUpdateView(LoginRequiredMixin, UpdateView):
+    """Vista para editar seguimiento"""
+    model = SeguimientoContacto
+    form_class = SeguimientoForm
+    template_name = 'legajos/seguimiento_form.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.object.legajo
+        context['editando'] = True
+        return context
+    
+    def get_success_url(self):
+        messages.success(self.request, 'Seguimiento actualizado exitosamente.')
+        return reverse_lazy('legajos:seguimientos', kwargs={'legajo_id': self.object.legajo.id})
+
+
+class DerivacionUpdateView(LoginRequiredMixin, UpdateView):
+    """Vista para editar derivación"""
+    model = Derivacion
+    form_class = DerivacionForm
+    template_name = 'legajos/derivacion_form.html'
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['legajo'] = self.object.legajo
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.object.legajo
+        context['editando'] = True
+        return context
+    
+    def get_success_url(self):
+        messages.success(self.request, 'Derivación actualizada exitosamente.')
+        return reverse_lazy('legajos:derivaciones', kwargs={'legajo_id': self.object.legajo.id})
+
+
+class EventoListView(LoginRequiredMixin, ListView):
+    """Vista de detalle para eventos críticos"""
+    model = EventoCritico
+    template_name = 'legajos/evento_list.html'
+    context_object_name = 'eventos'
+    paginate_by = 20
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.legajo = get_object_or_404(LegajoAtencion, id=kwargs['legajo_id'])
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_queryset(self):
+        queryset = self.legajo.eventos.all()
+        tipo = self.request.GET.get('tipo')
+        if tipo:
+            queryset = queryset.filter(tipo=tipo)
+        return queryset.order_by('-creado')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.legajo
+        context['tipos'] = EventoCritico.TipoEvento.choices
+        return context
+
+
+class EventoUpdateView(LoginRequiredMixin, UpdateView):
+    """Vista para editar evento crítico"""
+    model = EventoCritico
+    form_class = EventoCriticoForm
+    template_name = 'legajos/evento_form.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.object.legajo
+        context['editando'] = True
+        return context
+    
+    def get_success_url(self):
+        messages.success(self.request, 'Evento crítico actualizado exitosamente.')
+        return reverse_lazy('legajos:eventos', kwargs={'legajo_id': self.object.legajo.id})

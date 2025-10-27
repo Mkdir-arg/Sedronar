@@ -1,0 +1,234 @@
+{% extends 'includes/main.html' %}
+{% load custom_filters %}
+
+{% block title %}Eventos Críticos - {{ legajo.ciudadano.nombre }} {{ legajo.ciudadano.apellido }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Breadcrumb -->
+    <nav class="flex mb-6" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+                <a href="{% url 'legajos:lista' %}" class="text-gray-700 hover:text-blue-600">Legajos</a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <a href="{% url 'legajos:detalle' legajo.pk %}" class="ml-1 text-gray-700 hover:text-blue-600">{{ legajo.codigo }}</a>
+                </div>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="ml-1 text-gray-500">Eventos Críticos</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Eventos Críticos</h1>
+                    <p class="text-gray-600 mt-1">
+                        Legajo: <span class="font-medium">{{ legajo.codigo }}</span> - 
+                        {{ legajo.ciudadano.nombre }} {{ legajo.ciudadano.apellido }}
+                    </p>
+                </div>
+                <div class="flex space-x-3">
+                    <a href="{% url 'legajos:evento_nuevo' legajo.pk %}" 
+                       class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Registrar Evento
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <form method="get" class="flex flex-wrap items-center gap-4">
+                <div class="flex-1 min-w-64">
+                    <select name="tipo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Todos los tipos</option>
+                        {% for value, label in tipos %}
+                            <option value="{{ value }}" {% if request.GET.tipo == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                    <i class="fas fa-filter mr-2"></i>Filtrar
+                </button>
+                {% if request.GET.tipo %}
+                    <a href="{% url 'legajos:eventos' legajo.pk %}" 
+                       class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-times mr-2"></i>Limpiar
+                    </a>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- Stats -->
+        <div class="px-6 py-4 bg-gray-50">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-red-600">{{ eventos|length }}</div>
+                    <div class="text-sm text-gray-600">Total de Eventos</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-orange-600">
+                        {% for evento in eventos %}{% if evento.tipo == 'RECAIDA' %}{{ forloop.counter0|add:1 }}{% endif %}{% empty %}0{% endfor %}
+                    </div>
+                    <div class="text-sm text-gray-600">Recaídas</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-purple-600">
+                        {% for evento in eventos %}{% if evento.tipo == 'ABANDONO' %}{{ forloop.counter0|add:1 }}{% endif %}{% empty %}0{% endfor %}
+                    </div>
+                    <div class="text-sm text-gray-600">Abandonos</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-yellow-600">
+                        {% for evento in eventos %}{% if evento.tipo == 'CRISIS' %}{{ forloop.counter0|add:1 }}{% endif %}{% empty %}0{% endfor %}
+                    </div>
+                    <div class="text-sm text-gray-600">Crisis</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        {% if eventos %}
+            <!-- Tabla de eventos -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Evento
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Tipo
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Fecha
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Descripción
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Gravedad
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Acciones
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for evento in eventos %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        <div class="h-10 w-10 rounded-full 
+                                            {% if evento.tipo == 'RECAIDA' %}bg-orange-100{% elif evento.tipo == 'ABANDONO' %}bg-purple-100{% elif evento.tipo == 'CRISIS' %}bg-yellow-100{% else %}bg-red-100{% endif %} 
+                                            flex items-center justify-center">
+                                            <i class="fas fa-exclamation-triangle 
+                                                {% if evento.tipo == 'RECAIDA' %}text-orange-600{% elif evento.tipo == 'ABANDONO' %}text-purple-600{% elif evento.tipo == 'CRISIS' %}text-yellow-600{% else %}text-red-600{% endif %}"></i>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">
+                                            Evento #{{ forloop.counter }}
+                                        </div>
+                                        <div class="text-sm text-gray-500">{{ evento.creado|date:"d/m/Y H:i" }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                                    {% if evento.tipo == 'RECAIDA' %}bg-orange-100 text-orange-800{% elif evento.tipo == 'ABANDONO' %}bg-purple-100 text-purple-800{% elif evento.tipo == 'CRISIS' %}bg-yellow-100 text-yellow-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ evento.get_tipo_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ evento.creado|date:"d/m/Y" }}</div>
+                                <div class="text-sm text-gray-500">{{ evento.creado|date:"H:i" }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900">
+                                    {% if evento.descripcion %}
+                                        {{ evento.descripcion|truncatechars:100 }}
+                                    {% else %}
+                                        <span class="text-gray-400">Sin descripción</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if evento.gravedad == 'ALTA' %}
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                        Alta
+                                    </span>
+                                {% elif evento.gravedad == 'MEDIA' %}
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                        Media
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                        Baja
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex space-x-2">
+                                    <a href="{% url 'legajos:evento_editar' evento.pk %}" 
+                                       class="text-blue-600 hover:text-blue-900" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            {% if is_paginated %}
+                <div class="px-6 py-4 border-t border-gray-200">
+                    {% include 'components/pagination.html' %}
+                </div>
+            {% endif %}
+        {% else %}
+            <!-- Estado vacío -->
+            <div class="px-6 py-12 text-center">
+                <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-exclamation-triangle text-3xl text-gray-400"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No hay eventos críticos registrados</h3>
+                <p class="text-gray-500 mb-6">
+                    {% if request.GET.tipo %}
+                        No se encontraron eventos del tipo seleccionado.
+                    {% else %}
+                        Este legajo no tiene eventos críticos registrados.
+                    {% endif %}
+                </p>
+                {% if not request.GET.tipo %}
+                    <a href="{% url 'legajos:evento_nuevo' legajo.pk %}" 
+                       class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Registrar Primer Evento
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

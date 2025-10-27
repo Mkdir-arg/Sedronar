@@ -1,6 +1,7 @@
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import redirect
 from core.models import Provincia, Municipio, Localidad, DispositivoRed
 from .forms import ProvinciaForm, MunicipioForm, LocalidadForm, DispositivoForm
 
@@ -91,6 +92,16 @@ class DispositivoListView(LoginRequiredMixin, ListView):
     template_name = 'configuracion/dispositivo_list.html'
     context_object_name = 'dispositivos'
     paginate_by = 20
+    
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            # Super admin ve todos los dispositivos
+            return DispositivoRed.objects.all().order_by('nombre')
+        else:
+            # Usuario normal ve solo dispositivos donde es encargado
+            return DispositivoRed.objects.filter(
+                encargados=self.request.user
+            ).order_by('nombre')
 
 
 class DispositivoCreateView(LoginRequiredMixin, CreateView):
@@ -98,6 +109,13 @@ class DispositivoCreateView(LoginRequiredMixin, CreateView):
     form_class = DispositivoForm
     template_name = 'configuracion/dispositivo_form.html'
     success_url = reverse_lazy('configuracion:dispositivos')
+    
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            from django.contrib import messages
+            messages.error(request, 'No tiene permisos para crear dispositivos.')
+            return redirect('configuracion:dispositivos')
+        return super().dispatch(request, *args, **kwargs)
 
 
 class DispositivoUpdateView(LoginRequiredMixin, UpdateView):
@@ -105,9 +123,21 @@ class DispositivoUpdateView(LoginRequiredMixin, UpdateView):
     form_class = DispositivoForm
     template_name = 'configuracion/dispositivo_form.html'
     success_url = reverse_lazy('configuracion:dispositivos')
+    
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            return DispositivoRed.objects.all()
+        else:
+            return DispositivoRed.objects.filter(encargados=self.request.user)
 
 
 class DispositivoDeleteView(LoginRequiredMixin, DeleteView):
     model = DispositivoRed
     template_name = 'configuracion/dispositivo_confirm_delete.html'
     success_url = reverse_lazy('configuracion:dispositivos')
+    
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            return DispositivoRed.objects.all()
+        else:
+            return DispositivoRed.objects.filter(encargados=self.request.user)

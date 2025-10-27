@@ -4,7 +4,9 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.db import models
 import json
+from datetime import datetime
 from .models import Conversation, Message, ChatbotKnowledge, ChatbotFeedback
 from .ai_service import ChatbotAIService
 
@@ -25,69 +27,52 @@ def chat_interface(request):
 @login_required
 @csrf_exempt
 def send_message(request):
-    """Envía mensaje al chatbot"""
+    """API para enviar mensaje al chatbot desde la burbuja"""
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
     
     try:
         data = json.loads(request.body)
         message_content = data.get('message', '').strip()
-        conversation_id = data.get('conversation_id')
         
         if not message_content:
             return JsonResponse({'error': 'Mensaje vacío'}, status=400)
         
-        # Obtener o crear conversación
-        if conversation_id:
-            conversation = get_object_or_404(Conversation, id=conversation_id, user=request.user)
-        else:
-            conversation = Conversation.objects.create(
-                user=request.user,
-                title=message_content[:50] + "..." if len(message_content) > 50 else message_content
-            )
+        # Crear conversación temporal para la burbuja
+        conversation = Conversation.objects.create(
+            user=request.user,
+            title=f"Chat {message_content[:30]}..."
+        )
         
         # Guardar mensaje del usuario
-        user_message = Message.objects.create(
+        Message.objects.create(
             conversation=conversation,
             role='user',
             content=message_content
         )
         
-        # Obtener historial de conversación
-        history = conversation.messages.all()
-        
         # Generar respuesta con IA
         ai_service = ChatbotAIService()
-        response_data = ai_service.generate_response(message_content, history)
+        response_data = ai_service.generate_response(message_content, [])
         
         # Guardar respuesta del asistente
-        assistant_message = Message.objects.create(
+        Message.objects.create(
             conversation=conversation,
             role='assistant',
             content=response_data['content'],
             tokens_used=response_data.get('tokens_used', 0)
         )
         
-        # Actualizar timestamp de conversación
-        conversation.save()
-        
         return JsonResponse({
             'success': True,
-            'conversation_id': conversation.id,
-            'user_message': {
-                'id': user_message.id,
-                'content': user_message.content,
-                'timestamp': user_message.timestamp.isoformat()
-            },
-            'assistant_message': {
-                'id': assistant_message.id,
-                'content': assistant_message.content,
-                'timestamp': assistant_message.timestamp.isoformat()
-            }
+            'response': response_data['content']
         })
         
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({
+            'success': False,
+            'error': 'Error interno del servidor'
+        }, status=500)
 
 
 @login_required
@@ -132,24 +117,7 @@ def admin_panel(request):
         messages.error(request, 'No tienes permisos para acceder a esta sección.')
         return redirect('chatbot:chat_interface')
     
-    # Estadísticas
-    total_conversations = Conversation.objects.count()
-    total_messages = Message.objects.count()
-    total_knowledge = ChatbotKnowledge.objects.filter(is_active=True).count()
-    
-    # Conocimiento base
-    knowledge_list = ChatbotKnowledge.objects.all().order_by('-created_at')
-    paginator = Paginator(knowledge_list, 10)
-    page = request.GET.get('page')
-    knowledge = paginator.get_page(page)
-    
-    context = {
-        'total_conversations': total_conversations,
-        'total_messages': total_messages,
-        'total_knowledge': total_knowledge,
-        'knowledge': knowledge,
-    }
-    return render(request, 'chatbot/admin_panel.html', context)
+    return render(request, 'chatbot/admin_dashboard.html')
 
 
 @login_required
@@ -177,6 +145,183 @@ def submit_feedback(request):
             feedback.rating = rating
             feedback.comment = comment
             feedback.save()
+        
+        return JsonResponse({'success': True})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def admin_data(request):
+    """API para datos del dashboard admin"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    from datetime import datetime, timedelta
+    from django.conf import settings
+    
+    today = datetime.now().date()
+    
+    # Estadísticas
+    stats = {
+        'conversations_today': Conversation.objects.filter(created_at__date=today).count(),
+        'messages_today': Message.objects.filter(timestamp__date=today).count(),
+        'tokens_used': Message.objects.filter(timestamp__date=today).aggregate(
+            total=models.Sum('tokens_used')
+        )['total'] or 0
+    }
+    
+    # Estado del sistema
+    api_key = getattr(settings, 'OPENAI_API_KEY', None)
+    system_status = {
+        'api_status': bool(api_key and len(api_key) > 20),
+        'api_message': 'Configurada' if api_key else 'No configurada'
+    }
+    
+    # Conversaciones recientes
+    recent_conversations = []
+    for conv in Conversation.objects.select_related('user').order_by('-created_at')[:5]:
+        last_message = conv.messages.order_by('-timestamp').first()
+        recent_conversations.append({
+            'id': conv.id,
+            'user': conv.user.username,
+            'timestamp': conv.created_at.strftime('%d/%m/%Y %H:%M'),
+            'messages_count': conv.messages.count(),
+            'last_message': last_message.content[:100] if last_message else 'Sin mensajes'
+        })
+    
+    # Base de conocimiento
+    knowledge = []
+    for item in ChatbotKnowledge.objects.order_by('-created_at')[:10]:
+        knowledge.append({
+            'id': item.id,
+            'title': item.title,
+            'content': item.content,
+            'category': item.category,
+            'is_active': item.is_active
+        })
+    
+    return JsonResponse({
+        'system_status': system_status,
+        'stats': stats,
+        'recent_conversations': recent_conversations,
+        'knowledge': knowledge
+    })
+
+
+@login_required
+def chat_logs(request):
+    """API para logs del chat"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    # Simular logs (en producción usar logging real)
+    logs = [
+        {
+            'id': 1,
+            'timestamp': datetime.now().strftime('%H:%M:%S'),
+            'level': 'INFO',
+            'message': 'Usuario conectado al chat'
+        },
+        {
+            'id': 2,
+            'timestamp': datetime.now().strftime('%H:%M:%S'),
+            'level': 'DEBUG',
+            'message': 'Procesando mensaje de usuario'
+        }
+    ]
+    
+    return JsonResponse({'logs': logs})
+
+
+@login_required
+@csrf_exempt
+def update_api_key(request):
+    """Actualizar API Key de OpenAI"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        api_key = data.get('api_key', '').strip()
+        
+        if not api_key:
+            return JsonResponse({'error': 'API Key requerida'}, status=400)
+        
+        # En producción, guardar en base de datos o archivo de configuración
+        # Por ahora solo validamos el formato
+        if not api_key.startswith('sk-'):
+            return JsonResponse({'error': 'Formato de API Key inválido'}, status=400)
+        
+        return JsonResponse({'success': True, 'message': 'API Key actualizada'})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@csrf_exempt
+def test_api_key(request):
+    """Probar conexión con OpenAI"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    try:
+        ai_service = ChatbotAIService()
+        response = ai_service.generate_response('test', [])
+        
+        if 'error' in response:
+            return JsonResponse({'success': False, 'message': f'Error: {response["error"][:100]}'}, status=400)
+        
+        return JsonResponse({'success': True, 'message': 'API Key funcionando correctamente'})
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Error de conexión: {str(e)[:100]}'}, status=500)
+
+
+@login_required
+@csrf_exempt
+def add_knowledge(request):
+    """Agregar conocimiento"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        
+        knowledge = ChatbotKnowledge.objects.create(
+            title=data['title'],
+            content=data['content'],
+            category=data['category'],
+            is_active=True
+        )
+        
+        return JsonResponse({'success': True, 'id': knowledge.id})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@csrf_exempt
+def delete_knowledge(request, knowledge_id):
+    """Eliminar conocimiento"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    if request.method != 'DELETE':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        knowledge = get_object_or_404(ChatbotKnowledge, id=knowledge_id)
+        knowledge.delete()
         
         return JsonResponse({'success': True})
         

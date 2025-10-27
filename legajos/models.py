@@ -80,7 +80,7 @@ class LegajoAtencion(LegajoBase):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="legajos_responsable",
+        related_name="legajos_atencion_responsable",
         limit_choices_to={'groups__name': 'Responsable'},
         verbose_name="Responsable",
         help_text="Usuario con rol de Responsable asignado al legajo"

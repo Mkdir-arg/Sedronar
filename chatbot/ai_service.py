@@ -1,4 +1,4 @@
-import openai
+from openai import OpenAI
 from django.conf import settings
 from django.contrib.auth.models import User
 from legajos.models import Ciudadano
@@ -7,7 +7,7 @@ from .models import ChatbotKnowledge
 
 class ChatbotAIService:
     def __init__(self):
-        openai.api_key = settings.OPENAI_API_KEY
+        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
         self.model = "gpt-3.5-turbo"
         self.max_tokens = 500
     
@@ -44,8 +44,8 @@ class ChatbotAIService:
             total_ciudadanos = Ciudadano.objects.count()
             total_usuarios = User.objects.count()
             return f"Estadísticas actuales: {total_ciudadanos} ciudadanos registrados, {total_usuarios} usuarios del sistema."
-        except:
-            return "No se pudieron obtener las estadísticas del sistema."
+        except Exception as e:
+            return f"Error obteniendo estadísticas: {str(e)}"
     
     def generate_response(self, message, conversation_history=None):
         """Genera respuesta usando OpenAI"""
@@ -68,7 +68,7 @@ class ChatbotAIService:
             # Agregar mensaje actual
             messages.append({"role": "user", "content": message})
             
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
                 max_tokens=self.max_tokens,
@@ -82,7 +82,7 @@ class ChatbotAIService:
             
         except Exception as e:
             return {
-                'content': f"Lo siento, ocurrió un error al procesar tu consulta. Por favor, intenta nuevamente o contacta al administrador del sistema.",
+                'content': f"Error: {str(e)}",
                 'tokens_used': 0,
                 'error': str(e)
             }

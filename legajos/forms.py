@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
+from django.db import models
 from .models import Ciudadano, LegajoAtencion, Consentimiento, EvaluacionInicial, Objetivo, PlanIntervencion, SeguimientoContacto, Derivacion, EventoCritico
 from core.models import DispositivoRed
 import json
@@ -101,11 +102,8 @@ class AdmisionLegajoForm(forms.ModelForm):
     
     class Meta:
         model = LegajoAtencion
-        fields = ['ciudadano', 'dispositivo', 'responsable', 'via_ingreso', 'nivel_riesgo', 'notas']
+        fields = ['dispositivo', 'responsable', 'via_ingreso', 'nivel_riesgo', 'notas']
         widgets = {
-            'ciudadano': forms.Select(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'
-            }),
             'dispositivo': forms.Select(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'
             }),
@@ -129,28 +127,39 @@ class AdmisionLegajoForm(forms.ModelForm):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
-        # Filtrar ciudadanos activos
-        self.fields['ciudadano'].queryset = Ciudadano.objects.filter(activo=True).order_by('apellido', 'nombre')
-        self.fields['ciudadano'].empty_label = "Seleccionar ciudadano"
+        # Filtrar usuarios con permisos para ser responsables
+        # Buscar en múltiples grupos posibles
+        responsables_queryset = User.objects.filter(
+            models.Q(groups__name='Responsable') |
+            models.Q(groups__name='Ciudadanos') |
+            models.Q(is_superuser=True)
+        ).distinct()
         
-        # Filtrar solo usuarios del grupo Responsable
-        self.fields['responsable'].queryset = User.objects.filter(groups__name='Responsable')
+        self.fields['responsable'].queryset = responsables_queryset
         self.fields['responsable'].empty_label = "Seleccionar responsable (opcional)"
+        self.fields['responsable'].required = False
         
         # Filtrar dispositivos según el usuario
-        if user and user.is_superuser:
-            # Superusuario ve todos los dispositivos
-            self.fields['dispositivo'].queryset = DispositivoRed.objects.filter(activo=True)
+        if user and (user.is_superuser or user.groups.filter(name__in=['Administrador', 'Coordinador']).exists()):
+            # Superusuario o administradores ven todos los dispositivos
+            dispositivos_queryset = DispositivoRed.objects.filter(activo=True)
         elif user:
-            # Usuario normal ve solo dispositivos donde es encargado
-            self.fields['dispositivo'].queryset = DispositivoRed.objects.filter(
+            # Usuario normal ve dispositivos donde es encargado O todos si no hay restricción específica
+            dispositivos_encargado = DispositivoRed.objects.filter(
                 activo=True,
                 encargados=user
             )
+            
+            # Si no es encargado de ningún dispositivo, mostrar todos los activos
+            if not dispositivos_encargado.exists():
+                dispositivos_queryset = DispositivoRed.objects.filter(activo=True)
+            else:
+                dispositivos_queryset = dispositivos_encargado
         else:
             # Sin usuario, mostrar todos (fallback)
-            self.fields['dispositivo'].queryset = DispositivoRed.objects.filter(activo=True)
+            dispositivos_queryset = DispositivoRed.objects.filter(activo=True)
         
+        self.fields['dispositivo'].queryset = dispositivos_queryset.order_by('nombre')
         self.fields['dispositivo'].empty_label = "Seleccionar dispositivo"
 
 
