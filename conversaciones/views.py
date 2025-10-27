@@ -6,7 +6,7 @@ from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from django.contrib import messages
 from django.db import models
-from .models import Conversacion, Mensaje
+from .models import Conversacion, Mensaje, HistorialAsignacion
 import json
 
 
@@ -163,7 +163,19 @@ def tiene_permiso_conversaciones(user):
 @login_required
 @user_passes_test(tiene_permiso_conversaciones)
 def lista_conversaciones(request):
-    # Si es OperadorCharla, solo ve conversaciones sin asignar y las propias
+    from datetime import datetime
+    from django.db.models import Count, Q
+    from django.contrib.auth.models import User
+    
+    # Filtros
+    estado_filtro = request.GET.get('estado', '')
+    operador_filtro = request.GET.get('operador', '')
+    fecha_desde = request.GET.get('fecha_desde', '')
+    fecha_hasta = request.GET.get('fecha_hasta', '')
+    busqueda = request.GET.get('busqueda', '')
+    tipo_filtro = request.GET.get('tipo', '')
+    
+    # Base queryset
     if request.user.groups.filter(name='OperadorCharla').exists() and not request.user.is_superuser:
         conversaciones = Conversacion.objects.select_related('operador_asignado').prefetch_related('mensajes').filter(
             models.Q(operador_asignado=None) | models.Q(operador_asignado=request.user)
@@ -171,7 +183,71 @@ def lista_conversaciones(request):
     else:
         conversaciones = Conversacion.objects.select_related('operador_asignado').prefetch_related('mensajes')
     
-    # Agregar conteo de mensajes no leídos y verificar si es OperadorCharla
+    # Aplicar filtros
+    if estado_filtro:
+        conversaciones = conversaciones.filter(estado=estado_filtro)
+    
+    if operador_filtro:
+        if operador_filtro == 'sin_asignar':
+            conversaciones = conversaciones.filter(operador_asignado=None)
+        else:
+            conversaciones = conversaciones.filter(operador_asignado_id=operador_filtro)
+    
+    if fecha_desde:
+        conversaciones = conversaciones.filter(fecha_inicio__date__gte=fecha_desde)
+    
+    if fecha_hasta:
+        conversaciones = conversaciones.filter(fecha_inicio__date__lte=fecha_hasta)
+    
+    if busqueda:
+        conversaciones = conversaciones.filter(
+            Q(id__icontains=busqueda) | Q(dni_ciudadano__icontains=busqueda)
+        )
+    
+    if tipo_filtro:
+        conversaciones = conversaciones.filter(tipo=tipo_filtro)
+    
+    # Estadísticas
+    chats_no_atendidos = Conversacion.objects.filter(operador_asignado=None, estado='activa').count()
+    
+    mes_actual = datetime.now().month
+    año_actual = datetime.now().year
+    atendidos_mes = Conversacion.objects.filter(
+        operador_asignado__isnull=False,
+        fecha_inicio__month=mes_actual,
+        fecha_inicio__year=año_actual
+    ).count()
+    
+    tiempo_promedio = 0
+    conversaciones_con_respuesta = Conversacion.objects.filter(
+        operador_asignado__isnull=False,
+        mensajes__remitente='operador'
+    ).distinct()
+    
+    if conversaciones_con_respuesta.exists():
+        tiempos = []
+        for conv in conversaciones_con_respuesta:
+            primer_msg_ciudadano = conv.mensajes.filter(remitente='ciudadano').first()
+            primer_msg_operador = conv.mensajes.filter(remitente='operador').first()
+            if primer_msg_ciudadano and primer_msg_operador:
+                diff = primer_msg_operador.fecha_envio - primer_msg_ciudadano.fecha_envio
+                tiempos.append(diff.total_seconds() / 60)
+        
+        if tiempos:
+            tiempo_promedio = sum(tiempos) / len(tiempos)
+    
+    # Carga de trabajo por operador
+    operadores_con_carga = User.objects.filter(
+        groups__name__in=['Conversaciones', 'OperadorCharla']
+    ).annotate(
+        conversaciones_activas=Count('conversacion', filter=Q(conversacion__estado='activa'))
+    ).order_by('first_name', 'last_name')
+    
+    # Todos los operadores para el filtro
+    todos_operadores = User.objects.filter(
+        groups__name__in=['Conversaciones', 'OperadorCharla']
+    ).order_by('first_name', 'last_name')
+    
     es_operador_charla = request.user.groups.filter(name='OperadorCharla').exists()
     
     for conversacion in conversaciones:
@@ -179,7 +255,20 @@ def lista_conversaciones(request):
     
     return render(request, 'conversaciones/lista.html', {
         'conversaciones': conversaciones,
-        'es_operador_charla': es_operador_charla
+        'es_operador_charla': es_operador_charla,
+        'chats_no_atendidos': chats_no_atendidos,
+        'atendidos_mes': atendidos_mes,
+        'tiempo_promedio': round(tiempo_promedio, 1),
+        'operadores_con_carga': operadores_con_carga,
+        'todos_operadores': todos_operadores,
+        'filtros': {
+            'estado': estado_filtro,
+            'operador': operador_filtro,
+            'fecha_desde': fecha_desde,
+            'fecha_hasta': fecha_hasta,
+            'busqueda': busqueda,
+            'tipo': tipo_filtro,
+        }
     })
 
 
@@ -201,11 +290,32 @@ def detalle_conversacion(request, conversacion_id):
 @login_required
 @user_passes_test(tiene_permiso_conversaciones)
 def asignar_conversacion(request, conversacion_id):
-    conversacion = get_object_or_404(Conversacion, id=conversacion_id, operador_asignado=None, estado='activa')
-    conversacion.operador_asignado = request.user
-    conversacion.save()
+    conversacion = get_object_or_404(Conversacion, id=conversacion_id, estado='activa')
     
-    messages.success(request, 'Conversación asignada exitosamente.')
+    if request.method == 'POST':
+        operador_id = request.POST.get('operador_id')
+        if operador_id:
+            from django.contrib.auth.models import User
+            operador = get_object_or_404(User, id=operador_id)
+            
+            # Crear historial de asignación
+            HistorialAsignacion.objects.create(
+                conversacion=conversacion,
+                operador_anterior=conversacion.operador_asignado,
+                operador_nuevo=operador,
+                usuario_que_asigna=request.user
+            )
+            
+            conversacion.operador_asignado = operador
+            conversacion.save()
+            
+            messages.success(request, f'Conversación asignada a {operador.get_full_name()} exitosamente.')
+        else:
+            # Auto-asignación
+            conversacion.operador_asignado = request.user
+            conversacion.save()
+            messages.success(request, 'Conversación asignada exitosamente.')
+    
     return redirect('conversaciones:detalle', conversacion_id=conversacion.id)
 
 
@@ -258,4 +368,31 @@ def cerrar_conversacion(request, conversacion_id):
     conversacion.save()
     
     messages.success(request, 'Conversación cerrada exitosamente.')
+    return redirect('conversaciones:lista')
+
+
+@login_required
+@user_passes_test(tiene_permiso_conversaciones)
+def reasignar_conversacion(request, conversacion_id):
+    conversacion = get_object_or_404(Conversacion, id=conversacion_id, estado='activa')
+    
+    if request.method == 'POST':
+        operador_id = request.POST.get('operador_id')
+        if operador_id:
+            from django.contrib.auth.models import User
+            operador = get_object_or_404(User, id=operador_id)
+            
+            # Crear historial de asignación
+            HistorialAsignacion.objects.create(
+                conversacion=conversacion,
+                operador_anterior=conversacion.operador_asignado,
+                operador_nuevo=operador,
+                usuario_que_asigna=request.user
+            )
+            
+            conversacion.operador_asignado = operador
+            conversacion.save()
+            
+            messages.success(request, f'Conversación reasignada a {operador.get_full_name()} exitosamente.')
+    
     return redirect('conversaciones:lista')

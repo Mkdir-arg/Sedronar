@@ -15,6 +15,7 @@ urlpatterns = [
     path('', views.lista_conversaciones, name='lista'),
     path('<int:conversacion_id>/', views.detalle_conversacion, name='detalle'),
     path('<int:conversacion_id>/asignar/', views.asignar_conversacion, name='asignar'),
+    path('<int:conversacion_id>/reasignar/', views.reasignar_conversacion, name='reasignar'),
     path('<int:conversacion_id>/responder/', views.enviar_mensaje_operador, name='enviar_mensaje_operador'),
     path('<int:conversacion_id>/cerrar/', views.cerrar_conversacion, name='cerrar'),
 ]

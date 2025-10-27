@@ -48,3 +48,17 @@ class Mensaje(models.Model):
         
     def __str__(self):
         return f"{self.remitente}: {self.contenido[:50]}..."
+
+
+class HistorialAsignacion(models.Model):
+    conversacion = models.ForeignKey(Conversacion, on_delete=models.CASCADE, related_name='historial_asignaciones')
+    operador_anterior = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='asignaciones_anteriores')
+    operador_nuevo = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='asignaciones_nuevas')
+    usuario_que_asigna = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='asignaciones_realizadas')
+    fecha_asignacion = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        ordering = ['-fecha_asignacion']
+        
+    def __str__(self):
+        return f"Conversación #{self.conversacion.id} - {self.operador_anterior} → {self.operador_nuevo}"
