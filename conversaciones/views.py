@@ -41,26 +41,21 @@ def consultar_renaper(request):
                     }
                 })
             else:
-                # Si RENAPER falla, generar datos simulados basados en DNI
-                return JsonResponse({
-                    'success': True,
-                    'datos': {
-                        'nombre': f'Ciudadano',
-                        'apellido': f'DNI-{dni}',
-                        'fecha_nacimiento': '1985-06-15',
-                        'domicilio': f'Domicilio registrado para DNI {dni}'
-                    }
-                })
+                # Si RENAPER falla o persona fallecida
+                if resultado.get('fallecido'):
+                    return JsonResponse({
+                        'success': False, 
+                        'error': 'La persona consultada figura como fallecida en RENAPER'
+                    })
+                else:
+                    return JsonResponse({
+                        'success': False,
+                        'error': resultado.get('error', 'Error al consultar RENAPER')
+                    })
         except Exception as e:
-            # Si hay error, generar datos simulados basados en DNI
             return JsonResponse({
-                'success': True,
-                'datos': {
-                    'nombre': f'Ciudadano',
-                    'apellido': f'DNI-{dni}',
-                    'fecha_nacimiento': '1985-06-15',
-                    'domicilio': f'Domicilio registrado para DNI {dni}'
-                }
+                'success': False,
+                'error': f'Error interno al consultar datos: {str(e)}'
             })
     
     return JsonResponse({'success': False})

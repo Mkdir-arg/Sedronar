@@ -116,8 +116,8 @@
                     
                     const data = await response.json();
                     if (data.success) {
+                        this.agregarMensajeOperador(data.mensaje);
                         this.nuevoMensaje = '';
-                        location.reload(); // Recargar para mostrar el nuevo mensaje
                     } else {
                         alert('Error al enviar mensaje: ' + (data.error || 'Error desconocido'));
                     }
@@ -127,7 +127,21 @@
                 }
             },
             
-
+            agregarMensajeOperador(mensaje) {
+                const container = this.$refs.mensajesContainer;
+                const mensajeDiv = document.createElement('div');
+                mensajeDiv.className = 'flex justify-end';
+                
+                mensajeDiv.innerHTML = `
+                    <div class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg bg-blue-500 text-white">
+                        <p>${mensaje.contenido}</p>
+                        <p class="text-xs opacity-70 mt-1">Tú - ${mensaje.fecha}</p>
+                    </div>
+                `;
+                
+                container.appendChild(mensajeDiv);
+                this.scrollToBottom();
+            },
             
             scrollToBottom() {
                 const container = this.$refs.mensajesContainer;
