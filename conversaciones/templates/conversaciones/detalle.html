@@ -92,6 +92,13 @@
         return {
             nuevoMensaje: '',
             conversacionId: {{ conversacion.id }},
+            socket: null,
+            
+            init() {
+                this.$nextTick(() => {
+                    this.scrollToBottom();
+                });
+            },
             
             async enviarMensaje() {
                 if (!this.nuevoMensaje.trim()) return;
@@ -111,21 +118,24 @@
                     if (data.success) {
                         this.nuevoMensaje = '';
                         location.reload(); // Recargar para mostrar el nuevo mensaje
+                    } else {
+                        alert('Error al enviar mensaje: ' + (data.error || 'Error desconocido'));
                     }
                 } catch (error) {
                     console.error('Error:', error);
                     alert('Error al enviar mensaje');
                 }
+            },
+            
+
+            
+            scrollToBottom() {
+                const container = this.$refs.mensajesContainer;
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
             }
         }
     }
-    
-    // Scroll al final al cargar
-    document.addEventListener('DOMContentLoaded', function() {
-        const container = document.querySelector('[x-ref="mensajesContainer"]');
-        if (container) {
-            container.scrollTop = container.scrollHeight;
-        }
-    });
 </script>
 {% endblock main-content %}

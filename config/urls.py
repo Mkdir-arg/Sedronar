@@ -3,6 +3,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 urlpatterns = [
     path("admin/doc/", include("django.contrib.admindocs.urls")),
@@ -17,6 +18,17 @@ urlpatterns = [
     path("conversaciones/", include("conversaciones.urls")),
 
     path("", include("healthcheck.urls")),
+    
+    # API Routes
+    path("api/legajos/", include("legajos.api_urls")),
+    path("api/core/", include("core.api_urls")),
+    path("api/chatbot/", include("chatbot.api_urls")),
+    path("api/users/", include("users.api_urls")),
+    
+    # API Documentation
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
 ]
 
 # URLs de desarrollo se pueden agregar aquí si es necesario

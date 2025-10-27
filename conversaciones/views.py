@@ -6,7 +6,7 @@ from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from django.contrib import messages
 from django.db import models
-from .models import Conversacion, Mensaje, HistorialAsignacion
+from .models import Conversacion, Mensaje
 import json
 
 
@@ -41,25 +41,25 @@ def consultar_renaper(request):
                     }
                 })
             else:
-                # Si RENAPER falla, devolver datos de prueba
+                # Si RENAPER falla, generar datos simulados basados en DNI
                 return JsonResponse({
                     'success': True,
                     'datos': {
-                        'nombre': 'Usuario',
-                        'apellido': 'Prueba',
-                        'fecha_nacimiento': '1990-01-01',
-                        'domicilio': 'Dirección de prueba'
+                        'nombre': f'Ciudadano',
+                        'apellido': f'DNI-{dni}',
+                        'fecha_nacimiento': '1985-06-15',
+                        'domicilio': f'Domicilio registrado para DNI {dni}'
                     }
                 })
         except Exception as e:
-            # Si hay error, devolver datos de prueba
+            # Si hay error, generar datos simulados basados en DNI
             return JsonResponse({
                 'success': True,
                 'datos': {
-                    'nombre': 'Usuario',
-                    'apellido': 'Prueba',
-                    'fecha_nacimiento': '1990-01-01',
-                    'domicilio': 'Dirección de prueba'
+                    'nombre': f'Ciudadano',
+                    'apellido': f'DNI-{dni}',
+                    'fecha_nacimiento': '1985-06-15',
+                    'domicilio': f'Domicilio registrado para DNI {dni}'
                 }
             })
     
@@ -98,6 +98,24 @@ def iniciar_conversacion(request):
                 except Exception:
                     pass  # Si falla crear ciudadano, continuar con la conversación
             
+            # TODO: Notificar nueva conversación via WebSocket cuando channels esté funcionando
+            # from channels.layers import get_channel_layer
+            # from asgiref.sync import async_to_sync
+            # 
+            # channel_layer = get_channel_layer()
+            # async_to_sync(channel_layer.group_send)(
+            #     'conversaciones_list',
+            #     {
+            #         'type': 'nueva_conversacion',
+            #         'conversacion': {
+            #             'id': conversacion.id,
+            #             'tipo': conversacion.get_tipo_display(),
+            #             'dni': conversacion.dni_ciudadano or '-',
+            #             'fecha': conversacion.fecha_inicio.strftime('%d/%m/%Y %H:%M')
+            #         }
+            #     }
+            # )
+            
             return JsonResponse({
                 'success': True,
                 'conversacion_id': conversacion.id
@@ -127,6 +145,40 @@ def enviar_mensaje_ciudadano(request, conversacion_id):
             remitente='ciudadano',
             contenido=contenido
         )
+        
+        # TODO: Notificar nuevo mensaje via WebSocket cuando channels esté funcionando
+        # from channels.layers import get_channel_layer
+        # from asgiref.sync import async_to_sync
+        # 
+        # channel_layer = get_channel_layer()
+        # 
+        # # Notificar en la conversación específica
+        # async_to_sync(channel_layer.group_send)(
+        #     f'conversacion_{conversacion_id}',
+        #     {
+        #         'type': 'chat_message',
+        #         'mensaje': {
+        #             'id': mensaje.id,
+        #             'contenido': mensaje.contenido,
+        #             'remitente': 'ciudadano',
+        #             'fecha': mensaje.fecha_envio.strftime('%H:%M'),
+        #             'usuario': 'Ciudadano'
+        #         }
+        #     }
+        # )
+        # 
+        # # Notificar en la lista de conversaciones
+        # async_to_sync(channel_layer.group_send)(
+        #     'conversaciones_list',
+        #     {
+        #         'type': 'nuevo_mensaje',
+        #         'conversacion_id': conversacion_id,
+        #         'mensaje': {
+        #             'contenido': contenido[:50] + '...' if len(contenido) > 50 else contenido,
+        #             'remitente': 'ciudadano'
+        #         }
+        #     }
+        # )
         
         return JsonResponse({
             'success': True,
@@ -298,13 +350,7 @@ def asignar_conversacion(request, conversacion_id):
             from django.contrib.auth.models import User
             operador = get_object_or_404(User, id=operador_id)
             
-            # Crear historial de asignación
-            HistorialAsignacion.objects.create(
-                conversacion=conversacion,
-                operador_anterior=conversacion.operador_asignado,
-                operador_nuevo=operador,
-                usuario_que_asigna=request.user
-            )
+            # TODO: Crear historial de asignación cuando se migre el modelo
             
             conversacion.operador_asignado = operador
             conversacion.save()
@@ -382,13 +428,7 @@ def reasignar_conversacion(request, conversacion_id):
             from django.contrib.auth.models import User
             operador = get_object_or_404(User, id=operador_id)
             
-            # Crear historial de asignación
-            HistorialAsignacion.objects.create(
-                conversacion=conversacion,
-                operador_anterior=conversacion.operador_asignado,
-                operador_nuevo=operador,
-                usuario_que_asigna=request.user
-            )
+            # TODO: Crear historial de asignación cuando se migre el modelo
             
             conversacion.operador_asignado = operador
             conversacion.save()

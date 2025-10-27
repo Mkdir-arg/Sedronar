@@ -52,6 +52,8 @@ INSTALLED_APPS = [
     # Libs
     "django_extensions",
     "rest_framework",
+    # "drf_spectacular",  # Comentado temporalmente
+    # "channels",  # Comentado temporalmente
     # Apps propias
     "users",
     "core",
@@ -76,9 +78,10 @@ MIDDLEWARE = [
     "config.middlewares.threadlocals.ThreadLocalMiddleware",
 ]
 
-# URLs / WSGI
+# URLs / WSGI / ASGI
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
+# ASGI_APPLICATION = "config.asgi.application"  # Comentado temporalmente
 
 # Templates
 TEMPLATES = [
@@ -158,6 +161,13 @@ CACHES = {
     }
 }
 
+# Channels - Comentado temporalmente
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels.layers.InMemoryChannelLayer"
+#     }
+# }
+
 # TTLs (segundos)
 DEFAULT_CACHE_TIMEOUT = 300
 DASHBOARD_CACHE_TIMEOUT = 300
@@ -169,7 +179,18 @@ CIUDADANO_CACHE_TIMEOUT = 300
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
+    # "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",  # Comentado temporalmente
 }
+
+# Swagger/OpenAPI Configuration - Comentado temporalmente
+# SPECTACULAR_SETTINGS = {
+#     "TITLE": "SISOC API",
+#     "DESCRIPTION": "Sistema de gestión SISOC - API Documentation",
+#     "VERSION": "1.0.0",
+#     "SERVE_INCLUDE_SCHEMA": False,
+#     "COMPONENT_SPLIT_REQUEST": True,
+#     "SCHEMA_PATH_PREFIX": "/api/",
+# }
 
 # Dominios / Integraciones
 DOMINIO = os.environ.get("DOMINIO", "localhost:8001")

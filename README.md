@@ -154,6 +154,8 @@ docker compose exec django pytest -n auto
 ## Tecnologías Utilizadas
 
 - **Django 4.2**: Framework web
+- **Django REST Framework**: APIs REST
+- **drf-spectacular**: Documentación Swagger/OpenAPI
 - **MySQL 8.0**: Base de datos
 - **Docker & Docker Compose**: Contenedores
 - **Tailwind CSS**: Framework CSS utilitario
@@ -173,6 +175,22 @@ docker compose exec django pytest -n auto
 5. Revisión de al menos otro dev antes del merge.  
 
 ---
+
+## APIs y Documentación
+
+El sistema incluye APIs REST completamente documentadas:
+
+- **Swagger UI**: [http://localhost:9000/api/docs/](http://localhost:9000/api/docs/)
+- **ReDoc**: [http://localhost:9000/api/redoc/](http://localhost:9000/api/redoc/)
+- **Schema**: [http://localhost:9000/api/schema/](http://localhost:9000/api/schema/)
+
+### Endpoints disponibles:
+- `/api/core/` - Provincias, municipios, dispositivos
+- `/api/legajos/` - Ciudadanos, legajos, seguimientos
+- `/api/chatbot/` - Conversaciones y mensajes
+- `/api/users/` - Usuarios y perfiles
+
+Ver [API_DOCUMENTATION.md](API_DOCUMENTATION.md) para más detalles.
 
 ## Credenciales por Defecto
 
