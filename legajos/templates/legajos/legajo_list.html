@@ -5,25 +5,25 @@
 
 {% block main-content %}
 <div class="mb-8">
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
         <div>
-            <h1 class="text-3xl font-lora font-bold text-gray-900">Legajos de Atención</h1>
+            <h1 class="text-2xl sm:text-3xl font-lora font-bold text-gray-900">Legajos de Atención</h1>
             <p class="text-gray-600 mt-2">Gestión de legajos individuales de ciudadanos</p>
         </div>
-        <div class="flex gap-3">
+        <div class="flex flex-col sm:flex-row gap-3">
             <a href="{% url 'legajos:exportar_csv' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" 
-               class="bg-green-600 text-white px-4 py-3 rounded-xl hover:bg-green-700 transition-colors font-medium">
+               class="bg-green-600 text-white px-4 py-3 rounded-xl hover:bg-green-700 transition-colors font-medium text-center">
                 <i class="fas fa-file-csv mr-2"></i>Exportar CSV
             </a>
-            <a href="{% url 'legajos:admision_paso1' %}" class="bg-arg-azul text-white px-6 py-3 rounded-xl hover:bg-arg-secundario transition-colors font-medium">
+            <a href="{% url 'legajos:admision_paso1' %}" class="bg-arg-azul text-white px-6 py-3 rounded-xl hover:bg-arg-secundario transition-colors font-medium text-center">
                 <i class="fas fa-plus mr-2"></i>Nuevo Legajo
             </a>
         </div>
     </div>
 
     <!-- Filtros -->
-    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <form method="get" class="flex gap-4">
+    <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6">
+        <form method="get" class="flex flex-col sm:flex-row gap-4">
             <div class="flex-1">
                 <select name="estado" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-arg-azul focus:border-transparent">
                     <option value="">Todos los estados</option>
@@ -34,7 +34,8 @@
                 </select>
             </div>
             <button type="submit" class="bg-arg-azul text-white px-6 py-3 rounded-lg hover:bg-arg-secundario transition-colors">
-                <i class="fas fa-filter"></i>
+                <i class="fas fa-filter mr-2 sm:mr-0"></i>
+                <span class="sm:hidden">Filtrar</span>
             </button>
         </form>
     </div>
@@ -42,7 +43,8 @@
     <!-- Lista de legajos -->
     <div class="bg-white rounded-xl shadow-lg overflow-hidden">
         {% if legajos %}
-            <div class="overflow-x-auto">
+            <!-- Vista de tabla para desktop -->
+            <div class="hidden lg:block overflow-x-auto">
                 <table class="w-full">
                     <thead class="bg-gray-50">
                         <tr>
@@ -106,6 +108,60 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+            
+            <!-- Vista de cards para móvil y tablet -->
+            <div class="lg:hidden divide-y divide-gray-200">
+                {% for legajo in legajos %}
+                <div class="p-4 hover:bg-gray-50">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-900 mb-1">
+                                {{ legajo.ciudadano.apellido }}, {{ legajo.ciudadano.nombre }}
+                            </div>
+                            <div class="text-sm text-gray-500 mb-2">DNI: {{ legajo.ciudadano.dni }}</div>
+                            <div class="text-xs text-gray-600 mb-2">
+                                Código: {{ legajo.codigo|slice:":12" }}...
+                                {% if legajo.plan_vigente %}
+                                    <i class="fas fa-clipboard-check text-green-500 ml-1" title="Plan vigente"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <a href="{% url 'legajos:detalle' legajo.pk %}" 
+                           class="text-arg-azul hover:text-arg-secundario p-2">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <span class="text-gray-600">Dispositivo:</span>
+                            <div class="font-medium text-gray-900">{{ legajo.dispositivo.nombre|truncatechars:20 }}</div>
+                            <div class="text-xs text-gray-500">{{ legajo.dispositivo.get_tipo_display }}</div>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Fecha:</span>
+                            <div class="font-medium text-gray-900">{{ legajo.fecha_apertura|date:"d/m/Y" }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-2 mt-3">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium
+                            {% if legajo.estado == 'ABIERTO' %}bg-green-100 text-green-800
+                            {% elif legajo.estado == 'EN_SEGUIMIENTO' %}bg-blue-100 text-blue-800
+                            {% elif legajo.estado == 'DERIVADO' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ legajo.get_estado_display }}
+                        </span>
+                        <span class="px-2 py-1 rounded-full text-xs font-medium
+                            {% if legajo.nivel_riesgo == 'ALTO' %}bg-red-100 text-red-800
+                            {% elif legajo.nivel_riesgo == 'MEDIO' %}bg-orange-100 text-orange-800
+                            {% else %}bg-green-100 text-green-800{% endif %}">
+                            {{ legajo.get_nivel_riesgo_display }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
 
             <!-- Paginación -->

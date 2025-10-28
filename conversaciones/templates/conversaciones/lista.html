@@ -65,8 +65,8 @@
 
     <!-- Filtros -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <form method="GET" class="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <div>
+        <form method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div class="sm:col-span-2 lg:col-span-1">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Búsqueda</label>
                 <input type="text" name="busqueda" value="{{ filtros.busqueda }}" placeholder="DNI o ID" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
@@ -102,7 +102,7 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Desde</label>
                 <input type="date" name="fecha_desde" value="{{ filtros.fecha_desde }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
-            <div class="flex items-end">
+            <div class="flex items-end sm:col-span-2 lg:col-span-1">
                 <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
                     <i class="fas fa-search mr-2"></i>Filtrar
                 </button>
@@ -137,7 +137,8 @@
         <div class="p-4">
             <h2 class="text-lg font-semibold text-gray-900 mb-4">Lista de Conversaciones</h2>
         </div>
-        <div class="overflow-x-auto">
+        <!-- Vista de tabla para desktop -->
+        <div class="hidden lg:block overflow-x-auto">
             <table class="w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
@@ -236,6 +237,93 @@
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+        
+        <!-- Vista de cards para móvil y tablet -->
+        <div class="lg:hidden divide-y divide-gray-200">
+            {% for conversacion in conversaciones %}
+            <div class="p-4 hover:bg-gray-50">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="font-medium text-gray-900">#{{ conversacion.id }}</span>
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                {% if conversacion.tipo == 'personal' %}bg-green-100 text-green-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                                {{ conversacion.get_tipo_display }}
+                            </span>
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                {% if conversacion.estado == 'activa' %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ conversacion.get_estado_display }}
+                            </span>
+                        </div>
+                        
+                        {% if conversacion.dni_ciudadano %}
+                        <div class="text-sm text-gray-600 mb-1">
+                            DNI: {{ conversacion.dni_ciudadano }}
+                            {% if conversacion.sexo_ciudadano %}
+                                ({{ conversacion.sexo_ciudadano }})
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="text-sm text-gray-600 mb-1">
+                            Operador: {{ conversacion.operador_asignado.get_full_name|default:"Sin asignar" }}
+                        </div>
+                        
+                        <div class="text-xs text-gray-500">
+                            {{ conversacion.fecha_inicio|date:"d/m/Y H:i" }}
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col items-end gap-2">
+                        <div class="flex items-center gap-1">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                {{ conversacion.mensajes.count }}
+                            </span>
+                            {% if conversacion.mensajes_no_leidos %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    {{ conversacion.mensajes_no_leidos }}
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <a href="{% url 'conversaciones:detalle' conversacion.id %}" 
+                               class="text-blue-600 hover:text-blue-900 p-1">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            
+                            {% if conversacion.estado == 'activa' %}
+                                {% if not conversacion.operador_asignado %}
+                                    <button onclick="asignarConversacion({{ conversacion.id }})" 
+                                           class="text-green-600 hover:text-green-900 p-1">
+                                        <i class="fas fa-user-plus"></i>
+                                    </button>
+                                {% elif not es_operador_charla %}
+                                    <button onclick="reasignarConversacion({{ conversacion.id }})" 
+                                           class="text-orange-600 hover:text-orange-900 p-1">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </button>
+                                {% endif %}
+                                
+                                {% if not es_operador_charla %}
+                                <a href="{% url 'conversaciones:cerrar' conversacion.id %}" 
+                                   class="text-red-600 hover:text-red-900 p-1"
+                                   onclick="return confirm('¿Estás seguro de cerrar esta conversación?')">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="p-12 text-center text-gray-500">
+                <i class="fas fa-comments text-4xl mb-4"></i>
+                <p>No hay conversaciones disponibles</p>
+            </div>
+            {% endfor %}
         </div>
     </div>
 </div>

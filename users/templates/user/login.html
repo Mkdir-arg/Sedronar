@@ -124,24 +124,24 @@
             </div>
 
             <!-- Panel Derecho - Formulario de Login -->
-            <div class="flex-1 flex items-center justify-center p-6">
+            <div class="flex-1 flex items-center justify-center p-4 sm:p-6">
                 <div class="w-full max-w-md">
                     <!-- Logo Mobile -->
-                    <div class="text-center lg:hidden mb-8">
-                        <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl mb-4">
-                            <img class="h-10 w-10" src="{% static 'custom/img/sisoc_logo.png' %}" alt="SEDRONAR">
+                    <div class="text-center lg:hidden mb-6 sm:mb-8">
+                        <div class="inline-flex items-center justify-center w-14 sm:w-16 h-14 sm:h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl mb-4">
+                            <img class="h-8 sm:h-10 w-8 sm:w-10" src="{% static 'custom/img/sisoc_logo.png' %}" alt="SEDRONAR">
                         </div>
-                        <h2 class="text-3xl font-bold text-white">SEDRONAR</h2>
+                        <h2 class="text-2xl sm:text-3xl font-bold text-white">SEDRONAR</h2>
                     </div>
 
                     <!-- Formulario Moderno -->
-                    <div class="glass rounded-3xl p-8 shadow-2xl border border-white/20">
-                        <div class="text-center mb-8">
-                            <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl mb-4 animate-pulse">
-                                <i class="fas fa-fingerprint text-2xl text-white"></i>
+                    <div class="glass rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/20">
+                        <div class="text-center mb-6 sm:mb-8">
+                            <div class="inline-flex items-center justify-center w-14 sm:w-16 h-14 sm:h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl mb-4 animate-pulse">
+                                <i class="fas fa-fingerprint text-xl sm:text-2xl text-white"></i>
                             </div>
-                            <h3 class="text-2xl font-bold text-white mb-2">Acceso Seguro</h3>
-                            <p class="text-white/70">Autenticación biométrica del sistema</p>
+                            <h3 class="text-xl sm:text-2xl font-bold text-white mb-2">Acceso Seguro</h3>
+                            <p class="text-sm sm:text-base text-white/70">Autenticación biométrica del sistema</p>
                         </div>
 
                         <form class="space-y-6" method="post" id="form-login">
@@ -171,7 +171,7 @@
                                                name="username" 
                                                type="text" 
                                                required 
-                                               class="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:bg-white/20 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50 transition-all duration-300 backdrop-blur-sm" 
+                                               class="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:bg-white/20 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50 transition-all duration-300 backdrop-blur-sm text-sm sm:text-base" 
                                                placeholder="Ingrese su usuario">
                                     </div>
                                 </div>
@@ -188,14 +188,14 @@
                                                name="password" 
                                                type="password" 
                                                required 
-                                               class="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:bg-white/20 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50 transition-all duration-300 backdrop-blur-sm" 
+                                               class="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:bg-white/20 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50 transition-all duration-300 backdrop-blur-sm text-sm sm:text-base" 
                                                placeholder="Ingrese su contraseña">
                                     </div>
                                 </div>
                             </div>
 
                             <button type="submit" 
-                                    class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl shadow-lg border border-white/20 backdrop-blur-sm group">
+                                    class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold py-3 sm:py-4 px-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl shadow-lg border border-white/20 backdrop-blur-sm group text-sm sm:text-base">
                                 <i class="fas fa-rocket mr-2 group-hover:animate-bounce"></i>
                                 Acceder al Sistema
                             </button>

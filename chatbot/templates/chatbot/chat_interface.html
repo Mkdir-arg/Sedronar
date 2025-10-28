@@ -8,11 +8,17 @@
 {% endblock %}
 
 {% block content %}
-<div class="flex h-screen bg-gray-100">
+<div class="flex h-screen bg-gray-100" x-data="{ sidebarOpen: false }">
     <!-- Sidebar con conversaciones -->
-    <div class="w-1/4 bg-white border-r border-gray-200 flex flex-col">
+    <div class="w-full md:w-1/4 bg-white border-r border-gray-200 flex flex-col" 
+         :class="{ 'hidden md:flex': !sidebarOpen, 'flex': sidebarOpen }">
         <div class="p-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-800">Conversaciones</h2>
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-gray-800">Conversaciones</h2>
+                <button @click="sidebarOpen = false" class="md:hidden text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
             <button id="new-conversation" class="mt-2 w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
                 Nueva Conversación
             </button>
@@ -36,39 +42,46 @@
     </div>
 
     <!-- Área principal del chat -->
-    <div class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col" :class="{ 'w-full': sidebarOpen, 'w-full md:w-3/4': !sidebarOpen }">
         <!-- Header del chat -->
         <div class="bg-white border-b border-gray-200 p-4">
             <div class="flex items-center justify-between">
-                <h1 class="text-xl font-semibold text-gray-800">Asistente Virtual SEDRONAR</h1>
+                <div class="flex items-center gap-3">
+                    <button @click="sidebarOpen = !sidebarOpen" class="md:hidden text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="text-lg md:text-xl font-semibold text-gray-800">Asistente Virtual SEDRONAR</h1>
+                </div>
                 {% if user.is_staff %}
-                <a href="{% url 'chatbot:admin_panel' %}" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
-                    Panel Admin
+                <a href="{% url 'chatbot:admin_panel' %}" class="bg-gray-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm">
+                    <span class="hidden sm:inline">Panel Admin</span>
+                    <i class="fas fa-cog sm:hidden"></i>
                 </a>
                 {% endif %}
             </div>
         </div>
 
         <!-- Área de mensajes -->
-        <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-4">
-            <div id="welcome-message" class="text-center text-gray-500 mt-20">
-                <div class="text-6xl mb-4">🤖</div>
-                <h3 class="text-xl font-semibold mb-2">¡Hola! Soy tu asistente virtual</h3>
-                <p>Puedo ayudarte con información sobre el sistema SEDRONAR.</p>
-                <p class="text-sm mt-2">Pregúntame sobre ciudadanos, legajos, usuarios o cualquier funcionalidad del sistema.</p>
+        <div id="messages-container" class="flex-1 overflow-y-auto p-2 sm:p-4 space-y-4">
+            <div id="welcome-message" class="text-center text-gray-500 mt-10 sm:mt-20 px-4">
+                <div class="text-4xl sm:text-6xl mb-4">🤖</div>
+                <h3 class="text-lg sm:text-xl font-semibold mb-2">¡Hola! Soy tu asistente virtual</h3>
+                <p class="text-sm sm:text-base">Puedo ayudarte con información sobre el sistema SEDRONAR.</p>
+                <p class="text-xs sm:text-sm mt-2">Pregúntame sobre ciudadanos, legajos, usuarios o cualquier funcionalidad del sistema.</p>
             </div>
         </div>
 
         <!-- Área de entrada de mensaje -->
         <div class="bg-white border-t border-gray-200 p-4">
-            <div class="flex space-x-4">
+            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
                 <input type="text" 
                        id="message-input" 
                        placeholder="Escribe tu mensaje aquí..." 
                        class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 <button id="send-button" 
                         class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    Enviar
+                    <i class="fas fa-paper-plane mr-2 sm:mr-0"></i>
+                    <span class="sm:hidden">Enviar</span>
                 </button>
             </div>
             <div id="typing-indicator" class="hidden mt-2 text-sm text-gray-500">

@@ -44,6 +44,7 @@
         <link rel="stylesheet" href="{% static 'custom/css/custom.css' %}" />
         <link rel="stylesheet" href="{% static 'custom/css/utils.css' %}" />
         <link rel="stylesheet" href="{% static 'custom/css/override.css' %}" />
+        <link rel="stylesheet" href="{% static 'custom/css/responsive.css' %}" />
         
         <!-- Page specific CSS -->
         {% block page_css %}{% endblock %}
@@ -97,6 +98,9 @@
         
         <!-- CSRF Token para AJAX -->
         {% csrf_token %}
+        
+        <!-- Mobile Enhancements Script -->
+        <script src="{% static 'custom/js/mobile-enhancements.js' %}"></script>
         
         {% block customJS %}{% endblock %}
     </body>

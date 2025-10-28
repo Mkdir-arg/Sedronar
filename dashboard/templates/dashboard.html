@@ -6,26 +6,26 @@
 {% block main-content %}
 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     <!-- Page header -->
-    <div class="md:flex md:items-center md:justify-between">
+    <div class="flex items-center justify-between">
         <div class="min-w-0 flex-1">
-            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+            <h2 class="text-xl sm:text-2xl lg:text-3xl font-bold leading-7 text-gray-900 sm:truncate sm:tracking-tight">
                 Dashboard
             </h2>
         </div>
     </div>
 
     <!-- Stats cards -->
-    <div class="mt-8">
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="mt-6 sm:mt-8">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <!-- Card 1 -->
-            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-4 sm:py-5 shadow sm:p-6">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
                         <div class="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-white">
                             <i class="fas fa-users text-sm"></i>
                         </div>
                     </div>
-                    <div class="ml-5 w-0 flex-1">
+                    <div class="ml-4 sm:ml-5 w-0 flex-1">
                         <dl>
                             <dt class="truncate text-sm font-medium text-gray-500">Total Usuarios</dt>
                             <dd class="text-lg font-medium text-gray-900">{{ total_usuarios|default:"0" }}</dd>
@@ -88,16 +88,16 @@
     </div>
 
     <!-- Legajos stats -->
-    <div class="mt-8">
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
-            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+    <div class="mt-6 sm:mt-8">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-4 sm:py-5 shadow sm:p-6">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
                         <div class="flex h-8 w-8 items-center justify-center rounded-md bg-green-600 text-white">
                             <i class="fas fa-folder text-sm"></i>
                         </div>
                     </div>
-                    <div class="ml-5 w-0 flex-1">
+                    <div class="ml-4 sm:ml-5 w-0 flex-1">
                         <dl>
                             <dt class="truncate text-sm font-medium text-gray-500">Legajos Abiertos</dt>
                             <dd class="text-lg font-medium text-gray-900">{{ legajos_abiertos|default:"0" }}</dd>
@@ -141,17 +141,17 @@
     </div>
 
     <!-- Métricas de calidad -->
-    <div class="mt-8">
+    <div class="mt-6 sm:mt-8">
         <h3 class="text-lg font-medium text-gray-900 mb-4">Métricas de Calidad</h3>
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-4 sm:py-5 shadow sm:p-6">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
                         <div class="flex h-8 w-8 items-center justify-center rounded-md bg-indigo-500 text-white">
                             <i class="fas fa-clock text-sm"></i>
                         </div>
                     </div>
-                    <div class="ml-5 w-0 flex-1">
+                    <div class="ml-4 sm:ml-5 w-0 flex-1">
                         <dl>
                             <dt class="truncate text-sm font-medium text-gray-500">TTR Promedio</dt>
                             <dd class="text-lg font-medium text-gray-900">{{ ttr_promedio|default:"0" }} días</dd>
@@ -223,12 +223,12 @@
                         Sistema de gestión básico para la Secretaría Nacional de Políticas Integrales sobre Drogas
                     </p>
                     <div class="mt-6">
-                        <div class="flex justify-center space-x-6">
-                            <a href="{% url 'legajos:ciudadanos' %}" class="inline-flex items-center rounded-md border border-transparent bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                        <div class="flex flex-col sm:flex-row justify-center gap-4 sm:space-x-6">
+                            <a href="{% url 'legajos:ciudadanos' %}" class="inline-flex items-center justify-center rounded-md border border-transparent bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
                                 <i class="fas fa-users mr-2"></i>
                                 Gestionar Ciudadanos
                             </a>
-                            <a href="{% url 'legajos:lista' %}" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                            <a href="{% url 'legajos:lista' %}" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
                                 <i class="fas fa-folder mr-2"></i>
                                 Ver Legajos
                             </a>
@@ -290,19 +290,19 @@
     {% endif %}
 
     <!-- Quick actions -->
-    <div class="mt-8">
+    <div class="mt-6 sm:mt-8">
         <h3 class="text-lg font-medium text-gray-900">Acciones Rápidas</h3>
         <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div class="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm hover:border-gray-400">
+            <div class="relative rounded-lg border border-gray-300 bg-white px-4 sm:px-6 py-4 sm:py-5 shadow-sm hover:border-gray-400">
                 <div class="flex items-center space-x-3">
                     <div class="flex-shrink-0">
-                        <i class="fas fa-user-plus h-6 w-6 text-primary"></i>
+                        <i class="fas fa-user-plus h-5 w-5 sm:h-6 sm:w-6 text-primary"></i>
                     </div>
                     <div class="min-w-0 flex-1">
                         <a href="{% url 'legajos:ciudadano_nuevo' %}" class="focus:outline-none">
                             <span class="absolute inset-0" aria-hidden="true"></span>
                             <p class="text-sm font-medium text-gray-900">Nuevo Ciudadano</p>
-                            <p class="truncate text-sm text-gray-500">Registrar ciudadano con RENAPER</p>
+                            <p class="truncate text-xs sm:text-sm text-gray-500">Registrar ciudadano con RENAPER</p>
                         </a>
                     </div>
                 </div>
