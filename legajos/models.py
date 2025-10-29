@@ -538,3 +538,93 @@ class AlertaEventoCritico(TimeStamped):
     
     def __str__(self):
         return f"Alerta {self.evento.tipo} vista por {self.responsable.username}"
+
+
+class AlertaCiudadano(TimeStamped):
+    """Sistema de alertas automáticas para ciudadanos"""
+    
+    class TipoAlerta(models.TextChoices):
+        RIESGO_ALTO = "RIESGO_ALTO", "Riesgo Alto"
+        RIESGO_SUICIDA = "RIESGO_SUICIDA", "Riesgo Suicida"
+        VIOLENCIA = "VIOLENCIA", "Situación de Violencia"
+        SIN_CONTACTO = "SIN_CONTACTO", "Sin Contacto Prolongado"
+        SIN_EVALUACION = "SIN_EVALUACION", "Sin Evaluación Inicial"
+        SIN_PLAN = "SIN_PLAN", "Sin Plan de Intervención"
+        EVENTO_CRITICO = "EVENTO_CRITICO", "Evento Crítico Reciente"
+        DERIVACION_PENDIENTE = "DERIVACION_PENDIENTE", "Derivación Pendiente"
+        SIN_RED_FAMILIAR = "SIN_RED_FAMILIAR", "Sin Red Familiar"
+        SIN_CONSENTIMIENTO = "SIN_CONSENTIMIENTO", "Sin Consentimiento"
+        CONTACTOS_FALLIDOS = "CONTACTOS_FALLIDOS", "Contactos Fallidos"
+        PLAN_VENCIDO = "PLAN_VENCIDO", "Plan Vencido"
+    
+    class Prioridad(models.TextChoices):
+        CRITICA = "CRITICA", "Crítica"
+        ALTA = "ALTA", "Alta"
+        MEDIA = "MEDIA", "Media"
+        BAJA = "BAJA", "Baja"
+    
+    ciudadano = models.ForeignKey(
+        Ciudadano,
+        on_delete=models.CASCADE,
+        related_name="alertas"
+    )
+    legajo = models.ForeignKey(
+        LegajoAtencion,
+        on_delete=models.CASCADE,
+        related_name="alertas",
+        null=True,
+        blank=True
+    )
+    tipo = models.CharField(max_length=30, choices=TipoAlerta.choices)
+    prioridad = models.CharField(max_length=10, choices=Prioridad.choices)
+    mensaje = models.CharField(max_length=200)
+    activa = models.BooleanField(default=True)
+    fecha_cierre = models.DateTimeField(null=True, blank=True)
+    cerrada_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="alertas_cerradas"
+    )
+    
+    class Meta:
+        verbose_name = "Alerta de Ciudadano"
+        verbose_name_plural = "Alertas de Ciudadanos"
+        ordering = ["-creado"]
+        indexes = [
+            models.Index(fields=["ciudadano", "activa"]),
+            models.Index(fields=["tipo", "prioridad"]),
+            models.Index(fields=["legajo", "activa"]),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_tipo_display()} - {self.ciudadano}"
+    
+    def cerrar(self, usuario=None):
+        """Cerrar la alerta"""
+        self.activa = False
+        self.fecha_cierre = timezone.now()
+        self.cerrada_por = usuario
+        self.save()
+    
+    @property
+    def color_css(self):
+        """Retorna las clases CSS según la prioridad"""
+        colores = {
+            'CRITICA': 'bg-red-100 text-red-800 border-red-200',
+            'ALTA': 'bg-orange-100 text-orange-800 border-orange-200',
+            'MEDIA': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+            'BAJA': 'bg-blue-100 text-blue-800 border-blue-200',
+        }
+        return colores.get(self.prioridad, 'bg-gray-100 text-gray-800 border-gray-200')
+
+
+# Importar modelos de contactos
+from .models_contactos import (
+    HistorialContacto, VinculoFamiliar, ProfesionalTratante,
+    DispositivoVinculado, ContactoEmergencia
+)
+
+# Importar timezone
+from django.utils import timezone

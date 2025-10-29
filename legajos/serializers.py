@@ -125,3 +125,7 @@ class EventoCriticoSerializer(serializers.ModelSerializer):
             'creado', 'modificado'
         ]
         read_only_fields = ['id', 'creado', 'modificado']
+
+
+# Importar serializers de contactos
+from .serializers_contactos import *

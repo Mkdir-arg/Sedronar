@@ -150,3 +150,14 @@ class AlertaEventoCriticoAdmin(admin.ModelAdmin):
     list_filter = ['fecha_cierre', 'evento__tipo']
     search_fields = ['evento__legajo__codigo', 'responsable__username']
     readonly_fields = ['fecha_cierre']
+
+
+# Registrar modelos de contactos en admin
+try:
+    from .models_contactos import (
+        HistorialContacto, VinculoFamiliar, ProfesionalTratante,
+        DispositivoVinculado, ContactoEmergencia
+    )
+    from .admin_contactos import *
+except ImportError:
+    pass

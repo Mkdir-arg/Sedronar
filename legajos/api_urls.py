@@ -17,4 +17,5 @@ router.register(r'eventos', EventoCriticoViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('', include('legajos.api_urls_contactos')),
 ]

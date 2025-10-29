@@ -4,130 +4,1167 @@
 {% block title %}{{ ciudadano.apellido }}, {{ ciudadano.nombre }}{% endblock %}
 
 {% block main-content %}
-<div class="max-w-6xl mx-auto">
+<div class="max-w-full mx-4 lg:mx-8">
+
+
+    <!-- Información Personal - Header completo -->
     <div class="mb-8">
-        <div class="flex justify-between items-start">
-            <div>
-                <h1 class="text-3xl font-lora font-bold text-gray-900">{{ ciudadano.apellido }}, {{ ciudadano.nombre }}</h1>
-                <p class="text-gray-600 mt-2">DNI: {{ ciudadano.dni }}</p>
-            </div>
-            <div class="flex gap-3">
-                <a href="{% url 'legajos:ciudadano_editar' ciudadano.pk %}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-                    <i class="fas fa-edit mr-2"></i>Editar
-                </a>
-                <a href="{% url 'legajos:admision_paso1' %}?ciudadano={{ ciudadano.pk }}" class="bg-arg-azul text-white px-4 py-2 rounded-lg hover:bg-arg-secundario transition-colors">
-                    <i class="fas fa-plus mr-2"></i>Nuevo Legajo
-                </a>
+        <div class="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-2xl shadow-2xl overflow-hidden">
+            <div class="relative p-8">
+                <!-- Patrón de fondo decorativo -->
+                <div class="absolute inset-0 bg-black bg-opacity-10">
+                    <div class="absolute inset-0" style="background-image: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(255,255,255,0.1) 0%, transparent 50%);"></div>
+                </div>
+                
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center space-x-6">
+                            <!-- Avatar -->
+                            <div class="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center backdrop-blur-sm border border-white border-opacity-30">
+                                <span class="text-3xl font-bold text-white">{{ ciudadano.nombre.0 }}{{ ciudadano.apellido.0 }}</span>
+                            </div>
+                            
+                            <!-- Info básica -->
+                            <div class="text-white">
+                                <h2 class="text-3xl font-bold mb-1">{{ ciudadano.apellido }}, {{ ciudadano.nombre }}</h2>
+                                <p class="text-blue-100 text-lg">DNI: {{ ciudadano.dni }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Botones de acción -->
+                        <div class="flex gap-3">
+                            <a href="{% url 'legajos:ciudadano_editar' ciudadano.pk %}" class="bg-white bg-opacity-20 backdrop-blur-sm text-white px-6 py-3 rounded-xl hover:bg-opacity-30 transition-all duration-300 border border-white border-opacity-30 flex items-center space-x-2">
+                                <i class="fas fa-edit"></i>
+                                <span>Editar</span>
+                            </a>
+                            <a href="{% url 'legajos:admision_paso1' %}?ciudadano={{ ciudadano.pk }}" class="bg-white text-blue-600 px-6 py-3 rounded-xl hover:bg-blue-50 transition-all duration-300 shadow-lg flex items-center space-x-2 font-semibold">
+                                <i class="fas fa-plus"></i>
+                                <span>Nuevo Legajo</span>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Información detallada en grid -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                        {% if ciudadano.fecha_nacimiento %}
+                        <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <i class="fas fa-birthday-cake text-yellow-300"></i>
+                                <span class="text-blue-100 text-sm font-medium">Nacimiento</span>
+                            </div>
+                            <p class="text-white font-semibold">{{ ciudadano.fecha_nacimiento|date:"d/m/Y" }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if ciudadano.genero %}
+                        <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <i class="fas fa-user text-pink-300"></i>
+                                <span class="text-blue-100 text-sm font-medium">Género</span>
+                            </div>
+                            <p class="text-white font-semibold">{{ ciudadano.get_genero_display|default:ciudadano.genero }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if ciudadano.telefono %}
+                        <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <i class="fas fa-phone text-green-300"></i>
+                                <span class="text-blue-100 text-sm font-medium">Teléfono</span>
+                            </div>
+                            <p class="text-white font-semibold">{{ ciudadano.telefono }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if ciudadano.email %}
+                        <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <i class="fas fa-envelope text-blue-300"></i>
+                                <span class="text-blue-100 text-sm font-medium">Email</span>
+                            </div>
+                            <p class="text-white font-semibold text-sm">{{ ciudadano.email }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if ciudadano.domicilio %}
+                        <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20 md:col-span-2">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <i class="fas fa-map-marker-alt text-red-300"></i>
+                                <span class="text-blue-100 text-sm font-medium">Domicilio</span>
+                            </div>
+                            <p class="text-white font-semibold">{{ ciudadano.domicilio }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Estadística de legajos -->
+                        <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <i class="fas fa-folder text-orange-300"></i>
+                                <span class="text-blue-100 text-sm font-medium">Legajos</span>
+                            </div>
+                            <p class="text-white font-semibold text-xl">{{ legajos.count }}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Información Personal -->
-        <div class="lg:col-span-1">
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <h2 class="text-xl font-semibold text-gray-900 mb-4">Información Personal</h2>
-                <div class="space-y-4">
+    <!-- Alertas -->
+    <div class="mb-8">
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-900">⚠️ Alertas</h2>
+                <span class="text-sm text-gray-500" id="contador-alertas">Cargando...</span>
+            </div>
+            <div id="contenedor-alertas" class="flex flex-wrap gap-2">
+                <!-- Las alertas se cargarán aquí dinámicamente -->
+            </div>
+            <div id="sin-alertas" class="text-center py-4 text-gray-500 hidden">
+                😊 No hay alertas activas
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Resumido -->
+    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-lg border border-blue-100 p-8 mb-8">
+        <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+            <div class="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg p-2 mr-3">
+                <i class="fas fa-chart-bar text-white text-lg"></i>
+            </div>
+            Dashboard Resumido
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Total Legajos -->
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg transform hover:scale-105 transition-all duration-300 hover:shadow-xl">
+                <div class="flex items-center justify-between">
                     <div>
-                        <label class="text-sm font-medium text-gray-500">DNI</label>
-                        <p class="text-gray-900">{{ ciudadano.dni }}</p>
+                        <p class="text-blue-100 text-sm font-medium mb-1">Total Legajos</p>
+                        <p class="text-3xl font-bold" id="total-legajos">{{ legajos.count }}</p>
                     </div>
+                    <div class="bg-white bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-folder text-2xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center">
+                    <div class="bg-white bg-opacity-20 rounded-full w-2 h-2 mr-2 animate-pulse"></div>
+                    <span class="text-xs text-blue-100">Expedientes activos</span>
+                </div>
+            </div>
+
+            <!-- Vínculos Familiares -->
+            <div class="bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl p-6 text-white shadow-lg transform hover:scale-105 transition-all duration-300 hover:shadow-xl">
+                <div class="flex items-center justify-between">
                     <div>
-                        <label class="text-sm font-medium text-gray-500">Nombre Completo</label>
-                        <p class="text-gray-900">{{ ciudadano.nombre }} {{ ciudadano.apellido }}</p>
+                        <p class="text-emerald-100 text-sm font-medium mb-1">Vínculos Familiares</p>
+                        <p class="text-3xl font-bold" id="total-vinculos">0</p>
                     </div>
-                    {% if ciudadano.fecha_nacimiento %}
+                    <div class="bg-white bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-users text-2xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center">
+                    <div class="bg-white bg-opacity-20 rounded-full w-2 h-2 mr-2 animate-pulse"></div>
+                    <span class="text-xs text-emerald-100">Red familiar registrada</span>
+                </div>
+            </div>
+
+            <!-- Archivos Adjuntos -->
+            <div class="bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl p-6 text-white shadow-lg transform hover:scale-105 transition-all duration-300 hover:shadow-xl">
+                <div class="flex items-center justify-between">
                     <div>
-                        <label class="text-sm font-medium text-gray-500">Fecha de Nacimiento</label>
-                        <p class="text-gray-900">{{ ciudadano.fecha_nacimiento|date:"d/m/Y" }}</p>
+                        <p class="text-purple-100 text-sm font-medium mb-1">Archivos Adjuntos</p>
+                        <p class="text-3xl font-bold" id="total-archivos-dash">0</p>
                     </div>
-                    {% endif %}
-                    {% if ciudadano.genero %}
+                    <div class="bg-white bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-paperclip text-2xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center">
+                    <div class="bg-white bg-opacity-20 rounded-full w-2 h-2 mr-2 animate-pulse"></div>
+                    <span class="text-xs text-purple-100">Documentos disponibles</span>
+                </div>
+            </div>
+
+            <!-- Alertas Activas -->
+            <div class="bg-gradient-to-br from-red-500 to-rose-600 rounded-xl p-6 text-white shadow-lg transform hover:scale-105 transition-all duration-300 hover:shadow-xl">
+                <div class="flex items-center justify-between">
                     <div>
-                        <label class="text-sm font-medium text-gray-500">Género</label>
-                        <p class="text-gray-900">{{ ciudadano.get_genero_display|default:ciudadano.genero }}</p>
+                        <p class="text-red-100 text-sm font-medium mb-1">Alertas Activas</p>
+                        <p class="text-3xl font-bold" id="total-alertas-dash">0</p>
                     </div>
-                    {% endif %}
-                    {% if ciudadano.telefono %}
-                    <div>
-                        <label class="text-sm font-medium text-gray-500">Teléfono</label>
-                        <p class="text-gray-900">{{ ciudadano.telefono }}</p>
+                    <div class="bg-white bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-exclamation-triangle text-2xl animate-pulse"></i>
                     </div>
-                    {% endif %}
-                    {% if ciudadano.email %}
-                    <div>
-                        <label class="text-sm font-medium text-gray-500">Email</label>
-                        <p class="text-gray-900">{{ ciudadano.email }}</p>
+                </div>
+                <div class="mt-4 flex items-center">
+                    <div class="bg-white bg-opacity-20 rounded-full w-2 h-2 mr-2 animate-pulse"></div>
+                    <span class="text-xs text-red-100">Requieren atención</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-8">
+
+        <!-- Legajos -->
+        <div>
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-2xl font-bold mb-1">📋 Legajos de Atención</h2>
+                            <p class="text-blue-100">Historial completo de atenciones</p>
+                        </div>
+                        <div class="bg-white bg-opacity-20 px-4 py-2 rounded-full">
+                            <span class="text-lg font-bold">{{ legajos.count }}</span>
+                            <span class="text-sm">legajo{{ legajos.count|pluralize }}</span>
+                        </div>
                     </div>
-                    {% endif %}
-                    {% if ciudadano.domicilio %}
-                    <div>
-                        <label class="text-sm font-medium text-gray-500">Domicilio</label>
-                        <p class="text-gray-900">{{ ciudadano.domicilio }}</p>
-                    </div>
+                </div>
+
+                <div class="p-6">
+                    {% if legajos %}
+                        <div class="grid gap-4">
+                            {% for legajo in legajos %}
+                            <div class="group relative bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl p-8 hover:shadow-lg hover:border-blue-300 transition-all duration-300 min-h-[200px]">
+                                <!-- Header del legajo -->
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                                            {{ forloop.counter }}
+                                        </div>
+                                        <div>
+                                            <h3 class="text-lg font-bold text-gray-900">{{ legajo.codigo|slice:":12" }}...</h3>
+                                            <p class="text-sm text-gray-500">ID: {{ legajo.id }}</p>
+                                        </div>
+                                    </div>
+                                    <a href="{% url 'legajos:detalle' legajo.pk %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2">
+                                        <i class="fas fa-eye"></i>
+                                        <span>Ver Detalle</span>
+                                    </a>
+                                </div>
+
+                                <!-- Estados y badges -->
+                                <div class="flex flex-wrap gap-2 mb-4">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                        {% if legajo.estado == 'ABIERTO' %}bg-green-100 text-green-800 border border-green-200
+                                        {% elif legajo.estado == 'EN_SEGUIMIENTO' %}bg-blue-100 text-blue-800 border border-blue-200
+                                        {% elif legajo.estado == 'DERIVADO' %}bg-yellow-100 text-yellow-800 border border-yellow-200
+                                        {% else %}bg-gray-100 text-gray-800 border border-gray-200{% endif %}">
+                                        <div class="w-2 h-2 rounded-full mr-2
+                                            {% if legajo.estado == 'ABIERTO' %}bg-green-500
+                                            {% elif legajo.estado == 'EN_SEGUIMIENTO' %}bg-blue-500
+                                            {% elif legajo.estado == 'DERIVADO' %}bg-yellow-500
+                                            {% else %}bg-gray-500{% endif %}"></div>
+                                        {{ legajo.get_estado_display }}
+                                    </span>
+                                    
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                        {% if legajo.nivel_riesgo == 'ALTO' %}bg-red-100 text-red-800 border border-red-200
+                                        {% elif legajo.nivel_riesgo == 'MEDIO' %}bg-orange-100 text-orange-800 border border-orange-200
+                                        {% else %}bg-green-100 text-green-800 border border-green-200{% endif %}">
+                                        {% if legajo.nivel_riesgo == 'ALTO' %}🔴
+                                        {% elif legajo.nivel_riesgo == 'MEDIO' %}🟡
+                                        {% else %}🟢{% endif %}
+                                        Riesgo {{ legajo.get_nivel_riesgo_display }}
+                                    </span>
+                                </div>
+
+                                <!-- Información del legajo -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="space-y-2">
+                                        <div class="flex items-center text-gray-600">
+                                            <i class="fas fa-building w-5 text-blue-500"></i>
+                                            <span class="ml-2 text-sm">{{ legajo.dispositivo.nombre }}</span>
+                                        </div>
+                                        <div class="flex items-center text-gray-600">
+                                            <i class="fas fa-calendar w-5 text-green-500"></i>
+                                            <span class="ml-2 text-sm">Apertura: {{ legajo.fecha_apertura|date:"d/m/Y" }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2">
+                                        {% if legajo.responsable %}
+                                        <div class="flex items-center text-gray-600">
+                                            <i class="fas fa-user-md w-5 text-purple-500"></i>
+                                            <span class="ml-2 text-sm">{{ legajo.responsable.get_full_name|default:legajo.responsable.username }}</span>
+                                        </div>
+                                        {% endif %}
+                                        {% if legajo.fecha_cierre %}
+                                        <div class="flex items-center text-gray-600">
+                                            <i class="fas fa-calendar-times w-5 text-red-500"></i>
+                                            <span class="ml-2 text-sm">Cierre: {{ legajo.fecha_cierre|date:"d/m/Y" }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Acciones rápidas -->
+                                <div class="mt-4 pt-4 border-t border-gray-100">
+                                    <div class="flex justify-between items-center">
+                                        <div class="flex space-x-2">
+                                            <span class="text-xs text-gray-500">Acciones rápidas:</span>
+                                        </div>
+                                        <div class="flex space-x-2">
+                                            <button class="text-blue-600 hover:text-blue-800 text-sm" title="Historial">
+                                                <i class="fas fa-history"></i>
+                                            </button>
+                                            <button class="text-green-600 hover:text-green-800 text-sm" title="Seguimientos">
+                                                <i class="fas fa-clipboard-list"></i>
+                                            </button>
+                                            <button onclick="abrirModalArchivos('{{ legajo.id }}')" class="text-orange-600 hover:text-orange-800 text-sm" title="Subir archivos">
+                                                <i class="fas fa-paperclip"></i>
+                                            </button>
+                                            <button class="text-purple-600 hover:text-purple-800 text-sm" title="Red de contactos">
+                                                <i class="fas fa-users"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-12">
+                            <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
+                                <i class="fas fa-folder-open text-4xl text-gray-400"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-900 mb-2">Sin legajos registrados</h3>
+                            <p class="text-gray-600 mb-6 max-w-md mx-auto">Este ciudadano no tiene legajos de atención. Crea el primer legajo para comenzar el seguimiento.</p>
+                            <a href="{% url 'legajos:admision_paso1' %}?ciudadano={{ ciudadano.pk }}" class="inline-flex items-center bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl">
+                                <i class="fas fa-plus mr-2"></i>
+                                Crear Primer Legajo
+                            </a>
+                        </div>
                     {% endif %}
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Legajos -->
-        <div class="lg:col-span-2">
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-semibold text-gray-900">Legajos de Atención</h2>
-                    <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                        {{ legajos.count }} legajo{{ legajos.count|pluralize }}
-                    </span>
+    <!-- Actividad Reciente -->
+    <div class="mt-8">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="bg-gradient-to-r from-green-600 to-teal-600 p-6 text-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-1">📊 Actividad Reciente</h2>
+                        <p class="text-green-100">Historial completo de acciones en todos los legajos</p>
+                    </div>
+                    <div class="bg-white bg-opacity-20 px-4 py-2 rounded-full">
+                        <span class="text-lg font-bold" id="total-actividades">-</span>
+                        <span class="text-sm">registros</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha/Hora</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Legajo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-actividades" class="bg-white divide-y divide-gray-200">
+                            <!-- Las actividades se cargarán aquí dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="mensaje-sin-actividades" class="text-center py-12 hidden">
+                    <div class="text-gray-400 text-4xl mb-2">📋</div>
+                    <p class="text-gray-500">No hay actividades registradas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Red Familiar Interactiva -->
+    <div class="mt-8">
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-gray-900">👥 Red Familiar Interactiva</h2>
+                <button onclick="toggleRedFamiliar()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-users mr-2"></i>Ver Red Completa
+                </button>
+            </div>
+
+            <div id="red-familiar-container">
+                <!-- Vista previa de vínculos -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer" onclick="abrirModalVinculo()">
+                        <div class="text-4xl mb-2">👨‍👩‍👧‍👦</div>
+                        <h3 class="font-medium text-gray-900">Vínculos Familiares</h3>
+                        <p class="text-sm text-gray-500">Agregar familia</p>
+                    </div>
+                    
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-400 transition-colors cursor-pointer" onclick="abrirModalProfesional()">
+                        <div class="text-4xl mb-2">🏥</div>
+                        <h3 class="font-medium text-gray-900">Equipo Tratante</h3>
+                        <p class="text-sm text-gray-500">Asignar profesionales</p>
+                    </div>
+                    
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-red-400 transition-colors cursor-pointer" onclick="abrirModalEmergencia()">
+                        <div class="text-4xl mb-2">🚨</div>
+                        <h3 class="font-medium text-gray-900">Contactos Emergencia</h3>
+                        <p class="text-sm text-gray-500">Contactos críticos</p>
+                    </div>
                 </div>
 
-                {% if legajos %}
-                    <div class="space-y-4">
-                        {% for legajo in legajos %}
-                        <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                            <div class="flex justify-between items-start">
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-3 mb-2">
-                                        <h3 class="font-semibold text-gray-900">{{ legajo.codigo }}</h3>
-                                        <span class="px-2 py-1 rounded-full text-xs font-medium
-                                            {% if legajo.estado == 'ABIERTO' %}bg-green-100 text-green-800
-                                            {% elif legajo.estado == 'EN_SEGUIMIENTO' %}bg-blue-100 text-blue-800
-                                            {% elif legajo.estado == 'DERIVADO' %}bg-yellow-100 text-yellow-800
-                                            {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                            {{ legajo.get_estado_display }}
-                                        </span>
-                                        <span class="px-2 py-1 rounded-full text-xs font-medium
-                                            {% if legajo.nivel_riesgo == 'ALTO' %}bg-red-100 text-red-800
-                                            {% elif legajo.nivel_riesgo == 'MEDIO' %}bg-orange-100 text-orange-800
-                                            {% else %}bg-green-100 text-green-800{% endif %}">
-                                            Riesgo {{ legajo.get_nivel_riesgo_display }}
-                                        </span>
-                                    </div>
-                                    <p class="text-sm text-gray-600 mb-1">
-                                        <i class="fas fa-building mr-1"></i>{{ legajo.dispositivo.nombre }}
-                                    </p>
-                                    <p class="text-sm text-gray-600">
-                                        <i class="fas fa-calendar mr-1"></i>Apertura: {{ legajo.fecha_apertura|date:"d/m/Y" }}
-                                    </p>
-                                </div>
-                                <a href="{% url 'legajos:detalle' legajo.pk %}" class="text-arg-azul hover:text-arg-secundario">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                            </div>
-                        </div>
-                        {% endfor %}
+                <!-- Vínculos existentes -->
+                <div id="vinculos-existentes">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Vínculos Registrados</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ciudadano</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Relación</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-vinculos" class="bg-white divide-y divide-gray-200">
+                                <!-- Los vínculos se cargarán aquí dinámicamente -->
+                            </tbody>
+                        </table>
                     </div>
-                {% else %}
-                    <div class="text-center py-8">
-                        <i class="fas fa-folder-open text-4xl text-gray-300 mb-4"></i>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Sin legajos</h3>
-                        <p class="text-gray-600 mb-4">Este ciudadano no tiene legajos de atención registrados</p>
-                        <a href="{% url 'legajos:admision_paso1' %}?ciudadano={{ ciudadano.pk }}" class="bg-arg-azul text-white px-4 py-2 rounded-lg hover:bg-arg-secundario transition-colors">
-                            <i class="fas fa-plus mr-2"></i>Crear Primer Legajo
-                        </a>
+                    <div id="mensaje-sin-vinculos" class="text-center py-8 hidden">
+                        <div class="text-gray-400 text-4xl mb-2">👥</div>
+                        <p class="text-gray-500">No hay vínculos registrados</p>
                     </div>
-                {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Archivos del Ciudadano -->
+    <div class="mt-8">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="bg-gradient-to-r from-orange-600 to-red-600 p-6 text-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-1">📁 Archivos</h2>
+                        <p class="text-orange-100">Documentos de todos los legajos</p>
+                    </div>
+                    <div class="bg-white bg-opacity-20 px-4 py-2 rounded-full">
+                        <span class="text-lg font-bold" id="total-archivos">-</span>
+                        <span class="text-sm">archivos</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Archivo</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Etiqueta</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Legajo</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-archivos" class="bg-white divide-y divide-gray-200">
+                            <!-- Los archivos se cargarán aquí dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="mensaje-sin-archivos" class="text-center py-12 hidden">
+                    <div class="text-gray-400 text-4xl mb-2">📁</div>
+                    <p class="text-gray-500">No hay archivos subidos</p>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Modal Nuevo Vínculo -->
+<div id="modalVinculo" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">Agregar Vínculo Familiar</h3>
+                <button onclick="cerrarModal('modalVinculo')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="formVinculo">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Buscar Ciudadano</label>
+                        <input type="text" id="buscarCiudadano" placeholder="Nombre, apellido o DNI..." class="w-full border border-gray-300 rounded-lg px-3 py-2" required>
+                        <input type="hidden" name="ciudadano_id" id="ciudadanoSeleccionado">
+                        <div id="resultadosBusqueda" class="mt-2 max-h-40 overflow-y-auto"></div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Relación</label>
+                        <select name="relacion" class="w-full border border-gray-300 rounded-lg px-3 py-2" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="PADRE">Padre</option>
+                            <option value="MADRE">Madre</option>
+                            <option value="HIJO">Hijo/a</option>
+                            <option value="HERMANO">Hermano/a</option>
+                            <option value="PAREJA">Pareja</option>
+                            <option value="ABUELO">Abuelo/a</option>
+                            <option value="TIO">Tío/a</option>
+                            <option value="OTRO">Otro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                        <input type="text" name="telefono" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" name="convive" class="mr-2">
+                        <label class="text-sm text-gray-700">Convive con el ciudadano</label>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="cerrarModal('modalVinculo')" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Subir Archivos -->
+<div id="modalArchivos" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">Subir Archivos al Legajo</h3>
+                <button onclick="cerrarModal('modalArchivos')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="formArchivos" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" id="legajoIdArchivos" name="legajo_id">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Archivo</label>
+                        <input type="file" name="archivo" class="w-full border border-gray-300 rounded-lg px-3 py-2" required multiple>
+                        <p class="text-xs text-gray-500 mt-1">Formatos permitidos: PDF, DOC, DOCX, JPG, PNG (Máx. 10MB)</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Etiqueta/Descripción</label>
+                        <input type="text" name="etiqueta" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Ej: Informe médico, Consentimiento, etc.">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="cerrarModal('modalArchivos')" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+                        Subir Archivos
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Funciones para la red familiar
+// Cargar datos automáticamente al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    cargarVinculos();
+    cargarActividades();
+    cargarArchivos();
+    cargarAlertas();
+    actualizarDashboard();
+});
+
+// Sistema de Tabs
+function cambiarTab(tabName) {
+    // Ocultar todos los contenidos
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // Remover clase activa de todos los botones
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active', 'border-blue-500', 'text-blue-600');
+        button.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Mostrar contenido seleccionado
+    document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+    
+    // Activar botón seleccionado
+    const activeButton = document.querySelector(`[data-tab="${tabName}"]`);
+    activeButton.classList.add('active', 'border-blue-500', 'text-blue-600');
+    activeButton.classList.remove('border-transparent', 'text-gray-500');
+}
+
+// Actualizar dashboard con métricas
+function actualizarDashboard() {
+    setTimeout(() => {
+        const totalVinculos = document.getElementById('tabla-vinculos')?.children.length || 0;
+        const totalArchivos = document.getElementById('tabla-archivos')?.children.length || 0;
+        const totalAlertas = document.getElementById('contenedor-alertas')?.children.length || 0;
+        
+        // Actualizar métricas del dashboard
+        document.getElementById('total-vinculos').textContent = totalVinculos;
+        document.getElementById('total-archivos-dash').textContent = totalArchivos;
+        document.getElementById('total-alertas-dash').textContent = totalAlertas;
+        
+        // Animación de conteo
+        animarContador('total-vinculos', totalVinculos);
+        animarContador('total-archivos-dash', totalArchivos);
+        animarContador('total-alertas-dash', totalAlertas);
+    }, 1000);
+}
+
+// Función para animar contadores
+function animarContador(elementId, valorFinal) {
+    const elemento = document.getElementById(elementId);
+    if (!elemento) return;
+    
+    let valorActual = 0;
+    const incremento = valorFinal / 20;
+    const intervalo = setInterval(() => {
+        valorActual += incremento;
+        if (valorActual >= valorFinal) {
+            elemento.textContent = valorFinal;
+            clearInterval(intervalo);
+        } else {
+            elemento.textContent = Math.floor(valorActual);
+        }
+    }, 50);
+}
+
+// Cargar alertas del ciudadano
+function cargarAlertas() {
+    fetch(`/legajos/ciudadanos/{{ ciudadano.id }}/alertas/`)
+        .then(response => response.json())
+        .then(data => {
+            const contenedor = document.getElementById('contenedor-alertas');
+            const contador = document.getElementById('contador-alertas');
+            const sinAlertas = document.getElementById('sin-alertas');
+            
+            if (data.results && data.results.length > 0) {
+                contenedor.innerHTML = data.results.map(alerta => {
+                    const icono = getIconoAlerta(alerta.tipo);
+                    return `
+                        <span class="inline-flex items-center px-3 py-2 rounded-full text-sm font-medium border ${alerta.color_css}">
+                            <i class="${icono} mr-2"></i>
+                            ${alerta.mensaje}
+                            <button class="ml-2 text-gray-500 hover:text-gray-700" onclick="cerrarAlerta(${alerta.id}, this)">
+                                <i class="fas fa-times text-xs"></i>
+                            </button>
+                        </span>
+                    `;
+                }).join('');
+                contador.textContent = `${data.results.length} alerta${data.results.length > 1 ? 's' : ''}`;
+                sinAlertas.classList.add('hidden');
+            } else {
+                contenedor.innerHTML = '';
+                contador.textContent = 'Sin alertas';
+                sinAlertas.classList.remove('hidden');
+            }
+            
+            // Actualizar dashboard después de cargar alertas
+            actualizarDashboard();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('contador-alertas').textContent = 'Error al cargar';
+        });
+}
+
+// Obtener icono según tipo de alerta
+function getIconoAlerta(tipo) {
+    const iconos = {
+        'RIESGO_ALTO': 'fas fa-exclamation-triangle',
+        'RIESGO_SUICIDA': 'fas fa-skull-crossbones',
+        'VIOLENCIA': 'fas fa-fist-raised',
+        'SIN_CONTACTO': 'fas fa-phone-slash',
+        'SIN_EVALUACION': 'fas fa-stethoscope',
+        'SIN_PLAN': 'fas fa-tasks',
+        'EVENTO_CRITICO': 'fas fa-exclamation-circle',
+        'DERIVACION_PENDIENTE': 'fas fa-share',
+        'SIN_RED_FAMILIAR': 'fas fa-users',
+        'SIN_CONSENTIMIENTO': 'fas fa-file-signature',
+        'CONTACTOS_FALLIDOS': 'fas fa-phone-times',
+        'PLAN_VENCIDO': 'fas fa-clock'
+    };
+    return iconos[tipo] || 'fas fa-exclamation-triangle';
+}
+
+// Cerrar alerta individual
+function cerrarAlerta(alertaId, boton) {
+    fetch(`/legajos/alertas/${alertaId}/cerrar/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            boton.closest('span').remove();
+            // Actualizar contador
+            const contenedor = document.getElementById('contenedor-alertas');
+            const alertasRestantes = contenedor.children.length;
+            document.getElementById('contador-alertas').textContent = 
+                alertasRestantes > 0 ? `${alertasRestantes} alerta${alertasRestantes > 1 ? 's' : ''}` : 'Sin alertas';
+            
+            if (alertasRestantes === 0) {
+                document.getElementById('sin-alertas').classList.remove('hidden');
+            }
+        } else {
+            alert('Error al cerrar la alerta');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al cerrar la alerta');
+    });
+}
+
+// Cargar archivos del ciudadano
+function cargarArchivos() {
+    fetch(`/legajos/ciudadanos/{{ ciudadano.id }}/archivos/`)
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('tabla-archivos');
+            const mensajeSin = document.getElementById('mensaje-sin-archivos');
+            const contador = document.getElementById('total-archivos');
+            
+            if (data.results && data.results.length > 0) {
+                tbody.innerHTML = data.results.map(archivo => {
+                    const fecha = new Date(archivo.fecha_subida).toLocaleDateString('es-AR');
+                    const extension = archivo.nombre.split('.').pop().toLowerCase();
+                    const icono = getIconoArchivo(extension);
+                    
+                    return `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <i class="${icono} text-2xl mr-3 text-gray-600"></i>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">${archivo.nombre}</div>
+                                        <div class="text-sm text-gray-500">${formatearTamano(archivo.tamano)}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                ${archivo.etiqueta || '-'}
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm">
+                                <a href="/legajos/${archivo.legajo_id}/" class="text-blue-600 hover:text-blue-900">
+                                    ${archivo.legajo_codigo}
+                                </a>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                ${fecha}
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <a href="${archivo.url}" target="_blank" class="text-blue-600 hover:text-blue-900 mr-3" title="Descargar">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <button onclick="eliminarArchivo(${archivo.id})" class="text-red-600 hover:text-red-900" title="Eliminar">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                contador.textContent = data.results.length;
+                mensajeSin.classList.add('hidden');
+            } else {
+                tbody.innerHTML = '';
+                contador.textContent = '0';
+                mensajeSin.classList.remove('hidden');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('tabla-archivos').innerHTML = '<tr><td colspan="5" class="text-center py-4 text-red-500">Error al cargar archivos</td></tr>';
+        });
+}
+
+// Obtener icono según extensión
+function getIconoArchivo(extension) {
+    const iconos = {
+        'pdf': 'fas fa-file-pdf text-red-500',
+        'doc': 'fas fa-file-word text-blue-500',
+        'docx': 'fas fa-file-word text-blue-500',
+        'jpg': 'fas fa-file-image text-green-500',
+        'jpeg': 'fas fa-file-image text-green-500',
+        'png': 'fas fa-file-image text-green-500'
+    };
+    return iconos[extension] || 'fas fa-file text-gray-500';
+}
+
+// Formatear tamaño de archivo
+function formatearTamano(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Eliminar archivo
+function eliminarArchivo(archivoId) {
+    if (confirm('¿Está seguro de eliminar este archivo?')) {
+        fetch(`/legajos/archivos/${archivoId}/eliminar/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                cargarArchivos();
+            } else {
+                alert('Error al eliminar archivo');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al eliminar archivo');
+        });
+    }
+}
+
+// Cargar actividades del ciudadano
+function cargarActividades() {
+    fetch(`/legajos/ciudadanos/{{ ciudadano.id }}/actividades/`)
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('tabla-actividades');
+            const mensajeSin = document.getElementById('mensaje-sin-actividades');
+            const contador = document.getElementById('total-actividades');
+            
+            if (data.results && data.results.length > 0) {
+                tbody.innerHTML = data.results.map(actividad => {
+                    const fecha = new Date(actividad.fecha_hora).toLocaleString('es-AR');
+                    const tipoIcon = getTipoIcon(actividad.tipo);
+                    const tipoColor = getTipoColor(actividad.tipo);
+                    
+                    return `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                ${fecha}
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${tipoColor}">
+                                    <i class="${tipoIcon} mr-1"></i>
+                                    ${actividad.tipo_display || actividad.tipo}
+                                </span>
+                            </td>
+                            <td class="px-4 py-4 text-sm text-gray-900">
+                                ${actividad.descripcion}
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                ${actividad.usuario_nombre || 'Sistema'}
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm">
+                                <a href="/legajos/${actividad.legajo_id}/" class="text-blue-600 hover:text-blue-900">
+                                    ${actividad.legajo_codigo || actividad.legajo_id}
+                                </a>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                contador.textContent = data.results.length;
+                mensajeSin.classList.add('hidden');
+            } else {
+                tbody.innerHTML = '';
+                contador.textContent = '0';
+                mensajeSin.classList.remove('hidden');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('tabla-actividades').innerHTML = '<tr><td colspan="5" class="text-center py-4 text-red-500">Error al cargar actividades</td></tr>';
+        });
+}
+
+// Obtener icono según tipo de actividad
+function getTipoIcon(tipo) {
+    const iconos = {
+        'SEGUIMIENTO': 'fas fa-clipboard-list',
+        'EVALUACION': 'fas fa-stethoscope',
+        'PLAN': 'fas fa-tasks',
+        'DERIVACION': 'fas fa-share',
+        'EVENTO': 'fas fa-exclamation-triangle',
+        'CONTACTO': 'fas fa-phone',
+        'CHAT': 'fas fa-comments',
+        'ASIGNACION': 'fas fa-user-plus',
+        'APERTURA': 'fas fa-folder-open',
+        'CIERRE': 'fas fa-folder',
+        'VINCULO': 'fas fa-users'
+    };
+    return iconos[tipo] || 'fas fa-circle';
+}
+
+// Obtener color según tipo de actividad
+function getTipoColor(tipo) {
+    const colores = {
+        'SEGUIMIENTO': 'bg-blue-100 text-blue-800',
+        'EVALUACION': 'bg-purple-100 text-purple-800',
+        'PLAN': 'bg-green-100 text-green-800',
+        'DERIVACION': 'bg-yellow-100 text-yellow-800',
+        'EVENTO': 'bg-red-100 text-red-800',
+        'CONTACTO': 'bg-indigo-100 text-indigo-800',
+        'CHAT': 'bg-pink-100 text-pink-800',
+        'ASIGNACION': 'bg-teal-100 text-teal-800',
+        'APERTURA': 'bg-emerald-100 text-emerald-800',
+        'CIERRE': 'bg-gray-100 text-gray-800',
+        'VINCULO': 'bg-orange-100 text-orange-800'
+    };
+    return colores[tipo] || 'bg-gray-100 text-gray-800';
+}
+
+function toggleRedFamiliar() {
+    // Ya no es necesario toggle, solo actualizar
+    cargarVinculos();
+}
+
+function abrirModalVinculo() {
+    document.getElementById('modalVinculo').classList.remove('hidden');
+    document.getElementById('buscarCiudadano').focus();
+}
+
+// Buscador de ciudadanos
+let timeoutBusqueda;
+document.getElementById('buscarCiudadano').addEventListener('input', function() {
+    clearTimeout(timeoutBusqueda);
+    const query = this.value.trim();
+    
+    if (query.length < 2) {
+        document.getElementById('resultadosBusqueda').innerHTML = '';
+        return;
+    }
+    
+    timeoutBusqueda = setTimeout(() => {
+        fetch(`/api/legajos/ciudadanos/?search=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                const resultados = document.getElementById('resultadosBusqueda');
+                if (data.results && data.results.length > 0) {
+                    resultados.innerHTML = data.results.map(c => `
+                        <div class="p-2 hover:bg-gray-100 cursor-pointer border-b" onclick="seleccionarCiudadano(${c.id}, '${c.nombre} ${c.apellido}', '${c.dni}')">
+                            <div class="font-medium">${c.apellido}, ${c.nombre}</div>
+                            <div class="text-sm text-gray-500">DNI: ${c.dni}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    resultados.innerHTML = '<div class="p-2 text-gray-500">No se encontraron ciudadanos</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('resultadosBusqueda').innerHTML = '<div class="p-2 text-red-500">Error en la búsqueda</div>';
+            });
+    }, 300);
+});
+
+function seleccionarCiudadano(id, nombre, dni) {
+    document.getElementById('ciudadanoSeleccionado').value = id;
+    document.getElementById('buscarCiudadano').value = `${nombre} (DNI: ${dni})`;
+    document.getElementById('resultadosBusqueda').innerHTML = '';
+}
+
+function abrirModalProfesional() {
+    alert('Funcionalidad de profesionales en desarrollo');
+}
+
+function abrirModalEmergencia() {
+    alert('Funcionalidad de emergencias en desarrollo');
+}
+
+function cerrarModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+}
+
+function cargarVinculos() {
+    fetch(`/api/legajos/contactos/vinculos-familiares/?ciudadano_principal={{ ciudadano.id }}`)
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('tabla-vinculos');
+            const mensajeSin = document.getElementById('mensaje-sin-vinculos');
+            
+            if (data.results && data.results.length > 0) {
+                tbody.innerHTML = data.results.map(vinculo => {
+                    const ciudadano = vinculo.ciudadano_vinculado_detail || vinculo.ciudadano_vinculado;
+                    const nombre = ciudadano.nombre || 'N/A';
+                    const apellido = ciudadano.apellido || '';
+                    const dni = ciudadano.dni || 'N/A';
+                    const telefono = ciudadano.telefono || vinculo.telefono_alternativo || '-';
+                    const tipoVinculo = vinculo.tipo_vinculo_display || vinculo.tipo_vinculo;
+                    
+                    const badges = [];
+                    if (vinculo.convive) badges.push('<span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Convive</span>');
+                    if (vinculo.es_contacto_emergencia) badges.push('<span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">Emergencia</span>');
+                    if (vinculo.es_referente_tratamiento) badges.push('<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Referente</span>');
+                    
+                    return `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-3">
+                                        <span class="text-white font-semibold text-sm">${nombre.charAt(0)}${apellido.charAt(0)}</span>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">${nombre} ${apellido}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    ${tipoVinculo}
+                                </span>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${dni}</td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${telefono}</td>
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                <div class="flex flex-wrap gap-1">
+                                    ${badges.join('')}
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button onclick="eliminarVinculo(${vinculo.id})" class="text-red-600 hover:text-red-900 transition-colors">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                mensajeSin.classList.add('hidden');
+            } else {
+                tbody.innerHTML = '';
+                mensajeSin.classList.remove('hidden');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('tabla-vinculos').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-red-500">Error al cargar vínculos</td></tr>';
+        });
+}
+
+function eliminarVinculo(vinculoId) {
+    if (confirm('¿Está seguro de eliminar este vínculo?')) {
+        fetch(`/api/legajos/contactos/vinculos-familiares/${vinculoId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                cargarVinculos();
+            } else {
+                alert('Error al eliminar el vínculo');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al eliminar el vínculo');
+        });
+    }
+}
+
+// Manejar envío del formulario
+document.getElementById('formVinculo').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const ciudadanoId = document.getElementById('ciudadanoSeleccionado').value;
+    
+    if (!ciudadanoId) {
+        alert('Debe seleccionar un ciudadano');
+        return;
+    }
+    
+    const vinculoData = {
+        ciudadano_principal: {{ ciudadano.id }},
+        ciudadano_vinculado: parseInt(ciudadanoId),
+        tipo_vinculo: formData.get('relacion'),
+        convive: formData.get('convive') ? true : false,
+        telefono_alternativo: formData.get('telefono') || '',
+        observaciones: ''
+    };
+    
+    fetch('/api/legajos/contactos/vinculos-familiares/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+        },
+        body: JSON.stringify(vinculoData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.id) {
+            alert('Vínculo agregado exitosamente');
+            cerrarModal('modalVinculo');
+            this.reset();
+            document.getElementById('resultadosBusqueda').innerHTML = '';
+            cargarVinculos();
+        } else {
+            alert('Error al crear el vínculo');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al crear el vínculo');
+    });
+});
+// Funciones para archivos
+function abrirModalArchivos(legajoId) {
+    document.getElementById('legajoIdArchivos').value = legajoId;
+    document.getElementById('modalArchivos').classList.remove('hidden');
+}
+
+// Manejar envío de archivos
+document.getElementById('formArchivos').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const legajoId = document.getElementById('legajoIdArchivos').value;
+    
+    fetch(`/legajos/${legajoId}/subir-archivos/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            cerrarModal('modalArchivos');
+            this.reset();
+            cargarArchivos(); // Recargar tabla de archivos
+            alert('Archivos subidos exitosamente');
+        } else {
+            alert(data.error || 'Error al subir archivos');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al subir archivos');
+    });
+});
+</script>
 {% endblock %}

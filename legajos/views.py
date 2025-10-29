@@ -13,6 +13,11 @@ from core.models import DispositivoRed
 from .forms import ConsultaRenaperForm, CiudadanoForm, BuscarCiudadanoForm, AdmisionLegajoForm, ConsentimientoForm, EvaluacionInicialForm, PlanIntervencionForm, SeguimientoForm, DerivacionForm, EventoCriticoForm
 from .services.consulta_renaper import consultar_datos_renaper
 
+# Importar views de contactos
+from .views_dashboard_contactos import dashboard_contactos, metricas_contactos_api, metricas_red_contactos_api, exportar_reporte_contactos
+from .views_historial_contactos import historial_contactos_view, contactos_api, crear_contacto, detalle_contacto, editar_contacto, eliminar_contacto
+from .views_red_contactos import red_contactos_view, vinculos_api, profesionales_api, dispositivos_api, emergencias_api, buscar_ciudadanos_api, buscar_usuarios_api, crear_vinculo, crear_profesional, crear_contacto_emergencia
+
 
 class CiudadanoListView(LoginRequiredMixin, ListView):
     model = Ciudadano
