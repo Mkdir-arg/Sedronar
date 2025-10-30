@@ -27,8 +27,8 @@
     "model": "chatbot.chatbotknowledge",
     "pk": 3,
     "fields": {
-      "title": "Legajos de Atención",
-      "content": "Los legajos contienen el historial completo de atención de cada ciudadano, incluyendo evaluaciones, planes de intervención, seguimientos y derivaciones a instituciones especializadas.",
+      "title": "Acompañamiento",
+      "content": "Los acompañamientos contienen el historial completo de atención de cada ciudadano, incluyendo evaluaciones, planes de intervención, seguimientos y derivaciones a instituciones especializadas.",
       "category": "Funcionalidades",
       "is_active": true,
       "created_at": "2024-01-15T10:00:00Z",
