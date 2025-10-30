@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView, TemplateView, View
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, FormView, TemplateView, View
 from django.urls import reverse_lazy
 from django.db.models import Q, Count
 from django.contrib import messages
@@ -1027,3 +1027,64 @@ class EventoUpdateView(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         messages.success(self.request, 'Evento crítico actualizado exitosamente.')
         return reverse_lazy('legajos:eventos', kwargs={'legajo_id': self.object.legajo.id})
+
+
+# Vistas de Instituciones
+from core.models import Institucion
+from configuracion.forms import InstitucionForm
+
+
+class InstitucionListView(LoginRequiredMixin, ListView):
+    model = Institucion
+    template_name = 'configuracion/institucion_list.html'
+    context_object_name = 'instituciones'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            return Institucion.objects.filter(
+                estado_registro='APROBADO'
+            ).order_by('nombre')
+        else:
+            return Institucion.objects.filter(
+                encargados=self.request.user,
+                estado_registro='APROBADO'
+            ).order_by('nombre')
+
+
+class InstitucionCreateView(LoginRequiredMixin, CreateView):
+    model = Institucion
+    form_class = InstitucionForm
+    template_name = 'configuracion/institucion_form.html'
+    success_url = reverse_lazy('legajos:instituciones')
+    
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            messages.error(request, 'No tiene permisos para crear instituciones.')
+            return redirect('legajos:instituciones')
+        return super().dispatch(request, *args, **kwargs)
+
+
+class InstitucionUpdateView(LoginRequiredMixin, UpdateView):
+    model = Institucion
+    form_class = InstitucionForm
+    template_name = 'configuracion/institucion_form.html'
+    success_url = reverse_lazy('legajos:instituciones')
+    
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            return Institucion.objects.all()
+        else:
+            return Institucion.objects.filter(encargados=self.request.user)
+
+
+class InstitucionDeleteView(LoginRequiredMixin, DeleteView):
+    model = Institucion
+    template_name = 'configuracion/institucion_confirm_delete.html'
+    success_url = reverse_lazy('legajos:instituciones')
+    
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            return Institucion.objects.all()
+        else:
+            return Institucion.objects.filter(encargados=self.request.user)

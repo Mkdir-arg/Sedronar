@@ -40,8 +40,6 @@ def crear_usuario_institucion(request):
         
         # Guardar ID del usuario en sesión para el registro de institución
         request.session['pending_user_id'] = user.id
-        print(f"DEBUG: Usuario creado - ID: {user.id}, Username: {user.username}, Email: {user.email}")
-        print(f"DEBUG: Guardado en sesión - pending_user_id: {user.id}")
         messages.success(request, 'Usuario creado exitosamente. Complete ahora los datos de su institución.')
         return redirect('portal:registro_institucion')
     
@@ -52,12 +50,8 @@ def crear_usuario_institucion(request):
 def registro_institucion(request):
     # Verificar si hay un usuario pendiente en sesión o si está autenticado
     pending_user_id = request.session.get('pending_user_id')
-    print(f"DEBUG: Accediendo a registro institución")
-    print(f"DEBUG: Usuario autenticado: {request.user.is_authenticated}")
-    print(f"DEBUG: pending_user_id en sesión: {pending_user_id}")
     
     if not request.user.is_authenticated and not pending_user_id:
-        print(f"DEBUG: Redirigiendo a crear usuario - no hay usuario ni sesión")
         return redirect('portal:crear_usuario')
     
     if request.method == 'POST':
@@ -71,21 +65,14 @@ def registro_institucion(request):
             if pending_user_id:
                 try:
                     pending_user = User.objects.get(id=pending_user_id)
-                    print(f"DEBUG: Asociando usuario pendiente: {pending_user.username} (ID: {pending_user_id})")
                     institucion.encargados.add(pending_user)
-                    print(f"DEBUG: Usuario pendiente asociado exitosamente")
                     # Limpiar sesión
                     del request.session['pending_user_id']
                 except User.DoesNotExist:
-                    print(f"DEBUG: Error - Usuario con ID {pending_user_id} no encontrado")
                     messages.error(request, 'Error: Usuario no encontrado')
                     return redirect('portal:crear_usuario')
             elif request.user.is_authenticated:
-                print(f"DEBUG: Asociando usuario autenticado: {request.user.username}")
                 institucion.encargados.add(request.user)
-                print(f"DEBUG: Usuario asociado exitosamente")
-            else:
-                print(f"DEBUG: Error - No hay usuario autenticado ni pendiente en sesión")
             
             messages.success(request, 'Solicitud enviada correctamente. Recibirá notificaciones por email.')
             return redirect('portal:consultar_tramite')
@@ -99,24 +86,14 @@ def registro_institucion(request):
 def consultar_tramite(request):
     if request.method == 'POST':
         email = request.POST.get('email')
-        print(f"DEBUG: Buscando email: {email}")
-        
         try:
             user = User.objects.get(email=email)
-            print(f"DEBUG: Usuario encontrado: {user.username}")
-            
             instituciones = Institucion.objects.filter(encargados=user)
-            print(f"DEBUG: Instituciones encontradas: {instituciones.count()}")
-            
-            for inst in instituciones:
-                print(f"DEBUG: - {inst.nombre} ({inst.estado_registro})")
-            
             return render(request, 'portal/consultar_tramite.html', {
                 'instituciones': instituciones,
                 'email': email
             })
         except User.DoesNotExist:
-            print(f"DEBUG: Usuario no encontrado con email: {email}")
             messages.error(request, 'No se encontraron trámites con ese email')
     
     return render(request, 'portal/consultar_tramite.html')

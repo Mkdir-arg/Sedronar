@@ -73,4 +73,10 @@ urlpatterns = [
     # API Alertas
     path('ciudadanos/<int:ciudadano_id>/alertas/', views_contactos_simple.alertas_ciudadano_api, name='alertas_ciudadano'),
     path('alertas/<int:alerta_id>/cerrar/', views_contactos_simple.cerrar_alerta_api, name='cerrar_alerta'),
+    
+    # Instituciones
+    path('instituciones/', views.InstitucionListView.as_view(), name='instituciones'),
+    path('instituciones/crear/', views.InstitucionCreateView.as_view(), name='institucion_crear'),
+    path('instituciones/<int:pk>/editar/', views.InstitucionUpdateView.as_view(), name='institucion_editar'),
+    path('instituciones/<int:pk>/eliminar/', views.InstitucionDeleteView.as_view(), name='institucion_eliminar'),
 ]

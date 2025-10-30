@@ -12,6 +12,19 @@
                 <h1 class="text-2xl font-bold text-gray-900">Conversaciones</h1>
                 <p class="text-gray-600 mt-1">Gestiona las conversaciones con ciudadanos</p>
             </div>
+            <div class="flex gap-2">
+                <a href="{% url 'conversaciones:metricas' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                    <i class="fas fa-chart-bar mr-2"></i>Métricas
+                </a>
+                {% if not es_operador_charla %}
+                <a href="{% url 'conversaciones:configurar_cola' %}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm">
+                    <i class="fas fa-cog mr-2"></i>Configurar
+                </a>
+                <a href="{% url 'conversaciones:asignacion_automatica' %}" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm">
+                    <i class="fas fa-robot mr-2"></i>Auto-asignar
+                </a>
+                {% endif %}
+            </div>
         </div>
     </div>
 

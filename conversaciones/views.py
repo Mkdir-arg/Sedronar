@@ -70,12 +70,17 @@ def iniciar_conversacion(request):
             dni = data.get('dni', '')
             sexo = data.get('sexo', '')
             datos_renaper = data.get('datos_renaper', {})
+            prioridad = data.get('prioridad', 'normal')
             
             conversacion = Conversacion.objects.create(
                 tipo=tipo,
                 dni_ciudadano=dni if tipo == 'personal' and dni else None,
-                sexo_ciudadano=sexo if tipo == 'personal' and sexo else None
+                sexo_ciudadano=sexo if tipo == 'personal' and sexo else None,
+                prioridad=prioridad,
+                estado='activa'  # Iniciar como activa para que pueda ser asignada
             )
+            
+            print(f"DEBUG: Conversación creada - ID: {conversacion.id}, Tipo: {tipo}, Estado: {conversacion.estado}")
             
             # Solo crear ciudadano si es conversación personal y tenemos datos
             if tipo == 'personal' and dni and sexo:
@@ -93,23 +98,15 @@ def iniciar_conversacion(request):
                 except Exception:
                     pass  # Si falla crear ciudadano, continuar con la conversación
             
-            # TODO: Notificar nueva conversación via WebSocket cuando channels esté funcionando
-            # from channels.layers import get_channel_layer
-            # from asgiref.sync import async_to_sync
-            # 
-            # channel_layer = get_channel_layer()
-            # async_to_sync(channel_layer.group_send)(
-            #     'conversaciones_list',
-            #     {
-            #         'type': 'nueva_conversacion',
-            #         'conversacion': {
-            #             'id': conversacion.id,
-            #             'tipo': conversacion.get_tipo_display(),
-            #             'dni': conversacion.dni_ciudadano or '-',
-            #             'fecha': conversacion.fecha_inicio.strftime('%d/%m/%Y %H:%M')
-            #         }
-            #     }
-            # )
+            # Intentar asignación automática
+            from .services import AsignadorAutomatico, NotificacionService
+            
+            asignado = AsignadorAutomatico.asignar_conversacion_automatica(conversacion)
+            if asignado:
+                conversacion.refresh_from_db()
+            
+            # Notificar nueva conversación
+            NotificacionService.notificar_nueva_conversacion(conversacion)
             
             return JsonResponse({
                 'success': True,
@@ -127,19 +124,25 @@ def iniciar_conversacion(request):
 @csrf_exempt
 def enviar_mensaje_ciudadano(request, conversacion_id):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        contenido = data.get('mensaje', '').strip()
-        
-        if not contenido:
-            return JsonResponse({'success': False, 'error': 'Mensaje vacío'})
-        
-        conversacion = get_object_or_404(Conversacion, id=conversacion_id, estado='activa')
-        
-        mensaje = Mensaje.objects.create(
-            conversacion=conversacion,
-            remitente='ciudadano',
-            contenido=contenido
-        )
+        try:
+            data = json.loads(request.body)
+            contenido = data.get('mensaje', '').strip()
+            
+            if not contenido:
+                return JsonResponse({'success': False, 'error': 'Mensaje vacío'})
+            
+            conversacion = get_object_or_404(Conversacion, id=conversacion_id)
+            
+            mensaje = Mensaje.objects.create(
+                conversacion=conversacion,
+                remitente='ciudadano',
+                contenido=contenido
+            )
+            
+            print(f"DEBUG: Mensaje creado - ID: {mensaje.id}, Conversación: {conversacion_id}, Contenido: {contenido}")
+        except Exception as e:
+            print(f"DEBUG: Error al crear mensaje: {str(e)}")
+            return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'})
         
         # TODO: Notificar nuevo mensaje via WebSocket cuando channels esté funcionando
         # from channels.layers import get_channel_layer
@@ -191,6 +194,8 @@ def enviar_mensaje_ciudadano(request, conversacion_id):
 def obtener_mensajes_ciudadano(request, conversacion_id):
     conversacion = get_object_or_404(Conversacion, id=conversacion_id)
     mensajes = conversacion.mensajes.all()
+    
+    print(f"DEBUG: Obteniendo mensajes para conversación {conversacion_id} - Total: {mensajes.count()}")
     
     mensajes_data = [{
         'id': msg.id,
@@ -345,19 +350,20 @@ def asignar_conversacion(request, conversacion_id):
             from django.contrib.auth.models import User
             operador = get_object_or_404(User, id=operador_id)
             
-            # TODO: Crear historial de asignación cuando se migre el modelo
-            
-            conversacion.operador_asignado = operador
-            conversacion.save()
+            # Usar el método asignar_operador del modelo
+            conversacion.asignar_operador(operador, request.user)
             
             messages.success(request, f'Conversación asignada a {operador.get_full_name()} exitosamente.')
         else:
-            # Auto-asignación
-            conversacion.operador_asignado = request.user
-            conversacion.save()
+            # Auto-asignación al usuario actual
+            conversacion.asignar_operador(request.user, request.user)
             messages.success(request, 'Conversación asignada exitosamente.')
+        
+        # Actualizar colas después de la asignación
+        from .services import AsignadorAutomatico
+        AsignadorAutomatico.actualizar_todas_las_colas()
     
-    return redirect('conversaciones:detalle', conversacion_id=conversacion.id)
+    return redirect('conversaciones:lista')
 
 
 @login_required
@@ -387,6 +393,13 @@ def enviar_mensaje_operador(request, conversacion_id):
             remitente='operador',
             contenido=contenido
         )
+        
+        # Marcar primera respuesta si es la primera
+        conversacion.marcar_primera_respuesta()
+        
+        # Notificar mensaje
+        from .services import NotificacionService
+        NotificacionService.notificar_mensaje(conversacion, mensaje)
         
         return JsonResponse({
             'success': True,
@@ -423,11 +436,138 @@ def reasignar_conversacion(request, conversacion_id):
             from django.contrib.auth.models import User
             operador = get_object_or_404(User, id=operador_id)
             
-            # TODO: Crear historial de asignación cuando se migre el modelo
+            conversacion.asignar_operador(operador, request.user)
             
-            conversacion.operador_asignado = operador
-            conversacion.save()
+            # Actualizar colas
+            from .services import AsignadorAutomatico
+            AsignadorAutomatico.actualizar_todas_las_colas()
             
             messages.success(request, f'Conversación reasignada a {operador.get_full_name()} exitosamente.')
     
     return redirect('conversaciones:lista')
+
+
+@login_required
+@user_passes_test(tiene_permiso_conversaciones)
+def metricas_conversaciones(request):
+    """Vista de métricas del sistema de conversaciones"""
+    from .services import MetricasService
+    from .models import ColaAsignacion, MetricasOperador
+    
+    # Métricas globales
+    metricas_globales = MetricasService.calcular_metricas_globales()
+    
+    # Métricas por operador
+    metricas_operadores = MetricasOperador.objects.select_related('operador').all()
+    
+    # Estado de colas
+    colas = ColaAsignacion.objects.select_related('operador').all()
+    
+    return render(request, 'conversaciones/metricas.html', {
+        'metricas_globales': metricas_globales,
+        'metricas_operadores': metricas_operadores,
+        'colas': colas
+    })
+
+
+@login_required
+@user_passes_test(tiene_permiso_conversaciones)
+def configurar_cola(request):
+    """Vista para configurar la cola de asignación"""
+    from .models import ColaAsignacion
+    from .services import AsignadorAutomatico
+    from django.contrib.auth.models import User
+    
+    if request.method == 'POST':
+        operador_id = request.POST.get('operador_id')
+        max_conversaciones = int(request.POST.get('max_conversaciones', 5))
+        activo = request.POST.get('activo') == 'on'
+        
+        if operador_id:
+            operador = get_object_or_404(User, id=operador_id)
+            AsignadorAutomatico.configurar_operador(operador, max_conversaciones, activo)
+            messages.success(request, f'Configuración actualizada para {operador.get_full_name()}')
+    
+    # Obtener operadores con permisos de conversaciones
+    operadores = User.objects.filter(
+        groups__name__in=['Conversaciones', 'OperadorCharla']
+    ).order_by('first_name', 'last_name')
+    
+    colas = ColaAsignacion.objects.select_related('operador').all()
+    
+    return render(request, 'conversaciones/configurar_cola.html', {
+        'operadores': operadores,
+        'colas': colas
+    })
+
+
+@login_required
+@user_passes_test(tiene_permiso_conversaciones)
+def asignacion_automatica(request):
+    """Vista para forzar asignación automática de conversaciones sin asignar (solo a operadores logueados)"""
+    from .services import AsignadorAutomatico
+    
+    # Buscar conversaciones activas sin operador asignado
+    conversaciones_sin_asignar = Conversacion.objects.filter(
+        estado='activa',
+        operador_asignado=None
+    )
+    
+    asignadas = 0
+    sin_operadores = 0
+    
+    for conversacion in conversaciones_sin_asignar:
+        if AsignadorAutomatico.asignar_conversacion_automatica(conversacion):
+            asignadas += 1
+        else:
+            sin_operadores += 1
+    
+    # Actualizar todas las colas
+    AsignadorAutomatico.actualizar_todas_las_colas()
+    
+    if asignadas > 0:
+        messages.success(request, f'{asignadas} conversaciones asignadas automáticamente a operadores logueados')
+    
+    if sin_operadores > 0:
+        messages.warning(request, f'{sin_operadores} conversaciones no pudieron asignarse (no hay operadores logueados disponibles)')
+    
+    if asignadas == 0 and sin_operadores == 0:
+        messages.info(request, 'No hay conversaciones sin asignar')
+    
+    return redirect('conversaciones:lista')
+
+
+@login_required
+@user_passes_test(tiene_permiso_conversaciones)
+def evaluar_conversacion(request, conversacion_id):
+    """Vista para que el ciudadano evalúe la conversación"""
+    conversacion = get_object_or_404(Conversacion, id=conversacion_id)
+    
+    if request.method == 'POST':
+        satisfaccion = request.POST.get('satisfaccion')
+        if satisfaccion:
+            conversacion.satisfaccion = int(satisfaccion)
+            conversacion.save()
+            
+            # Actualizar métricas del operador
+            if conversacion.operador_asignado:
+                from .services import MetricasService
+                MetricasService.actualizar_metricas_operador(conversacion.operador_asignado)
+            
+            return JsonResponse({'success': True})
+    
+    return JsonResponse({'success': False})
+
+
+@login_required
+@user_passes_test(tiene_permiso_conversaciones)
+def api_metricas_tiempo_real(request):
+    """API para obtener métricas en tiempo real"""
+    from .services import MetricasService
+    
+    metricas = MetricasService.calcular_metricas_globales()
+    
+    return JsonResponse({
+        'success': True,
+        'metricas': metricas
+    })

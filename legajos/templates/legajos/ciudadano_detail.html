@@ -39,7 +39,7 @@
                             </a>
                             <a href="{% url 'legajos:admision_paso1' %}?ciudadano={{ ciudadano.pk }}" class="bg-white text-blue-600 px-6 py-3 rounded-xl hover:bg-blue-50 transition-all duration-300 shadow-lg flex items-center space-x-2 font-semibold">
                                 <i class="fas fa-plus"></i>
-                                <span>Nuevo Legajo</span>
+                                <span>Nuevo Acompañamiento</span>
                             </a>
                         </div>
                     </div>
@@ -213,7 +213,7 @@
                 <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
                     <div class="flex justify-between items-center">
                         <div>
-                            <h2 class="text-2xl font-bold mb-1">📋 Legajos de Atención</h2>
+                            <h2 class="text-2xl font-bold mb-1">📋 Acompañamiento</h2>
                             <p class="text-blue-100">Historial completo de atenciones</p>
                         </div>
                         <div class="bg-white bg-opacity-20 px-4 py-2 rounded-full">
@@ -333,7 +333,7 @@
                             <p class="text-gray-600 mb-6 max-w-md mx-auto">Este ciudadano no tiene legajos de atención. Crea el primer legajo para comenzar el seguimiento.</p>
                             <a href="{% url 'legajos:admision_paso1' %}?ciudadano={{ ciudadano.pk }}" class="inline-flex items-center bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl">
                                 <i class="fas fa-plus mr-2"></i>
-                                Crear Primer Legajo
+                                Crear Primer Acompañamiento
                             </a>
                         </div>
                     {% endif %}
@@ -868,7 +868,7 @@ function cargarActividades() {
                             <td class="px-4 py-4 whitespace-nowrap">
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${tipoColor}">
                                     <i class="${tipoIcon} mr-1"></i>
-                                    ${actividad.tipo_display || actividad.tipo}
+                                    ${getTipoNombre(actividad.tipo)}
                                 </span>
                             </td>
                             <td class="px-4 py-4 text-sm text-gray-900">
@@ -933,6 +933,24 @@ function getTipoColor(tipo) {
         'VINCULO': 'bg-orange-100 text-orange-800'
     };
     return colores[tipo] || 'bg-gray-100 text-gray-800';
+}
+
+// Obtener nombre corto para tipo de actividad
+function getTipoNombre(tipo) {
+    const nombres = {
+        'SEGUIMIENTO': 'Seguimiento',
+        'EVALUACION': 'Evaluación',
+        'PLAN': 'Plan',
+        'DERIVACION': 'Derivación',
+        'EVENTO': 'Evento',
+        'CONTACTO': 'Contacto',
+        'CHAT': 'Chat',
+        'ASIGNACION': 'Asignación',
+        'APERTURA': 'Apertura',
+        'CIERRE': 'Cierre',
+        'VINCULO': 'Vínculo'
+    };
+    return nombres[tipo] || tipo;
 }
 
 function toggleRedFamiliar() {

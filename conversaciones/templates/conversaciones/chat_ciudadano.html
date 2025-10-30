@@ -3,390 +3,448 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat SEDRONAR</title>
+    <title>Chat SEDRONAR - Consultas Ciudadanas</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .chat-container {
+            height: 70vh;
+            overflow-y: auto;
+        }
+        .mensaje-ciudadano {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        }
+        .mensaje-operador {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        .typing-indicator {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
-    <div x-data="chatApp()" class="min-h-screen flex items-center justify-center p-4">
-        <!-- Pantalla de selección de tipo -->
-        <div x-show="!conversacionIniciada" class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full border border-gray-100">
-            <!-- Logo y Header -->
-            <div class="text-center mb-8">
-                <div class="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-comments text-white text-2xl"></i>
-                </div>
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">Chat SEDRONAR</h1>
-                <p class="text-gray-600">Conectate con nosotros para recibir ayuda</p>
-            </div>
-            
-            <div class="space-y-4">
-                <button @click="iniciarConversacion('anonima')" 
-                        class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-3">
-                    <i class="fas fa-user-secret"></i>
-                    <span class="font-semibold">Conversación Anónima</span>
-                </button>
-                
-                <button @click="mostrarFormularioDNI = true" 
-                        class="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-4 px-6 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-3">
-                    <i class="fas fa-id-card"></i>
-                    <span class="font-semibold">Conversación Personal</span>
-                </button>
-            </div>
-            
-            <!-- Formulario DNI -->
-            <div x-show="mostrarFormularioDNI" x-transition class="mt-6 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
-                <div class="space-y-4">
+<body class="bg-gray-100">
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-4 shadow-lg">
+            <div class="max-w-4xl mx-auto flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-comments text-2xl mr-3"></i>
                     <div>
-                        <div class="flex items-center gap-2 mb-2">
-                            <i class="fas fa-id-card text-green-600"></i>
-                            <label class="text-sm font-semibold text-green-800">DNI:</label>
+                        <h1 class="text-xl font-bold">Chat SEDRONAR</h1>
+                        <p class="text-blue-100 text-sm">Consultas y orientación ciudadana</p>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <div id="estadoConexion" class="flex items-center text-sm">
+                        <div class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                        <span>En línea</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Contenido Principal -->
+        <main class="flex-1 max-w-4xl mx-auto w-full p-4">
+            <!-- Paso 1: Selección de tipo de consulta -->
+            <div id="paso1" class="bg-white rounded-xl shadow-lg p-6 mb-4">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">¿Cómo podemos ayudarte?</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button onclick="seleccionarTipo('anonima')" 
+                            class="p-6 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all group">
+                        <div class="text-center">
+                            <i class="fas fa-user-secret text-4xl text-gray-400 group-hover:text-blue-500 mb-3"></i>
+                            <h3 class="font-semibold text-gray-900 mb-2">Consulta Anónima</h3>
+                            <p class="text-sm text-gray-600">Realiza tu consulta sin proporcionar datos personales</p>
                         </div>
-                        <input x-model="dni" type="text" maxlength="8" 
-                               class="w-full px-4 py-3 border border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                               placeholder="12345678">
+                    </button>
+                    
+                    <button onclick="seleccionarTipo('personal')" 
+                            class="p-6 border-2 border-gray-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all group">
+                        <div class="text-center">
+                            <i class="fas fa-user text-4xl text-gray-400 group-hover:text-green-500 mb-3"></i>
+                            <h3 class="font-semibold text-gray-900 mb-2">Consulta Personal</h3>
+                            <p class="text-sm text-gray-600">Proporciona tu DNI para un seguimiento personalizado</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Paso 2: Datos personales (solo para consulta personal) -->
+            <div id="paso2" class="bg-white rounded-xl shadow-lg p-6 mb-4 hidden">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Datos Personales</h2>
+                <form id="formDatos" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">DNI</label>
+                            <input type="text" id="dni" maxlength="8" placeholder="12345678" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Sexo</label>
+                            <select id="sexo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">Seleccionar...</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
+                                <option value="X">No binario</option>
+                            </select>
+                        </div>
                     </div>
                     
-                    <div>
-                        <div class="flex items-center gap-2 mb-2">
-                            <i class="fas fa-venus-mars text-green-600"></i>
-                            <label class="text-sm font-semibold text-green-800">Sexo:</label>
-                        </div>
-                        <select x-model="sexo" class="w-full px-4 py-3 border border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                            <option value="">Seleccionar...</option>
-                            <option value="M">Masculino</option>
-                            <option value="F">Femenino</option>
-                            <option value="X">No binario</option>
-                        </select>
+                    <div class="flex justify-between">
+                        <button type="button" onclick="volverPaso1()" 
+                                class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            <i class="fas fa-arrow-left mr-2"></i>Volver
+                        </button>
+                        <button type="button" onclick="consultarRenaper()" 
+                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            <i class="fas fa-search mr-2"></i>Verificar Datos
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Resultado RENAPER -->
+                <div id="resultadoRenaper" class="mt-4 hidden">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <h3 class="font-medium text-green-900 mb-2">Datos verificados:</h3>
+                        <div id="datosVerificados" class="text-sm text-green-800"></div>
+                        <button onclick="iniciarChat()" 
+                                class="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                            <i class="fas fa-comments mr-2"></i>Iniciar Chat
+                        </button>
                     </div>
                 </div>
                 
-                <div class="mt-4 flex gap-3">
-                    <button @click="consultarRenaper()" 
-                            class="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-semibold">
-                        <i class="fas fa-search mr-2"></i>Consultar Datos
-                    </button>
-                    <button @click="mostrarFormularioDNI = false; dni = ''; sexo = ''" 
-                            class="flex-1 bg-gray-400 text-white py-3 px-4 rounded-lg hover:bg-gray-500 transition-colors font-semibold">
-                        <i class="fas fa-times mr-2"></i>Cancelar
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Modal de Términos y Condiciones -->
-            <div x-show="mostrarTerminos" x-transition class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                    <div class="p-6">
-                        <!-- Datos de RENAPER -->
-                        <div class="mb-6">
-                            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                <i class="fas fa-user-check text-green-600"></i>
-                                Datos Verificados
-                            </h3>
-                            <div class="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
-                                <p><strong>Nombre:</strong> <span x-text="datosRenaper?.nombre"></span></p>
-                                <p><strong>Apellido:</strong> <span x-text="datosRenaper?.apellido"></span></p>
-                                <p><strong>DNI:</strong> <span x-text="dni"></span></p>
-                                <p><strong>Fecha de Nacimiento:</strong> <span x-text="datosRenaper?.fecha_nacimiento"></span></p>
-                                <p><strong>Domicilio:</strong> <span x-text="datosRenaper?.domicilio"></span></p>
-                            </div>
-                        </div>
-                        
-                        <!-- Términos y Condiciones -->
-                        <div class="mb-6">
-                            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                <i class="fas fa-file-contract text-blue-600"></i>
-                                Términos y Condiciones
-                            </h3>
-                            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 max-h-60 overflow-y-auto text-sm text-gray-700">
-                                <h4 class="font-semibold mb-2">1. Aceptación de Términos</h4>
-                                <p class="mb-3">Al utilizar este servicio de chat, usted acepta estos términos y condiciones en su totalidad.</p>
-                                
-                                <h4 class="font-semibold mb-2">2. Uso del Servicio</h4>
-                                <p class="mb-3">Este chat está destinado exclusivamente para consultas relacionadas con los servicios de SEDRONAR. El uso indebido del servicio puede resultar en la suspensión del acceso.</p>
-                                
-                                <h4 class="font-semibold mb-2">3. Privacidad y Protección de Datos</h4>
-                                <p class="mb-3">Sus datos personales serán tratados conforme a la Ley de Protección de Datos Personales. La información proporcionada será utilizada únicamente para brindar asistencia y crear su legajo en el sistema.</p>
-                                
-                                <h4 class="font-semibold mb-2">4. Confidencialidad</h4>
-                                <p class="mb-3">Las conversaciones son confidenciales y serán atendidas por personal autorizado de SEDRONAR.</p>
-                                
-                                <h4 class="font-semibold mb-2">5. Limitaciones</h4>
-                                <p class="mb-3">Este servicio no constituye atención médica de emergencia. En caso de emergencia, comuníquese con los servicios de emergencia correspondientes.</p>
-                                
-                                <h4 class="font-semibold mb-2">6. Modificaciones</h4>
-                                <p>SEDRONAR se reserva el derecho de modificar estos términos en cualquier momento.</p>
-                            </div>
-                        </div>
-                        
-                        <!-- Checkbox de aceptación -->
-                        <div class="mb-6">
-                            <label class="flex items-start gap-3 cursor-pointer">
-                                <input type="checkbox" x-model="terminosAceptados" 
-                                       class="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                                <span class="text-sm text-gray-700">
-                                    He leído y acepto los términos y condiciones. Autorizo el tratamiento de mis datos personales y la creación de mi legajo en el sistema de SEDRONAR.
-                                </span>
-                            </label>
-                        </div>
-                        
-                        <!-- Botones -->
-                        <div class="flex gap-3">
-                            <button @click="iniciarConversacion('personal')" 
-                                    :disabled="!terminosAceptados"
-                                    class="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
-                                <i class="fas fa-comments mr-2"></i>Iniciar Chat
+                <!-- Error RENAPER -->
+                <div id="errorRenaper" class="mt-4 hidden">
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <h3 class="font-medium text-yellow-900 mb-2">No se pudieron verificar los datos</h3>
+                        <p class="text-sm text-yellow-800 mb-3">Puedes continuar sin verificación o intentar nuevamente.</p>
+                        <div class="flex gap-2">
+                            <button onclick="iniciarChat()" 
+                                    class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
+                                <i class="fas fa-comments mr-2"></i>Continuar sin verificar
                             </button>
-                            <button @click="mostrarTerminos = false; terminosAceptados = false" 
-                                    class="flex-1 bg-gray-400 text-white py-3 px-4 rounded-lg hover:bg-gray-500 transition-colors font-semibold">
-                                <i class="fas fa-times mr-2"></i>Cancelar
+                            <button onclick="consultarRenaper()" 
+                                    class="px-4 py-2 border border-yellow-600 text-yellow-600 rounded-lg hover:bg-yellow-50">
+                                <i class="fas fa-redo mr-2"></i>Intentar nuevamente
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Info adicional -->
-            <div class="mt-6 text-center text-xs text-gray-500">
-                <p>Tu privacidad es importante para nosotros</p>
-            </div>
-        </div>
-        
-        <!-- Pantalla de chat -->
-        <div x-show="conversacionIniciada" x-transition class="bg-white rounded-2xl shadow-xl max-w-lg w-full h-[600px] flex flex-col overflow-hidden">
-            <!-- Header azul -->
-            <div class="bg-blue-500 text-white px-4 py-3 flex items-center justify-between rounded-t-2xl">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                        <i class="fas fa-comments text-white text-sm"></i>
-                    </div>
-                    <div>
-                        <h2 class="font-medium text-base">Chat SEDRONAR</h2>
-                        <p class="text-xs opacity-90" x-text="tipoConversacion === 'personal' ? 'Conversación Personal' : 'Conversación Anónima'"></p>
+
+            <!-- Paso 3: Chat -->
+            <div id="paso3" class="bg-white rounded-xl shadow-lg hidden">
+                <!-- Header del chat -->
+                <div class="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100 rounded-t-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-comments text-blue-600 text-xl mr-3"></i>
+                            <div>
+                                <h3 class="font-semibold text-gray-900">Conversación Iniciada</h3>
+                                <p class="text-sm text-gray-600" id="infoConversacion">Conectando con un operador...</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <div id="estadoOperador" class="flex items-center text-sm text-gray-600">
+                                <div class="w-2 h-2 bg-yellow-400 rounded-full mr-2 animate-pulse"></div>
+                                <span>Esperando operador</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <button @click="finalizarChat()" class="text-white/80 hover:text-white text-sm">
-                    En línea
-                </button>
+
+                <!-- Área de mensajes -->
+                <div id="mensajes" class="chat-container p-4 space-y-4">
+                    <div class="flex justify-center">
+                        <div class="bg-gray-100 text-gray-600 px-4 py-2 rounded-full text-sm">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Conversación iniciada. Un operador te atenderá pronto.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Indicador de escritura -->
+                <div id="indicadorEscritura" class="px-4 pb-2 hidden">
+                    <div class="flex items-center text-sm text-gray-500">
+                        <div class="typing-indicator w-2 h-2 bg-gray-400 rounded-full mr-1"></div>
+                        <div class="typing-indicator w-2 h-2 bg-gray-400 rounded-full mr-1" style="animation-delay: 0.2s"></div>
+                        <div class="typing-indicator w-2 h-2 bg-gray-400 rounded-full mr-2" style="animation-delay: 0.4s"></div>
+                        <span>El operador está escribiendo...</span>
+                    </div>
+                </div>
+
+                <!-- Input de mensaje -->
+                <div class="p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+                    <div class="flex gap-2">
+                        <input type="text" id="inputMensaje" placeholder="Escribe tu mensaje..." 
+                               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               onkeypress="if(event.key==='Enter') enviarMensaje()">
+                        <button onclick="enviarMensaje()" 
+                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="mt-2 text-xs text-gray-500 text-center">
+                        Presiona Enter para enviar • Tus datos están protegidos
+                    </div>
+                </div>
             </div>
-            
-            <!-- Área de mensajes -->
-            <div class="flex-1 overflow-y-auto p-4 bg-gray-50" x-ref="mensajesContainer">
-                <!-- Mensaje de bienvenida -->
-                <div class="flex items-start gap-2 mb-4">
-                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-robot text-white text-xs"></i>
-                    </div>
-                    <div class="bg-white rounded-lg rounded-tl-none p-3 shadow-sm max-w-xs">
-                        <div class="text-xs font-medium text-blue-600 mb-1">SEDRONAR</div>
-                        <p class="text-sm text-gray-800">¡Hola! Bienvenido al chat de SEDRONAR. ¿En qué podemos ayudarte?</p>
-                        <div class="text-xs text-gray-400 mt-1">Ahora</div>
-                    </div>
+
+            <!-- Evaluación final -->
+            <div id="evaluacion" class="bg-white rounded-xl shadow-lg p-6 hidden">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">¿Cómo fue tu experiencia?</h2>
+                <p class="text-gray-600 mb-4">Tu opinión nos ayuda a mejorar el servicio</p>
+                
+                <div class="flex justify-center gap-2 mb-4">
+                    <button onclick="evaluar(1)" class="evaluacion-btn p-3 text-2xl text-gray-300 hover:text-yellow-400 transition-colors">⭐</button>
+                    <button onclick="evaluar(2)" class="evaluacion-btn p-3 text-2xl text-gray-300 hover:text-yellow-400 transition-colors">⭐</button>
+                    <button onclick="evaluar(3)" class="evaluacion-btn p-3 text-2xl text-gray-300 hover:text-yellow-400 transition-colors">⭐</button>
+                    <button onclick="evaluar(4)" class="evaluacion-btn p-3 text-2xl text-gray-300 hover:text-yellow-400 transition-colors">⭐</button>
+                    <button onclick="evaluar(5)" class="evaluacion-btn p-3 text-2xl text-gray-300 hover:text-yellow-400 transition-colors">⭐</button>
                 </div>
                 
-                <template x-for="mensaje in mensajes" :key="mensaje.id">
-                    <div class="mb-4">
-                        <div x-show="mensaje.remitente === 'operador'" class="flex items-start gap-2">
-                            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                                <i class="fas fa-user text-white text-xs"></i>
-                            </div>
-                            <div class="bg-white rounded-lg rounded-tl-none p-3 shadow-sm max-w-xs">
-                                <div class="text-xs font-medium text-blue-600 mb-1">Operador</div>
-                                <p class="text-sm text-gray-800" x-text="mensaje.contenido"></p>
-                                <div class="text-xs text-gray-400 mt-1" x-text="mensaje.fecha"></div>
-                            </div>
-                        </div>
-                        <div x-show="mensaje.remitente === 'ciudadano'" class="flex justify-end">
-                            <div class="bg-blue-500 text-white rounded-lg rounded-br-none p-3 shadow-sm max-w-xs">
-                                <p class="text-sm" x-text="mensaje.contenido"></p>
-                                <div class="text-xs text-blue-100 mt-1" x-text="mensaje.fecha"></div>
-                            </div>
-                        </div>
-                    </div>
-                </template>
-            </div>
-            
-            <!-- Input inferior -->
-            <div class="border-t border-gray-200 p-3 bg-white rounded-b-2xl">
-                <div class="flex items-center gap-2">
-                    <input x-model="nuevoMensaje" @keyup.enter="enviarMensaje()" 
-                           type="text" placeholder="Escribe tu mensaje..."
-                           class="flex-1 px-3 py-2 bg-gray-100 border-0 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                    <button @click="enviarMensaje()" 
-                            :disabled="!nuevoMensaje.trim()"
-                            class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full transition-colors disabled:opacity-50">
-                        <i class="fas fa-paper-plane text-sm"></i>
+                <div class="text-center">
+                    <button onclick="nuevaConsulta()" 
+                            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-plus mr-2"></i>Nueva Consulta
                     </button>
                 </div>
             </div>
-        </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-white p-4 text-center">
+            <p class="text-sm">SEDRONAR - Secretaría de Políticas Integrales sobre Drogas</p>
+            <p class="text-xs text-gray-400 mt-1">Servicio disponible 24/7 • Confidencial y gratuito</p>
+        </footer>
     </div>
 
     <script>
-        function chatApp() {
-            return {
-                conversacionIniciada: false,
-                mostrarFormularioDNI: false,
-                conversacionId: null,
-                tipoConversacion: null,
-                dni: '',
-                sexo: '',
-                datosRenaper: null,
-                mostrarTerminos: false,
-                terminosAceptados: false,
-                mensajes: [],
-                nuevoMensaje: '',
-                
-                async consultarRenaper() {
-                    if (!this.dni.trim() || !this.sexo) {
-                        this.mostrarNotificacion('Por favor completa DNI y sexo', 'error');
-                        return;
-                    }
-                    
-                    try {
-                        const response = await fetch('/conversaciones/consultar-renaper/', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                dni: this.dni,
-                                sexo: this.sexo
-                            })
-                        });
-                        
-                        const data = await response.json();
-                        if (data.success) {
-                            this.datosRenaper = data.datos;
-                            this.mostrarTerminos = true;
-                        } else {
-                            this.mostrarNotificacion(data.error || 'Error al consultar datos', 'error');
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        this.mostrarNotificacion('Error al consultar datos', 'error');
-                    }
-                },
-                
-                async iniciarConversacion(tipo) {
-                    if (tipo === 'personal' && !this.terminosAceptados) {
-                        this.mostrarNotificacion('Debes aceptar los términos y condiciones', 'error');
-                        return;
-                    }
-                    
-                    try {
-                        const response = await fetch('/conversaciones/iniciar/', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                tipo: tipo,
-                                dni: this.dni,
-                                sexo: this.sexo,
-                                datos_renaper: this.datosRenaper
-                            })
-                        });
-                        
-                        const data = await response.json();
-                        if (data.success) {
-                            this.conversacionId = data.conversacion_id;
-                            this.tipoConversacion = tipo;
-                            this.conversacionIniciada = true;
-                            this.iniciarPolling();
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        this.mostrarNotificacion('Error al iniciar conversación', 'error');
-                    }
-                },
-                
-                async enviarMensaje() {
-                    if (!this.nuevoMensaje.trim()) return;
-                    
-                    try {
-                        const response = await fetch(`/conversaciones/${this.conversacionId}/enviar/`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                mensaje: this.nuevoMensaje
-                            })
-                        });
-                        
-                        const data = await response.json();
-                        if (data.success) {
-                            this.nuevoMensaje = '';
-                            this.cargarMensajes();
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                    }
-                },
-                
-                async cargarMensajes() {
-                    try {
-                        const response = await fetch(`/conversaciones/${this.conversacionId}/mensajes/`);
-                        const data = await response.json();
-                        this.mensajes = data.mensajes;
-                        this.$nextTick(() => {
-                            this.$refs.mensajesContainer.scrollTop = this.$refs.mensajesContainer.scrollHeight;
-                        });
-                    } catch (error) {
-                        console.error('Error:', error);
-                    }
-                },
-                
-                iniciarPolling() {
-                    setInterval(() => {
-                        this.cargarMensajes();
-                    }, 2000);
-                },
-                
-                finalizarChat() {
-                    if (confirm('¿Estás seguro de que quieres finalizar el chat?')) {
-                        this.conversacionIniciada = false;
-                        this.conversacionId = null;
-                        this.tipoConversacion = null;
-                        this.mensajes = [];
-                        this.nuevoMensaje = '';
-                        this.mostrarFormularioDNI = false;
-                        this.dni = '';
-                        this.sexo = '';
-                        this.datosRenaper = null;
-                        this.mostrarTerminos = false;
-                        this.terminosAceptados = false;
-                    }
-                },
-                
-                mostrarNotificacion(mensaje, tipo) {
-                    // Simple notification system
-                    const notification = document.createElement('div');
-                    notification.className = `fixed top-4 right-4 p-4 rounded-lg text-white z-50 ${
-                        tipo === 'error' ? 'bg-red-500' : 'bg-green-500'
-                    }`;
-                    notification.textContent = mensaje;
-                    document.body.appendChild(notification);
-                    
-                    setTimeout(() => {
-                        notification.remove();
-                    }, 3000);
-                }
+        let tipoConsulta = null;
+        let conversacionId = null;
+        let datosRenaper = null;
+        let intervaloPoll = null;
+        let mensajesCargados = new Set();
+
+        function seleccionarTipo(tipo) {
+            tipoConsulta = tipo;
+            document.getElementById('paso1').classList.add('hidden');
+            
+            if (tipo === 'personal') {
+                document.getElementById('paso2').classList.remove('hidden');
+            } else {
+                iniciarChat();
             }
         }
+
+        function volverPaso1() {
+            document.getElementById('paso2').classList.add('hidden');
+            document.getElementById('paso1').classList.remove('hidden');
+            tipoConsulta = null;
+        }
+
+        async function consultarRenaper() {
+            const dni = document.getElementById('dni').value.trim();
+            const sexo = document.getElementById('sexo').value;
+
+            if (!dni || !sexo) {
+                alert('Por favor completa DNI y sexo');
+                return;
+            }
+
+            try {
+                const response = await fetch('/conversaciones/consultar-renaper/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ dni, sexo })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    datosRenaper = data.datos;
+                    document.getElementById('datosVerificados').innerHTML = `
+                        <strong>${data.datos.nombre} ${data.datos.apellido}</strong><br>
+                        DNI: ${dni}<br>
+                        ${data.datos.domicilio ? `Domicilio: ${data.datos.domicilio}` : ''}
+                    `;
+                    document.getElementById('resultadoRenaper').classList.remove('hidden');
+                    document.getElementById('errorRenaper').classList.add('hidden');
+                } else {
+                    document.getElementById('errorRenaper').classList.remove('hidden');
+                    document.getElementById('resultadoRenaper').classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('errorRenaper').classList.remove('hidden');
+            }
+        }
+
+        async function iniciarChat() {
+            try {
+                const payload = {
+                    tipo: tipoConsulta,
+                    prioridad: 'normal'
+                };
+
+                if (tipoConsulta === 'personal') {
+                    payload.dni = document.getElementById('dni').value;
+                    payload.sexo = document.getElementById('sexo').value;
+                    payload.datos_renaper = datosRenaper || {};
+                }
+
+                const response = await fetch('/conversaciones/iniciar/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    conversacionId = data.conversacion_id;
+                    mostrarChat();
+                    iniciarPolling();
+                } else {
+                    alert('Error al iniciar conversación: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al conectar con el servidor');
+            }
+        }
+
+        function mostrarChat() {
+            document.getElementById('paso2').classList.add('hidden');
+            document.getElementById('paso3').classList.remove('hidden');
+            
+            const info = tipoConsulta === 'personal' 
+                ? `Conversación personal - DNI: ${document.getElementById('dni').value}`
+                : 'Conversación anónima';
+            
+            document.getElementById('infoConversacion').textContent = info;
+            document.getElementById('inputMensaje').focus();
+        }
+
+        async function enviarMensaje() {
+            const input = document.getElementById('inputMensaje');
+            const mensaje = input.value.trim();
+
+            if (!mensaje || !conversacionId) return;
+
+            try {
+                const response = await fetch(`/conversaciones/${conversacionId}/enviar/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ mensaje })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    // Agregar mensaje localmente y marcarlo como cargado
+                    const mensajeId = `${data.mensaje.id}-ciudadano`;
+                    if (!mensajesCargados.has(mensajeId)) {
+                        agregarMensaje(data.mensaje.contenido, 'ciudadano', data.mensaje.fecha);
+                        mensajesCargados.add(mensajeId);
+                    }
+                    input.value = '';
+                } else {
+                    console.error('Error al enviar mensaje:', data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function agregarMensaje(contenido, remitente, fecha = null) {
+            const mensajes = document.getElementById('mensajes');
+            const div = document.createElement('div');
+            
+            const esCiudadano = remitente === 'ciudadano';
+            const hora = fecha || new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+            
+            div.className = `flex ${esCiudadano ? 'justify-end' : 'justify-start'}`;
+            div.innerHTML = `
+                <div class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg text-white ${esCiudadano ? 'mensaje-ciudadano' : 'mensaje-operador'}">
+                    <p class="text-sm">${contenido}</p>
+                    <p class="text-xs opacity-75 mt-1">${hora}</p>
+                </div>
+            `;
+            
+            mensajes.appendChild(div);
+            mensajes.scrollTop = mensajes.scrollHeight;
+        }
+
+        async function cargarMensajes() {
+            if (!conversacionId) return;
+
+            try {
+                const response = await fetch(`/conversaciones/${conversacionId}/mensajes/`);
+                const data = await response.json();
+
+                // Solo agregar mensajes nuevos
+                data.mensajes.forEach(msg => {
+                    const mensajeId = `${msg.id}-${msg.remitente}`;
+                    if (!mensajesCargados.has(mensajeId)) {
+                        agregarMensaje(msg.contenido, msg.remitente, msg.fecha);
+                        mensajesCargados.add(mensajeId);
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error al cargar mensajes:', error);
+            }
+        }
+
+        function iniciarPolling() {
+            // Cargar mensajes cada 2 segundos
+            intervaloPoll = setInterval(cargarMensajes, 2000);
+        }
+
+        async function evaluar(puntuacion) {
+            if (!conversacionId) return;
+
+            try {
+                await fetch(`/conversaciones/${conversacionId}/evaluar/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `satisfaccion=${puntuacion}`
+                });
+
+                // Actualizar estrellas
+                const botones = document.querySelectorAll('.evaluacion-btn');
+                botones.forEach((btn, index) => {
+                    btn.style.color = index < puntuacion ? '#fbbf24' : '#d1d5db';
+                });
+
+                setTimeout(() => {
+                    alert('¡Gracias por tu evaluación!');
+                }, 500);
+
+            } catch (error) {
+                console.error('Error al evaluar:', error);
+            }
+        }
+
+        function nuevaConsulta() {
+            location.reload();
+        }
+
+        // Limpiar interval al salir
+        window.addEventListener('beforeunload', () => {
+            if (intervaloPoll) {
+                clearInterval(intervaloPoll);
+            }
+        });
     </script>
-    
-    <style>
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .animate-fade-in {
-            animation: fadeIn 0.3s ease-out;
-        }
-    </style>
 </body>
 </html>

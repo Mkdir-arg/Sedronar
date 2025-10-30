@@ -99,12 +99,15 @@ class InstitucionListView(LoginRequiredMixin, ListView):
     
     def get_queryset(self):
         if self.request.user.is_superuser:
-            # Super admin ve todas las instituciones
-            return Institucion.objects.all().order_by('nombre')
-        else:
-            # Usuario normal ve solo instituciones donde es encargado
+            # Super admin ve todas las instituciones aprobadas
             return Institucion.objects.filter(
-                encargados=self.request.user
+                estado_registro='APROBADO'
+            ).order_by('nombre')
+        else:
+            # Usuario normal ve solo instituciones aprobadas donde es encargado
+            return Institucion.objects.filter(
+                encargados=self.request.user,
+                estado_registro='APROBADO'
             ).order_by('nombre')
 
 

@@ -18,4 +18,11 @@ urlpatterns = [
     path('<int:conversacion_id>/reasignar/', views.reasignar_conversacion, name='reasignar'),
     path('<int:conversacion_id>/responder/', views.enviar_mensaje_operador, name='enviar_mensaje_operador'),
     path('<int:conversacion_id>/cerrar/', views.cerrar_conversacion, name='cerrar'),
+    path('<int:conversacion_id>/evaluar/', views.evaluar_conversacion, name='evaluar'),
+    
+    # Métricas y gestión
+    path('metricas/', views.metricas_conversaciones, name='metricas'),
+    path('configurar-cola/', views.configurar_cola, name='configurar_cola'),
+    path('asignacion-automatica/', views.asignacion_automatica, name='asignacion_automatica'),
+    path('api/metricas/', views.api_metricas_tiempo_real, name='api_metricas'),
 ]

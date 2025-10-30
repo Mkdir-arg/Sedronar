@@ -103,8 +103,8 @@ class LegajoAtencion(LegajoBase):
     )
     
     class Meta:
-        verbose_name = "Legajo de Atención"
-        verbose_name_plural = "Legajos de Atención"
+        verbose_name = "Acompañamiento"
+        verbose_name_plural = "Acompañamientos"
         indexes = [
             models.Index(fields=["ciudadano", "dispositivo"]),
             models.Index(fields=["estado"]),
