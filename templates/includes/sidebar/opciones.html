@@ -125,8 +125,8 @@
                                 <a href="{% url 'configuracion:localidades' %}" class="{% if 'localidades' in pagina_actual %}bg-white/20 text-white{% else %}text-blue-200 hover:text-white hover:bg-white/10{% endif %} block rounded-lg py-2 px-3 text-sm transition-colors">
                                     <i class="fas fa-map-marker-alt mr-2 text-xs"></i>Localidades
                                 </a>
-                                <a href="{% url 'configuracion:dispositivos' %}" class="{% if 'dispositivos' in pagina_actual %}bg-white/20 text-white{% else %}text-blue-200 hover:text-white hover:bg-white/10{% endif %} block rounded-lg py-2 px-3 text-sm transition-colors">
-                                    <i class="fas fa-network-wired mr-2 text-xs"></i>Dispositivos
+                                <a href="{% url 'configuracion:instituciones' %}" class="{% if 'instituciones' in pagina_actual %}bg-white/20 text-white{% else %}text-blue-200 hover:text-white hover:bg-white/10{% endif %} block rounded-lg py-2 px-3 text-sm transition-colors">
+                                    <i class="fas fa-building mr-2 text-xs"></i>Instituciones
                                 </a>
                             </div>
                         </div>
@@ -183,6 +183,19 @@
                 </div>
             {% endif %}
 
+            <!-- Trámites -->
+            {% if request.user.is_staff or request.user|has_group:"Administrador" or request.user|has_group:"Supervisor" %}
+                <div class="relative">
+                    <a href="{% url 'tramites:lista_tramites' %}" class="{% if 'tramites' in pagina_actual %}bg-white/20 text-white{% else %}text-blue-100 hover:text-white hover:bg-white/10{% endif %} group flex items-center rounded-xl p-3 text-sm font-medium transition-all duration-200" :class="sidebarCollapsed ? 'justify-center' : 'gap-x-3'">
+                        <i class="fas fa-clipboard-list text-base"></i>
+                        <span x-show="!sidebarCollapsed" class="ml-3">Trámites</span>
+                    </a>
+                    <div x-show="sidebarCollapsed" class="absolute left-full ml-6 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                        Trámites
+                    </div>
+                </div>
+            {% endif %}
+
             <!-- Conversaciones -->
             {% if request.user|has_group:"Conversaciones" or request.user|has_group:"OperadorCharla" %}
                 <div class="relative">
@@ -196,37 +209,37 @@
                 </div>
             {% endif %}
 
-            <!-- Dispositivos -->
-            {% if request.user|has_group:"EncargadoDispositivo" or request.user.is_superuser %}
-                <div x-data="{ open: {% if 'dispositivo' in pagina_actual %}true{% else %}false{% endif %} }" class="relative">
+            <!-- Instituciones -->
+            {% if request.user|has_group:"EncargadoInstitucion" or request.user|has_group:"EncargadoDispositivo" or request.user.is_superuser %}
+                <div x-data="{ open: {% if 'institucion' in pagina_actual or 'dispositivo' in pagina_actual %}true{% else %}false{% endif %} }" class="relative">
                     <template x-if="!sidebarCollapsed">
                         <div>
                             <button @click="open = !open" class="text-blue-100 hover:text-white hover:bg-white/10 group flex w-full items-center gap-x-3 rounded-xl p-3 text-left text-sm font-medium transition-all duration-200">
-                                <i class="fas fa-network-wired text-base"></i>
-                                <span class="flex-1">Dispositivos</span>
+                                <i class="fas fa-building text-base"></i>
+                                <span class="flex-1">Instituciones</span>
                                 <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
                             </button>
                             <div x-show="open" x-transition class="mt-1 ml-6 space-y-1">
                                 {% if request.user.is_superuser %}
-                                    {% for dispositivo in todos_dispositivos %}
-                                        <a href="{% url 'legajos:dispositivo_derivaciones' dispositivo.id %}" class="{% if request.resolver_match.kwargs.dispositivo_id == dispositivo.id|stringformat:'s' %}bg-white/20 text-white{% else %}text-blue-200 hover:text-white hover:bg-white/10{% endif %} block rounded-lg py-2 px-3 text-sm transition-colors">
-                                            <i class="fas fa-building mr-2 text-xs"></i>{{ dispositivo.nombre|truncatechars:25 }}
+                                    {% for institucion in todas_instituciones %}
+                                        <a href="{% url 'configuracion:instituciones' %}" class="text-blue-200 hover:text-white hover:bg-white/10 block rounded-lg py-2 px-3 text-sm transition-colors">
+                                            <i class="fas fa-hospital mr-2 text-xs"></i>{{ institucion.nombre|truncatechars:25 }}
                                         </a>
                                     {% empty %}
                                         <span class="text-blue-300 block py-2 px-3 text-xs italic">
-                                            No hay dispositivos registrados
+                                            No hay instituciones registradas
                                         </span>
                                     {% endfor %}
                                 {% else %}
-                                    {% for dispositivo in request.user.dispositivos_encargados.all %}
-                                        {% if dispositivo.activo %}
-                                            <a href="{% url 'legajos:dispositivo_derivaciones' dispositivo.id %}" class="{% if request.resolver_match.kwargs.dispositivo_id == dispositivo.id|stringformat:'s' %}bg-white/20 text-white{% else %}text-blue-200 hover:text-white hover:bg-white/10{% endif %} block rounded-lg py-2 px-3 text-sm transition-colors">
-                                                <i class="fas fa-building mr-2 text-xs"></i>{{ dispositivo.nombre|truncatechars:25 }}
+                                    {% for institucion in request.user.instituciones_encargadas.all %}
+                                        {% if institucion.activo %}
+                                            <a href="{% url 'configuracion:instituciones' %}" class="text-blue-200 hover:text-white hover:bg-white/10 block rounded-lg py-2 px-3 text-sm transition-colors">
+                                                <i class="fas fa-hospital mr-2 text-xs"></i>{{ institucion.nombre|truncatechars:25 }}
                                             </a>
                                         {% endif %}
                                     {% empty %}
                                         <span class="text-blue-300 block py-2 px-3 text-xs italic">
-                                            Sin dispositivos asignados
+                                            Sin instituciones asignadas
                                         </span>
                                     {% endfor %}
                                 {% endif %}
@@ -236,12 +249,12 @@
                     
                     <template x-if="sidebarCollapsed">
                         <div class="group flex items-center justify-center rounded-xl p-3 text-sm font-medium transition-all duration-200 text-blue-100 hover:text-white hover:bg-white/10">
-                            <i class="fas fa-network-wired text-base"></i>
+                            <i class="fas fa-building text-base"></i>
                         </div>
                     </template>
                     
                     <div x-show="sidebarCollapsed" class="absolute left-full ml-6 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-                        Dispositivos
+                        Instituciones
                     </div>
                 </div>
             {% endif %}

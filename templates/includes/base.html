@@ -14,10 +14,21 @@
                 theme: {
                     extend: {
                         colors: {
-                            'arg-azul': '#232D4F',
-                            'arg-secundario': '#3E5A7E',
-                            primary: '#232D4F',
-                            secondary: '#3E5A7E',
+                            // Paleta unificada SEDRONAR
+                            'primario': '#1e3a8a',
+                            'primario-claro': '#3b82f6',
+                            'primario-oscuro': '#1e40af',
+                            'secundario': '#475569',
+                            'secundario-claro': '#64748b',
+                            'secundario-oscuro': '#334155',
+                            'acento': '#0f766e',
+                            'acento-claro': '#14b8a6',
+                            'acento-oscuro': '#0d9488',
+                            // Compatibilidad con nombres anteriores
+                            'arg-azul': '#1e3a8a',
+                            'arg-secundario': '#475569',
+                            primary: '#1e3a8a',
+                            secondary: '#475569',
                         },
                         fontFamily: {
                             'lora': ['Lora', 'serif'],
@@ -39,6 +50,9 @@
         <!-- Alpine.js for interactivity -->
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
         
+        <!-- Paleta de colores unificada (DEBE IR PRIMERO) -->
+        <link rel="stylesheet" href="{% static 'custom/css/paleta-unificada.css' %}" />
+        
         <!-- Custom CSS Files -->
         <link rel="stylesheet" href="{% static 'custom/css/main.css' %}" />
         <link rel="stylesheet" href="{% static 'custom/css/custom.css' %}" />
@@ -54,7 +68,7 @@
         
         <title>SEDRONAR - {% block title %}{% endblock %}</title>
     </head>
-    <body class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 font-montserrat" x-data="{ sidebarOpen: false, sidebarCollapsed: false }">
+    <body class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-slate-100 font-montserrat" x-data="{ sidebarOpen: false, sidebarCollapsed: false }" style="background: var(--fondo-principal);">
         <div class="min-h-full">
             {% include 'includes/navbar.html' %}
             {% include 'includes/sidebar/base.html' %}

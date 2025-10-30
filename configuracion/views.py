@@ -2,8 +2,12 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
-from core.models import Provincia, Municipio, Localidad, DispositivoRed
-from .forms import ProvinciaForm, MunicipioForm, LocalidadForm, DispositivoForm
+from core.models import Provincia, Municipio, Localidad, Institucion
+from .forms import ProvinciaForm, MunicipioForm, LocalidadForm, InstitucionForm
+
+# Alias para compatibilidad
+DispositivoRed = Institucion
+DispositivoForm = InstitucionForm
 
 
 class ProvinciaListView(LoginRequiredMixin, ListView):
@@ -87,57 +91,73 @@ class LocalidadDeleteView(LoginRequiredMixin, DeleteView):
     success_url = reverse_lazy('configuracion:localidades')
 
 
-class DispositivoListView(LoginRequiredMixin, ListView):
-    model = DispositivoRed
-    template_name = 'configuracion/dispositivo_list.html'
-    context_object_name = 'dispositivos'
+class InstitucionListView(LoginRequiredMixin, ListView):
+    model = Institucion
+    template_name = 'configuracion/institucion_list.html'
+    context_object_name = 'instituciones'
     paginate_by = 20
     
     def get_queryset(self):
         if self.request.user.is_superuser:
-            # Super admin ve todos los dispositivos
-            return DispositivoRed.objects.all().order_by('nombre')
+            # Super admin ve todas las instituciones
+            return Institucion.objects.all().order_by('nombre')
         else:
-            # Usuario normal ve solo dispositivos donde es encargado
-            return DispositivoRed.objects.filter(
+            # Usuario normal ve solo instituciones donde es encargado
+            return Institucion.objects.filter(
                 encargados=self.request.user
             ).order_by('nombre')
 
 
-class DispositivoCreateView(LoginRequiredMixin, CreateView):
-    model = DispositivoRed
-    form_class = DispositivoForm
-    template_name = 'configuracion/dispositivo_form.html'
-    success_url = reverse_lazy('configuracion:dispositivos')
+# Alias para compatibilidad
+DispositivoListView = InstitucionListView
+
+
+class InstitucionCreateView(LoginRequiredMixin, CreateView):
+    model = Institucion
+    form_class = InstitucionForm
+    template_name = 'configuracion/institucion_form.html'
+    success_url = reverse_lazy('configuracion:instituciones')
     
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_superuser:
             from django.contrib import messages
-            messages.error(request, 'No tiene permisos para crear dispositivos.')
-            return redirect('configuracion:dispositivos')
+            messages.error(request, 'No tiene permisos para crear instituciones.')
+            return redirect('configuracion:instituciones')
         return super().dispatch(request, *args, **kwargs)
 
 
-class DispositivoUpdateView(LoginRequiredMixin, UpdateView):
-    model = DispositivoRed
-    form_class = DispositivoForm
-    template_name = 'configuracion/dispositivo_form.html'
-    success_url = reverse_lazy('configuracion:dispositivos')
+# Alias para compatibilidad
+DispositivoCreateView = InstitucionCreateView
+
+
+class InstitucionUpdateView(LoginRequiredMixin, UpdateView):
+    model = Institucion
+    form_class = InstitucionForm
+    template_name = 'configuracion/institucion_form.html'
+    success_url = reverse_lazy('configuracion:instituciones')
     
     def get_queryset(self):
         if self.request.user.is_superuser:
-            return DispositivoRed.objects.all()
+            return Institucion.objects.all()
         else:
-            return DispositivoRed.objects.filter(encargados=self.request.user)
+            return Institucion.objects.filter(encargados=self.request.user)
 
 
-class DispositivoDeleteView(LoginRequiredMixin, DeleteView):
-    model = DispositivoRed
-    template_name = 'configuracion/dispositivo_confirm_delete.html'
-    success_url = reverse_lazy('configuracion:dispositivos')
+# Alias para compatibilidad
+DispositivoUpdateView = InstitucionUpdateView
+
+
+class InstitucionDeleteView(LoginRequiredMixin, DeleteView):
+    model = Institucion
+    template_name = 'configuracion/institucion_confirm_delete.html'
+    success_url = reverse_lazy('configuracion:instituciones')
     
     def get_queryset(self):
         if self.request.user.is_superuser:
-            return DispositivoRed.objects.all()
+            return Institucion.objects.all()
         else:
-            return DispositivoRed.objects.filter(encargados=self.request.user)
+            return Institucion.objects.filter(encargados=self.request.user)
+
+
+# Alias para compatibilidad
+DispositivoDeleteView = InstitucionDeleteView

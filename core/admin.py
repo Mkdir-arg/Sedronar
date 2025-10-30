@@ -8,7 +8,8 @@ from core.models import (
     Mes,
     Dia,
     Turno,
-    DispositivoRed,
+    Institucion,
+    DocumentoRequerido,
 )
 
 admin.site.register(Provincia)
@@ -31,16 +32,24 @@ class LocalidadAdmin(admin.ModelAdmin):
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
-@admin.register(DispositivoRed)
-class DispositivoRedAdmin(admin.ModelAdmin):
-    list_display = ("nombre", "tipo", "activo", "municipio", "provincia")
-    list_filter = ("tipo", "activo", "provincia")
-    search_fields = ("nombre", "municipio__nombre", "provincia__nombre")
+class DocumentoRequeridoInline(admin.TabularInline):
+    model = DocumentoRequerido
+    extra = 0
+    fields = ('tipo', 'archivo', 'estado', 'obligatorio', 'observaciones')
+    readonly_fields = ('creado',)
+
+
+@admin.register(Institucion)
+class InstitucionAdmin(admin.ModelAdmin):
+    list_display = ("nombre", "tipo", "estado_registro", "activo", "municipio", "provincia")
+    list_filter = ("tipo", "estado_registro", "activo", "provincia", "presta_asistencia")
+    search_fields = ("nombre", "municipio__nombre", "provincia__nombre", "nro_registro")
     ordering = ("provincia", "municipio", "nombre")
+    inlines = [DocumentoRequeridoInline]
     
     fieldsets = (
         ("Información Básica", {
-            "fields": ("nombre", "tipo", "activo")
+            "fields": ("nombre", "tipo", "activo", "descripcion")
         }),
         ("Ubicación", {
             "fields": ("provincia", "municipio", "localidad", "direccion")
@@ -48,15 +57,39 @@ class DispositivoRedAdmin(admin.ModelAdmin):
         ("Contacto", {
             "fields": ("telefono", "email")
         }),
-        ("Personal", {
-            "fields": ("encargados",)
+        ("Estado del Registro", {
+            "fields": ("estado_registro", "fecha_solicitud", "fecha_aprobacion", "observaciones")
         }),
-        ("Registro", {
+        ("Información Legal", {
+            "fields": ("tipo_personeria", "nro_personeria", "fecha_personeria", "cuit")
+        }),
+        ("Registro SEDRONAR", {
             "fields": ("nro_registro", "resolucion", "fecha_alta")
         }),
-        ("Descripción", {
-            "fields": ("descripcion",)
+        ("Servicios", {
+            "fields": ("presta_asistencia", "convenio_obras_sociales", "nro_sss")
+        }),
+        ("Personal", {
+            "fields": ("encargados",)
         }),
     )
     
     filter_horizontal = ('encargados',)
+    
+    def get_readonly_fields(self, request, obj=None):
+        readonly = ['fecha_alta']
+        if obj and obj.estado_registro == 'APROBADO':
+            readonly.extend(['nro_registro', 'resolucion', 'fecha_aprobacion'])
+        return readonly
+
+
+@admin.register(DocumentoRequerido)
+class DocumentoRequeridoAdmin(admin.ModelAdmin):
+    list_display = ('institucion', 'tipo', 'estado', 'obligatorio', 'creado')
+    list_filter = ('tipo', 'estado', 'obligatorio')
+    search_fields = ('institucion__nombre',)
+    ordering = ('institucion', 'tipo')
+
+
+# Alias para compatibilidad hacia atrás
+DispositivoRedAdmin = InstitucionAdmin

@@ -1,9 +1,11 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView
 from django.db.models import Count, Q
+from django.utils import timezone
 from datetime import datetime, timedelta
 from dashboard.utils import contar_usuarios, contar_ciudadanos
-from legajos.models import LegajoAtencion, Ciudadano, SeguimientoContacto, Derivacion
+from legajos.models import LegajoAtencion, Ciudadano, SeguimientoContacto, AlertaCiudadano
+from users.models import User
 
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = "dashboard.html"
@@ -12,30 +14,27 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         
         # Datos básicos del sistema
-        context["total_usuarios"] = contar_usuarios()
-        context["total_ciudadanos"] = contar_ciudadanos()
+        context["total_usuarios"] = User.objects.filter(is_active=True).count()
+        context["total_ciudadanos"] = Ciudadano.objects.count()
         
         # Estadísticas de legajos
         context["total_legajos"] = LegajoAtencion.objects.count()
-        context["legajos_abiertos"] = LegajoAtencion.objects.filter(estado='ABIERTO').count()
-        context["legajos_seguimiento"] = LegajoAtencion.objects.filter(estado='EN_SEGUIMIENTO').count()
-        context["legajos_riesgo_alto"] = LegajoAtencion.objects.filter(nivel_riesgo='ALTO').count()
+        context["legajos_activos"] = LegajoAtencion.objects.filter(estado__in=['ABIERTO', 'EN_SEGUIMIENTO']).count()
         
-        # Actividad reciente (últimos 7 días)
-        fecha_limite = datetime.now().date() - timedelta(days=7)
-        context["legajos_nuevos_semana"] = LegajoAtencion.objects.filter(fecha_apertura__gte=fecha_limite).count()
-        context["seguimientos_semana"] = SeguimientoContacto.objects.filter(creado__date__gte=fecha_limite).count()
-        context["derivaciones_pendientes"] = Derivacion.objects.filter(estado='PENDIENTE').count()
+        # Actividad de hoy
+        hoy = timezone.now().date()
+        context["seguimientos_hoy"] = SeguimientoContacto.objects.filter(creado__date=hoy).count()
+        context["alertas_activas"] = AlertaCiudadano.objects.filter(activa=True).count()
         
-        # Legajos recientes para mostrar
-        context["legajos_recientes"] = LegajoAtencion.objects.select_related(
-            'ciudadano', 'dispositivo'
-        ).order_by('-fecha_apertura')[:5]
+        # Actividad del mes
+        inicio_mes = hoy.replace(day=1)
+        context["registros_mes"] = LegajoAtencion.objects.filter(fecha_apertura__gte=inicio_mes).count()
         
-        # Métricas de calidad para dashboard
-        from legajos.views import ReportesView
-        reportes_view = ReportesView()
-        context["ttr_promedio"] = reportes_view._calcular_ttr_promedio()
-        context["adherencia_adecuada"] = reportes_view._calcular_adherencia()
+        # Usuarios activos (últimas 24 horas)
+        hace_24h = timezone.now() - timedelta(hours=24)
+        context["usuarios_activos"] = User.objects.filter(last_login__gte=hace_24h).count()
+        
+        # Actividad de hoy para mostrar en el dashboard
+        context["actividad_hoy"] = context["seguimientos_hoy"]
         
         return context

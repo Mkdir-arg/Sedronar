@@ -3,7 +3,10 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.core.exceptions import ValidationError
-from core.models import TimeStamped, LegajoBase, DispositivoRed
+from core.models import TimeStamped, LegajoBase, Institucion
+
+# Alias para compatibilidad
+DispositivoRed = Institucion
 
 
 class Ciudadano(TimeStamped):
@@ -71,9 +74,10 @@ class LegajoAtencion(LegajoBase):
         related_name="legajos"
     )
     dispositivo = models.ForeignKey(
-        DispositivoRed, 
+        Institucion, 
         on_delete=models.PROTECT, 
-        related_name="legajos"
+        related_name="legajos",
+        verbose_name="Institución"
     )
     responsable = models.ForeignKey(
         User,
@@ -412,14 +416,16 @@ class Derivacion(TimeStamped):
         related_name="derivaciones"
     )
     origen = models.ForeignKey(
-        DispositivoRed, 
+        Institucion, 
         on_delete=models.PROTECT, 
-        related_name="derivaciones_origen"
+        related_name="derivaciones_origen",
+        verbose_name="Institución Origen"
     )
     destino = models.ForeignKey(
-        DispositivoRed, 
+        Institucion, 
         on_delete=models.PROTECT, 
-        related_name="derivaciones_destino"
+        related_name="derivaciones_destino",
+        verbose_name="Institución Destino"
     )
     motivo = models.TextField()
     urgencia = models.CharField(

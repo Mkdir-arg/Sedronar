@@ -4,15 +4,15 @@ footer.app-footer {
     position: sticky;
     width: 100%;
     height: 110px !important;
-    background-color: #232d4f !important;
-    border-top: 15px solid #e7ba61 !important;
-    color: #ffffff !important;
+    background-color: var(--fondo-footer) !important;
+    border-top: 15px solid var(--color-acento) !important;
+    color: var(--texto-blanco) !important;
     margin-top: auto;
     z-index: 3 !important;
 }
 
 .app-sidebar {
-    background-color: #232d4f !important;
+    background: var(--fondo-sidebar) !important;
     position: fixed;
     top: 72px !important;
     z-index:3;
@@ -71,9 +71,9 @@ header.main-header {
     top: 0;
     left: 0;
     right: 0;
-    background-color: #232d4f !important;
-    border-bottom: 5px solid #e7ba61 !important;
-    color: #ffffff !important;
+    background-color: var(--fondo-header) !important;
+    border-bottom: 5px solid var(--color-acento) !important;
+    color: var(--texto-blanco) !important;
 }
 
 
@@ -94,7 +94,7 @@ header.main-header {
     }
 
 .sidebar-wrapper .sidebar-menu > .nav-item > .nav-link.active:not(:hover) {
-    color: #e7ba61;
+    color: var(--color-acento-claro);
 }
 
 
@@ -119,13 +119,13 @@ ul > .nav-main-item:first-child>a {
 .nav-main-item.menu-open::before {
     content: "";
     position: absolute;
-    border-left: 12px solid #e7ba61;
+    border-left: 12px solid var(--color-acento);
     height: 60px;
     width: 12px;
 }
 
 .nav-item.menu-open > .nav-link {
-    color: #e7ba61 !important;
+    color: var(--color-acento-claro) !important;
 }
 
 .nav-item {
@@ -137,7 +137,7 @@ ul > .nav-main-item:first-child>a {
 }
 
 .nav-item.menu-open > .nav-link img {
-    filter: invert(67%) sepia(54%) saturate(559%) hue-rotate(340deg) brightness(230%) contrast(50%);
+    filter: invert(67%) sepia(54%) saturate(559%) hue-rotate(180deg) brightness(230%) contrast(50%);
 }
 
 .sidebar-menu .nav-link {
@@ -182,6 +182,6 @@ aside .nav-link p {
 }
 
 .btn-warning {
-    background-color: #e7ba61;
-    border-color: #e7ba61;
+    background-color: var(--color-advertencia);
+    border-color: var(--color-advertencia);
 }

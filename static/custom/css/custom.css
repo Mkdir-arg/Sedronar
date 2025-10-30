@@ -38,28 +38,28 @@ input:-internal-autofill-selected {
 
 
 .callout.callout-danger {
-  color: #fb4733;
+  color: var(--color-error);
 }
 .dark-mode .callout.callout-danger {
-border-left-color: #fb4733 !important;
+border-left-color: var(--color-error) !important;
 }
 
 .badge-alertas {
-  color: #fff;
-  background-color: #fb4733;
+  color: var(--color-blanco);
+  background-color: var(--color-error);
 }
 
 .badge-Critica {
-  color: #fff;
-  background-color: #fb4733;
+  color: var(--color-blanco);
+  background-color: var(--color-error);
 }
 .badge-Importante {
-  color: #000000;
-  background-color: #eca20f;
+  color: var(--color-blanco);
+  background-color: var(--color-advertencia);
 }
 .badge-Precaución {
-  color: #000000;
-  background-color: #eee246;
+  color: var(--color-gris-900);
+  background-color: var(--color-advertencia-claro);
 }
 
 .callout.callout-Importante {
@@ -100,28 +100,28 @@ border-left-color: #fb4733 !important;
 /* PARA PROYECTO SISTEMA SOCIAL */
 
 .dark-mode {
-  background-color: #2a4160 !important;
-  color: #fff;
+  background-color: var(--color-gris-800) !important;
+  color: var(--color-blanco);
 }
 
 .login-page, .register-page {
-  background-color: #2a4160 !important;
+  background-color: var(--color-primario) !important;
 }
 
 .navbar-dark {
-  background-color: #2a4160 !important;
-  border-color: #21283a !important;
+  background-color: var(--color-primario) !important;
+  border-color: var(--color-primario-oscuro) !important;
 }
 
 [class*="sidebar-dark-"] {
-  background-color: #2a4160 !important;
+  background: var(--fondo-sidebar) !important;
 }
 
 .layout-navbar-fixed .wrapper .sidebar-dark-primary .brand-link:not([class*="navbar"]) {
-  background-color: #2a4160 !important;
+  background: var(--fondo-sidebar) !important;
 }
 .dark-mode .content-wrapper {
-  background-color: rgb(42 59 82) !important;
+  background-color: var(--color-gris-800) !important;
 }
 
 
@@ -166,26 +166,26 @@ border-left-color: #fb4733 !important;
 
 /* Mejoras para títulos de tarjetas en ambos modos */
 .card-header .card-title {
-  color: #1a1a1a !important;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+  color: var(--texto-primario) !important;
+  text-shadow: var(--sombra-sm);
   font-weight: 700 !important;
   letter-spacing: 0.5px;
 }
 
 [data-bs-theme="dark"] .card-header .card-title {
-  color: #ffffff !important;
+  color: var(--color-blanco) !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 /* Mejorar contraste de headers en modo claro */
 .card-header {
-  background-color: #f8f9fa !important;
-  border-bottom: 2px solid #007bff;
+  background: linear-gradient(135deg, var(--color-gris-50) 0%, var(--color-gris-100) 100%) !important;
+  border-bottom: 2px solid var(--color-primario);
 }
 
 [data-bs-theme="dark"] .card-header {
-  background-color: #3a4148 !important;
-  border-bottom: 2px solid #0d6efd;
+  background: linear-gradient(135deg, var(--color-gris-700) 0%, var(--color-gris-800) 100%) !important;
+  border-bottom: 2px solid var(--color-acento);
 }
 
 /* Mejoras adicionales para el contenido de las tarjetas */

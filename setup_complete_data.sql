@@ -113,18 +113,18 @@ INSERT IGNORE INTO core_localidad (id, nombre, municipio_id) VALUES
 (15, 'Centro', 12);
 
 -- ========================================
--- 3. DISPOSITIVOS DE LA RED SEDRONAR
+-- 3. INSTITUCIONES DE LA RED SEDRONAR
 -- ========================================
 
-INSERT IGNORE INTO core_dispositivored (id, tipo, nombre, provincia_id, municipio_id, localidad_id, direccion, telefono, email, activo, nro_registro, resolucion, fecha_alta, descripcion, creado, modificado) VALUES 
-(1, 'DTC', 'DTC Buenos Aires Centro', 24, 1, 1, 'Av. Corrientes 1234', '011-4567-8901', 'dtc.bsas.centro@sedronar.gob.ar', 1, 'DTC-001', 'Res. 123/2024', '2024-01-15', 'Dispositivo Territorial Comunitario en el centro de CABA', NOW(), NOW()),
-(2, 'CAAC', 'CAAC La Plata', 1, 2, 5, 'Calle 7 entre 47 y 48', '0221-456-7890', 'caac.laplata@sedronar.gob.ar', 1, 'CAAC-001', 'Res. 124/2024', '2024-01-15', 'Casa de Atención y Acompañamiento Comunitario', NOW(), NOW()),
-(3, 'CAI', 'CAI Buenos Aires Sur', 24, 1, 4, 'Ramón Carrillo 375', '011-4305-0061', 'cai.bsas.sur@sedronar.gob.ar', 1, 'CAI-001', 'Res. 125/2024', '2024-01-15', 'Centro de Asistencia Inmediata', NOW(), NOW()),
-(4, 'DTC', 'DTC Córdoba Capital', 5, 5, 8, 'Av. Colón 1456', '0351-234-5678', 'dtc.cordoba@sedronar.gob.ar', 1, 'DTC-002', 'Res. 126/2024', '2024-01-15', 'Dispositivo Territorial Comunitario Córdoba', NOW(), NOW()),
-(5, 'CAAC', 'CAAC Rosario', 20, 6, 9, 'Bv. Oroño 789', '0341-567-8901', 'caac.rosario@sedronar.gob.ar', 1, 'CAAC-002', 'Res. 127/2024', '2024-01-15', 'Casa de Atención y Acompañamiento Comunitario Rosario', NOW(), NOW()),
-(6, 'CCC', 'CCC Mendoza', 12, 7, 10, 'San Martín 234', '0261-345-6789', 'ccc.mendoza@sedronar.gob.ar', 1, 'CCC-001', 'Res. 128/2024', '2024-01-15', 'Casa Comunitaria Convivencial Mendoza', NOW(), NOW()),
-(7, 'CT', 'CT Tucumán', 23, 8, 11, 'Av. Independencia 567', '0381-456-7890', 'ct.tucuman@sedronar.gob.ar', 1, 'CT-001', 'Res. 129/2024', '2024-01-15', 'Comunidad Terapéutica Tucumán', NOW(), NOW()),
-(8, 'IC', 'IC Salta Norte', 16, 9, 12, 'Av. San Martín 890', '0387-567-8901', 'ic.salta@sedronar.gob.ar', 1, 'IC-001', 'Res. 130/2024', '2024-01-15', 'Institución Conveniada Salta', NOW(), NOW());
+INSERT IGNORE INTO core_institucion (id, tipo, nombre, provincia_id, municipio_id, localidad_id, direccion, telefono, email, activo, nro_registro, resolucion, fecha_alta, descripcion, estado_registro, fecha_aprobacion, creado, modificado) VALUES 
+(1, 'DTC', 'DTC Buenos Aires Centro', 24, 1, 1, 'Av. Corrientes 1234', '011-4567-8901', 'dtc.bsas.centro@sedronar.gob.ar', 1, 'DTC-001-2024', 'Res. 123/2024', '2024-01-15', 'Dispositivo Territorial Comunitario en el centro de CABA', 'APROBADO', '2024-01-15', NOW(), NOW()),
+(2, 'CAAC', 'CAAC La Plata', 1, 2, 5, 'Calle 7 entre 47 y 48', '0221-456-7890', 'caac.laplata@sedronar.gob.ar', 1, 'CAAC-001-2024', 'Res. 124/2024', '2024-01-15', 'Casa de Atención y Acompañamiento Comunitario', 'APROBADO', '2024-01-15', NOW(), NOW()),
+(3, 'CAI', 'CAI Buenos Aires Sur', 24, 1, 4, 'Ramón Carrillo 375', '011-4305-0061', 'cai.bsas.sur@sedronar.gob.ar', 1, 'CAI-001-2024', 'Res. 125/2024', '2024-01-15', 'Centro de Asistencia Inmediata', 'APROBADO', '2024-01-15', NOW(), NOW()),
+(4, 'DTC', 'DTC Córdoba Capital', 5, 5, 8, 'Av. Colón 1456', '0351-234-5678', 'dtc.cordoba@sedronar.gob.ar', 1, 'DTC-002-2024', 'Res. 126/2024', '2024-01-15', 'Dispositivo Territorial Comunitario Córdoba', 'APROBADO', '2024-01-15', NOW(), NOW()),
+(5, 'CAAC', 'CAAC Rosario', 20, 6, 9, 'Bv. Oroño 789', '0341-567-8901', 'caac.rosario@sedronar.gob.ar', 1, 'CAAC-002-2024', 'Res. 127/2024', '2024-01-15', 'Casa de Atención y Acompañamiento Comunitario Rosario', 'APROBADO', '2024-01-15', NOW(), NOW()),
+(6, 'CCC', 'CCC Mendoza', 12, 7, 10, 'San Martín 234', '0261-345-6789', 'ccc.mendoza@sedronar.gob.ar', 1, 'CCC-001-2024', 'Res. 128/2024', '2024-01-15', 'Casa Comunitaria Convivencial Mendoza', 'APROBADO', '2024-01-15', NOW(), NOW()),
+(7, 'CT', 'CT Tucumán', 23, 8, 11, 'Av. Independencia 567', '0381-456-7890', 'ct.tucuman@sedronar.gob.ar', 1, 'CT-001-2024', 'Res. 129/2024', '2024-01-15', 'Comunidad Terapéutica Tucumán', 'APROBADO', '2024-01-15', NOW(), NOW()),
+(8, 'IC', 'IC Salta Norte', 16, 9, 12, 'Av. San Martín 890', '0387-567-8901', 'ic.salta@sedronar.gob.ar', 1, 'IC-001-2024', 'Res. 130/2024', '2024-01-15', 'Institución Conveniada Salta', 'APROBADO', '2024-01-15', NOW(), NOW());
 
 -- ========================================
 -- 4. GRUPOS DE USUARIOS DEL SISTEMA
@@ -136,6 +136,7 @@ INSERT IGNORE INTO auth_group (name) VALUES
 ('Operador'),
 ('Supervisor'),
 ('Consulta'),
+('EncargadoInstitucion'),
 ('EncargadoDispositivo'),
 ('Profesional');
 

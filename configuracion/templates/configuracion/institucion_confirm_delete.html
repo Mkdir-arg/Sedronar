@@ -1,0 +1,54 @@
+{% extends "includes/main.html" %}
+{% load static %}
+
+{% block title %}Eliminar Institución{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Eliminar Institución</h1>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="mb-6">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-exclamation-triangle text-red-500 text-2xl mr-3"></i>
+                <h2 class="text-lg font-medium text-gray-900">¿Está seguro que desea eliminar esta institución?</h2>
+            </div>
+            
+            <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                <h3 class="font-medium text-gray-900 mb-2">{{ object.nombre }}</h3>
+                <p class="text-sm text-gray-600">{{ object.get_tipo_display }}</p>
+                <p class="text-sm text-gray-600">{{ object.municipio }}, {{ object.provincia }}</p>
+                {% if object.nro_registro %}
+                    <p class="text-sm text-gray-600">Registro: {{ object.nro_registro }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p class="text-sm text-red-800">
+                    <strong>Advertencia:</strong> Esta acción no se puede deshacer. 
+                    Se eliminarán todos los datos asociados a esta institución, incluyendo:
+                </p>
+                <ul class="list-disc list-inside text-sm text-red-700 mt-2">
+                    <li>Documentos requeridos</li>
+                    <li>Derivaciones asociadas</li>
+                    <li>Historial de registro</li>
+                </ul>
+            </div>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="flex justify-end space-x-3">
+                <a href="{% url 'configuracion:instituciones' %}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
+                    Cancelar
+                </a>
+                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
+                    <i class="fas fa-trash mr-2"></i>Eliminar Institución
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -62,6 +62,8 @@ INSTALLED_APPS = [
     "configuracion",
     "chatbot",
     "conversaciones",
+    "portal",
+    "tramites",
 ]
 
 # Middleware (orden CORS correcto)

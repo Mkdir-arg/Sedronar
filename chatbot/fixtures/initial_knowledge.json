@@ -6,17 +6,21 @@
       "title": "¿Qué es SEDRONAR?",
       "content": "SEDRONAR es la Secretaría Nacional de Políticas Integrales sobre Drogas. Es el organismo encargado de diseñar, coordinar y ejecutar las políticas públicas en materia de prevención del consumo de drogas, asistencia y reinserción social de personas con consumos problemáticos.",
       "category": "Información General",
-      "is_active": true
+      "is_active": true,
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-01-15T10:00:00Z"
     }
   },
   {
     "model": "chatbot.chatbotknowledge",
     "pk": 2,
     "fields": {
-      "title": "Gestión de Ciudadanos",
-      "content": "El módulo de Ciudadanos permite registrar y gestionar información de personas que requieren atención. Incluye datos personales, contacto, situación familiar y seguimiento de casos.",
+      "title": "Gestión de Instituciones",
+      "content": "El módulo de Instituciones permite registrar y gestionar organizaciones que forman parte de la red SEDRONAR. Incluye el proceso completo de registro con documentación requerida y estados de aprobación.",
       "category": "Funcionalidades",
-      "is_active": true
+      "is_active": true,
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-01-15T10:00:00Z"
     }
   },
   {
@@ -24,29 +28,35 @@
     "pk": 3,
     "fields": {
       "title": "Legajos de Atención",
-      "content": "Los legajos contienen el historial completo de atención de cada ciudadano, incluyendo evaluaciones, planes de intervención, seguimientos y derivaciones a dispositivos especializados.",
+      "content": "Los legajos contienen el historial completo de atención de cada ciudadano, incluyendo evaluaciones, planes de intervención, seguimientos y derivaciones a instituciones especializadas.",
       "category": "Funcionalidades",
-      "is_active": true
+      "is_active": true,
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-01-15T10:00:00Z"
     }
   },
   {
     "model": "chatbot.chatbotknowledge",
     "pk": 4,
     "fields": {
-      "title": "Usuarios del Sistema",
-      "content": "El sistema maneja diferentes tipos de usuarios: Administradores (acceso completo), personal de Ciudadanos (gestión de casos) y Encargados de Dispositivo (gestión de derivaciones).",
-      "category": "Usuarios",
-      "is_active": true
+      "title": "Registro de Instituciones",
+      "content": "Las instituciones pueden registrarse online cargando toda la documentación requerida por SEDRONAR: personería jurídica, estatutos, habilitaciones, seguros, etc. El proceso incluye revisión y aprobación oficial.",
+      "category": "Registro",
+      "is_active": true,
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-01-15T10:00:00Z"
     }
   },
   {
     "model": "chatbot.chatbotknowledge",
     "pk": 5,
     "fields": {
-      "title": "Reportes y Estadísticas",
-      "content": "El sistema genera reportes automáticos sobre cantidad de ciudadanos atendidos, tipos de consumo, derivaciones realizadas y estadísticas por dispositivo y región.",
-      "category": "Reportes",
-      "is_active": true
+      "title": "Tipos de Instituciones",
+      "content": "SEDRONAR trabaja con diferentes tipos de instituciones: DTC (Dispositivos Territoriales Comunitarios), CAAC (Casas de Atención y Acompañamiento), CAI (Centros de Asistencia Inmediata), CCC (Casas Comunitarias Convivenciales) y CT (Comunidades Terapéuticas).",
+      "category": "Información General",
+      "is_active": true,
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-01-15T10:00:00Z"
     }
   }
 ]

@@ -1,7 +1,10 @@
 from rest_framework import serializers
 from .models import (
-    Provincia, Municipio, Localidad, DispositivoRed, Sexo, Mes, Dia, Turno
+    Provincia, Municipio, Localidad, Institucion, DocumentoRequerido, Sexo, Mes, Dia, Turno
 )
+
+# Alias para compatibilidad
+DispositivoRed = Institucion
 
 
 class ProvinciaSerializer(serializers.ModelSerializer):
@@ -32,22 +35,47 @@ class LocalidadSerializer(serializers.ModelSerializer):
         fields = ['id', 'nombre', 'municipio', 'municipio_id']
 
 
-class DispositivoRedSerializer(serializers.ModelSerializer):
-    """Serializer para el modelo DispositivoRed"""
+class DocumentoRequeridoSerializer(serializers.ModelSerializer):
+    """Serializer para DocumentoRequerido"""
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    estado_display = serializers.CharField(source='get_estado_display', read_only=True)
+    
+    class Meta:
+        model = DocumentoRequerido
+        fields = [
+            'id', 'tipo', 'tipo_display', 'archivo', 'estado', 'estado_display',
+            'observaciones', 'obligatorio', 'creado', 'modificado'
+        ]
+        read_only_fields = ['id', 'creado', 'modificado']
+
+
+class InstitucionSerializer(serializers.ModelSerializer):
+    """Serializer para el modelo Institucion"""
     provincia = ProvinciaSerializer(read_only=True)
     municipio = MunicipioSerializer(read_only=True)
     localidad = LocalidadSerializer(read_only=True)
     tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    estado_registro_display = serializers.CharField(source='get_estado_registro_display', read_only=True)
+    tipo_personeria_display = serializers.CharField(source='get_tipo_personeria_display', read_only=True)
+    documentos = DocumentoRequeridoSerializer(many=True, read_only=True)
     
     class Meta:
-        model = DispositivoRed
+        model = Institucion
         fields = [
             'id', 'tipo', 'tipo_display', 'nombre', 'provincia', 'municipio', 
-            'localidad', 'direccion', 'telefono', 'email', 'activo',
-            'nro_registro', 'resolucion', 'fecha_alta', 'descripcion',
+            'localidad', 'direccion', 'telefono', 'email', 'activo', 'descripcion',
+            'estado_registro', 'estado_registro_display', 'fecha_solicitud', 
+            'fecha_aprobacion', 'observaciones', 'tipo_personeria', 
+            'tipo_personeria_display', 'nro_personeria', 'fecha_personeria', 'cuit',
+            'nro_registro', 'resolucion', 'fecha_alta', 'presta_asistencia',
+            'convenio_obras_sociales', 'nro_sss', 'documentos',
             'creado', 'modificado'
         ]
         read_only_fields = ['id', 'fecha_alta', 'creado', 'modificado']
+
+
+# Alias para compatibilidad hacia atrás
+DispositivoRedSerializer = InstitucionSerializer
 
 
 class SexoSerializer(serializers.ModelSerializer):

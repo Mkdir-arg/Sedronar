@@ -1,11 +1,17 @@
 .custom-card {
     display: flex;
     align-items: center;
-    border-radius: 8px;
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    background-color: #4FD0C8; /* Color de fondo principal */
-    color: white; /* Color de texto */
+    box-shadow: var(--sombra-md);
+    background-color: var(--color-acento-claro);
+    color: var(--color-blanco);
+    transition: var(--transicion-normal);
+  }
+
+  .custom-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sombra-lg);
   }
 
   .card-icon {
@@ -35,32 +41,32 @@
 
   .custom-card.card-violet
   {
-    background-color: #8E83B6 !important;
+    background-color: var(--color-secundario) !important;
   }
 
   .custom-card.card-violet .card-icon
   {
-    background-color: #6D5B95 !important;
+    background-color: var(--color-secundario-oscuro) !important;
   }
 
   .custom-card.card-red
   {
-    background-color: #E94E4E !important;
+    background-color: var(--color-error) !important;
   }
 
   .custom-card.card-red .card-icon
   {
-    background-color: #F15D5D !important;
+    background-color: var(--color-error-claro) !important;
   }
 
   .custom-card.card-green
   {
-    background-color: #4CAF50 !important;
+    background-color: var(--color-exito) !important;
   }
 
   .custom-card.card-green .card-icon
   {
-    background-color: #67C672 !important;
+    background-color: var(--color-exito-claro) !important;
   }
 
   iframe

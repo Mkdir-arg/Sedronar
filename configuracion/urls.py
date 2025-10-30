@@ -23,9 +23,16 @@ urlpatterns = [
     path('localidades/<int:pk>/editar/', login_required(views.LocalidadUpdateView.as_view()), name='localidad_editar'),
     path('localidades/<int:pk>/eliminar/', login_required(views.LocalidadDeleteView.as_view()), name='localidad_eliminar'),
     
-    # Dispositivos
-    path('dispositivos/', login_required(views.DispositivoListView.as_view()), name='dispositivos'),
-    path('dispositivos/crear/', login_required(views.DispositivoCreateView.as_view()), name='dispositivo_crear'),
-    path('dispositivos/<int:pk>/editar/', login_required(views.DispositivoUpdateView.as_view()), name='dispositivo_editar'),
-    path('dispositivos/<int:pk>/eliminar/', login_required(views.DispositivoDeleteView.as_view()), name='dispositivo_eliminar'),
+    # Instituciones
+    path('instituciones/', login_required(views.InstitucionListView.as_view()), name='instituciones'),
+    path('instituciones/crear/', login_required(views.InstitucionCreateView.as_view()), name='institucion_crear'),
+    path('instituciones/nueva/', login_required(views.InstitucionCreateView.as_view()), name='institucion_nueva'),
+    path('instituciones/<int:pk>/editar/', login_required(views.InstitucionUpdateView.as_view()), name='institucion_editar'),
+    path('instituciones/<int:pk>/eliminar/', login_required(views.InstitucionDeleteView.as_view()), name='institucion_eliminar'),
+    
+    # Dispositivos (compatibilidad)
+    path('dispositivos/', login_required(views.InstitucionListView.as_view()), name='dispositivos'),
+    path('dispositivos/crear/', login_required(views.InstitucionCreateView.as_view()), name='dispositivo_crear'),
+    path('dispositivos/<int:pk>/editar/', login_required(views.InstitucionUpdateView.as_view()), name='dispositivo_editar'),
+    path('dispositivos/<int:pk>/eliminar/', login_required(views.InstitucionDeleteView.as_view()), name='dispositivo_eliminar'),
 ]

@@ -13,13 +13,16 @@
                 theme: {
                     extend: {
                         colors: {
-                            'primary': '#1e40af',
-                            'secondary': '#3b82f6',
-                            'accent': '#06b6d4',
+                            'primario': '#1e3a8a',
+                            'primario-claro': '#3b82f6',
+                            'primario-oscuro': '#1e40af',
+                            'secundario': '#475569',
+                            'acento': '#0f766e',
+                            'acento-claro': '#14b8a6',
                             'surface': 'rgba(255, 255, 255, 0.1)',
                         },
                         fontFamily: {
-                            'inter': ['Inter', 'sans-serif'],
+                            'montserrat': ['Montserrat', 'sans-serif'],
                         },
                         animation: {
                             'float': 'float 6s ease-in-out infinite',
@@ -35,8 +38,8 @@
                 50% { transform: translateY(-20px); }
             }
             @keyframes glow {
-                from { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
-                to { box-shadow: 0 0 30px rgba(59, 130, 246, 0.8); }
+                from { box-shadow: 0 0 20px rgba(30, 58, 138, 0.5); }
+                to { box-shadow: 0 0 30px rgba(30, 58, 138, 0.8); }
             }
             .glass {
                 background: rgba(255, 255, 255, 0.1);
@@ -53,12 +56,12 @@
         <!-- Font Awesome -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     </head>
-    <body class="h-full bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 font-inter overflow-hidden">
+    <body class="h-full bg-gradient-to-br from-slate-900 via-primario to-primario-oscuro font-montserrat overflow-hidden">
         <!-- Animated Background -->
         <div class="absolute inset-0 overflow-hidden">
-            <div class="absolute -top-40 -right-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float"></div>
-            <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float" style="animation-delay: 2s;"></div>
-            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float" style="animation-delay: 4s;"></div>
+            <div class="absolute -top-40 -right-40 w-80 h-80 bg-primario-claro rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float"></div>
+            <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-acento-claro rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float" style="animation-delay: 2s;"></div>
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-secundario rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float" style="animation-delay: 4s;"></div>
         </div>
         
         <!-- Header Minimalista -->
@@ -66,7 +69,7 @@
             <div class="max-w-7xl mx-auto px-6 lg:px-8">
                 <div class="flex items-center justify-between h-20">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                        <div class="w-10 h-10 bg-gradient-to-r from-primario to-acento rounded-lg flex items-center justify-center">
                             <img class="h-6 w-6" src="{% static 'custom/img/escudo_nacional.png' %}" alt="Escudo">
                         </div>
                         <div class="text-white">
@@ -75,7 +78,7 @@
                         </div>
                     </div>
                     <div class="text-white text-right">
-                        <div class="text-lg font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">SEDRONAR</div>
+                        <div class="text-lg font-bold bg-gradient-to-r from-primario-claro to-acento-claro bg-clip-text text-transparent">SEDRONAR</div>
                         <div class="text-xs text-white/70">Sistema de Gestión</div>
                     </div>
                 </div>
@@ -87,7 +90,7 @@
             <div class="hidden lg:flex lg:w-1/2 items-center justify-center p-12">
                 <div class="max-w-md">
                     <div class="text-center mb-12">
-                        <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl mb-6 animate-glow">
+                        <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-primario to-acento rounded-2xl mb-6 animate-glow">
                             <img class="h-12 w-12" src="{% static 'custom/img/sisoc_logo.png' %}" alt="SEDRONAR">
                         </div>
                         <h1 class="text-5xl font-bold text-white mb-4 bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
@@ -103,19 +106,19 @@
                         <h3 class="text-xl font-bold mb-6 text-center">Sistema de Gestión Integral</h3>
                         <div class="grid grid-cols-2 gap-4">
                             <div class="text-center p-4 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300">
-                                <i class="fas fa-users text-2xl text-cyan-400 mb-2"></i>
+                                <i class="fas fa-users text-2xl text-acento-claro mb-2"></i>
                                 <p class="text-sm font-medium">Gestión de Ciudadanos</p>
                             </div>
                             <div class="text-center p-4 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300">
-                                <i class="fas fa-shield-alt text-2xl text-blue-400 mb-2"></i>
+                                <i class="fas fa-shield-alt text-2xl text-primario-claro mb-2"></i>
                                 <p class="text-sm font-medium">Seguridad y Control</p>
                             </div>
                             <div class="text-center p-4 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300">
-                                <i class="fas fa-chart-line text-2xl text-indigo-400 mb-2"></i>
+                                <i class="fas fa-chart-line text-2xl text-secundario mb-2"></i>
                                 <p class="text-sm font-medium">Reportes y Analytics</p>
                             </div>
                             <div class="text-center p-4 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300">
-                                <i class="fas fa-file-alt text-2xl text-purple-400 mb-2"></i>
+                                <i class="fas fa-file-alt text-2xl text-acento mb-2"></i>
                                 <p class="text-sm font-medium">Gestión Documental</p>
                             </div>
                         </div>
@@ -128,7 +131,7 @@
                 <div class="w-full max-w-md">
                     <!-- Logo Mobile -->
                     <div class="text-center lg:hidden mb-6 sm:mb-8">
-                        <div class="inline-flex items-center justify-center w-14 sm:w-16 h-14 sm:h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl mb-4">
+                        <div class="inline-flex items-center justify-center w-14 sm:w-16 h-14 sm:h-16 bg-gradient-to-r from-primario to-acento rounded-2xl mb-4">
                             <img class="h-8 sm:h-10 w-8 sm:w-10" src="{% static 'custom/img/sisoc_logo.png' %}" alt="SEDRONAR">
                         </div>
                         <h2 class="text-2xl sm:text-3xl font-bold text-white">SEDRONAR</h2>
@@ -137,7 +140,7 @@
                     <!-- Formulario Moderno -->
                     <div class="glass rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/20">
                         <div class="text-center mb-6 sm:mb-8">
-                            <div class="inline-flex items-center justify-center w-14 sm:w-16 h-14 sm:h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl mb-4 animate-pulse">
+                            <div class="inline-flex items-center justify-center w-14 sm:w-16 h-14 sm:h-16 bg-gradient-to-r from-primario to-acento rounded-2xl mb-4 animate-pulse">
                                 <i class="fas fa-fingerprint text-xl sm:text-2xl text-white"></i>
                             </div>
                             <h3 class="text-xl sm:text-2xl font-bold text-white mb-2">Acceso Seguro</h3>
@@ -165,13 +168,13 @@
                                     </label>
                                     <div class="relative">
                                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                            <i class="fas fa-user text-white/50 group-focus-within:text-cyan-400 transition-colors"></i>
+                                            <i class="fas fa-user text-white/50 group-focus-within:text-acento-claro transition-colors"></i>
                                         </div>
                                         <input id="id_username" 
                                                name="username" 
                                                type="text" 
                                                required 
-                                               class="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:bg-white/20 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50 transition-all duration-300 backdrop-blur-sm text-sm sm:text-base" 
+                                               class="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:bg-white/20 focus:border-acento-claro focus:ring-2 focus:ring-acento-claro/50 transition-all duration-300 backdrop-blur-sm text-sm sm:text-base" 
                                                placeholder="Ingrese su usuario">
                                     </div>
                                 </div>
@@ -182,20 +185,20 @@
                                     </label>
                                     <div class="relative">
                                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                            <i class="fas fa-lock text-white/50 group-focus-within:text-cyan-400 transition-colors"></i>
+                                            <i class="fas fa-lock text-white/50 group-focus-within:text-acento-claro transition-colors"></i>
                                         </div>
                                         <input id="id_password" 
                                                name="password" 
                                                type="password" 
                                                required 
-                                               class="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:bg-white/20 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50 transition-all duration-300 backdrop-blur-sm text-sm sm:text-base" 
+                                               class="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:bg-white/20 focus:border-acento-claro focus:ring-2 focus:ring-acento-claro/50 transition-all duration-300 backdrop-blur-sm text-sm sm:text-base" 
                                                placeholder="Ingrese su contraseña">
                                     </div>
                                 </div>
                             </div>
 
                             <button type="submit" 
-                                    class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold py-3 sm:py-4 px-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl shadow-lg border border-white/20 backdrop-blur-sm group text-sm sm:text-base">
+                                    class="w-full bg-gradient-to-r from-primario to-acento hover:from-primario-claro hover:to-acento-claro text-white font-semibold py-3 sm:py-4 px-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl shadow-lg border border-white/20 backdrop-blur-sm group text-sm sm:text-base">
                                 <i class="fas fa-rocket mr-2 group-hover:animate-bounce"></i>
                                 Acceder al Sistema
                             </button>
@@ -221,7 +224,7 @@
             <div class="max-w-7xl mx-auto px-6 lg:px-8 py-6">
                 <div class="flex flex-col sm:flex-row items-center justify-between">
                     <div class="flex items-center space-x-4 mb-4 sm:mb-0">
-                        <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                        <div class="w-8 h-8 bg-gradient-to-r from-primario to-acento rounded-lg flex items-center justify-center">
                             <img class="h-5 w-5" src="{% static 'custom/img/presidencia_logo.svg' %}" alt="Presidencia">
                         </div>
                         <div class="text-white text-xs">
@@ -231,11 +234,11 @@
                     </div>
                     <div class="text-white text-xs text-center sm:text-right">
                         <div class="font-medium flex items-center justify-center sm:justify-end">
-                            <i class="fas fa-headset mr-2 text-cyan-400"></i>
+                            <i class="fas fa-headset mr-2 text-acento-claro"></i>
                             Mesa de Ayuda: 0800-SEDRONAR
                         </div>
                         <div class="text-white/60 flex items-center justify-center sm:justify-end mt-1">
-                            <i class="fas fa-clock mr-2 text-blue-400"></i>
+                            <i class="fas fa-clock mr-2 text-primario-claro"></i>
                             Lunes a Viernes de 8:00 a 18:00 hs
                         </div>
                     </div>

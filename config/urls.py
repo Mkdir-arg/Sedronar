@@ -8,14 +8,20 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 urlpatterns = [
     path("admin/doc/", include("django.contrib.admindocs.urls")),
     path("admin/", admin.site.urls),
-    path("", include("django.contrib.auth.urls")),
-    path("", include("users.urls")),
-    path("", include("core.urls")),
-    path("", include("dashboard.urls")),
+    
+    # Specific paths first
     path("legajos/", include("legajos.urls")),
     path("configuracion/", include("configuracion.urls")),
     path("chatbot/", include("chatbot.urls")),
     path("conversaciones/", include("conversaciones.urls")),
+    path("portal/", include("portal.urls")),
+    path("tramites/", include("tramites.urls")),
+    
+    # Root paths last
+    path("", include("django.contrib.auth.urls")),
+    path("", include("users.urls")),
+    path("", include("core.urls")),
+    path("", include("dashboard.urls")),
 
     path("", include("healthcheck.urls")),
     
