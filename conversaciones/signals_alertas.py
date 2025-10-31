@@ -10,18 +10,35 @@ from legajos.services_alertas import AlertasService
 @receiver(post_save, sender=Conversacion)
 def alerta_nueva_conversacion(sender, instance, created, **kwargs):
     """Genera alerta cuando se crea nueva conversación"""
-    if created:
+    if created and instance.estado == 'pendiente':
         try:
-            if hasattr(instance, 'ciudadano_relacionado') and instance.ciudadano_relacionado:
-                from legajos.models import AlertaCiudadano
-                
-                alerta = AlertaCiudadano.objects.create(
-                    ciudadano=instance.ciudadano_relacionado,
-                    tipo='NUEVA_CONVERSACION',
-                    prioridad='MEDIA',
-                    mensaje=f'Nueva conversación iniciada por {instance.ciudadano_relacionado.nombre_completo}'
+            from django.contrib.auth.models import User
+            from .models import NuevaConversacionAlerta
+            
+            # Notificar a todos los operadores activos
+            operadores = User.objects.filter(
+                groups__name__in=['Conversaciones', 'OperadorCharla'],
+                is_active=True
+            ).distinct()
+            
+            for operador in operadores:
+                NuevaConversacionAlerta.objects.get_or_create(
+                    conversacion=instance,
+                    operador=operador,
+                    defaults={'vista': False}
                 )
-                AlertasService._enviar_notificacion_alerta(alerta)
+                
+                # Crear historial
+                from .models import HistorialAlertaConversacion
+                HistorialAlertaConversacion.objects.create(
+                    conversacion=instance,
+                    operador=operador,
+                    tipo='NUEVA_CONVERSACION',
+                    mensaje=f'Nueva conversación #{instance.id} disponible'
+                )
+            
+            print(f"Nueva conversación #{instance.id} notificada a {operadores.count()} operadores")
+            
         except Exception as e:
             print(f"Error generando alerta de nueva conversación: {e}")
 
@@ -59,8 +76,9 @@ def verificar_tiempo_respuesta(sender, instance, created, **kwargs):
         try:
             conversacion = instance.conversacion
             
-            # Generar alerta para operador asignado cuando ciudadano envía mensaje
+            # Verificar palabras clave de riesgo PRIMERO
             if conversacion.operador_asignado:
+                _verificar_palabras_riesgo(conversacion, instance)
                 _generar_alerta_mensaje_ciudadano(conversacion, instance)
             
             # Verificar si hay operador asignado
@@ -90,6 +108,30 @@ def verificar_tiempo_respuesta(sender, instance, created, **kwargs):
                         AlertasService._enviar_notificacion_alerta(alerta)
         except Exception as e:
             print(f"Error verificando tiempo de respuesta: {e}")
+
+
+def _verificar_palabras_riesgo(conversacion, mensaje):
+    """Verifica palabras clave de riesgo en el mensaje"""
+    try:
+        palabras_riesgo = ['suicidio', 'lastimar', 'drogas', 'violencia', 'matar', 'morir', 'suicidar']
+        contenido_lower = mensaje.contenido.lower()
+        
+        palabras_encontradas = [palabra for palabra in palabras_riesgo if palabra in contenido_lower]
+        
+        if palabras_encontradas:
+            # Crear alerta crítica en el sistema principal
+            if hasattr(conversacion, 'ciudadano_relacionado') and conversacion.ciudadano_relacionado:
+                from legajos.models import AlertaCiudadano
+                
+                alerta = AlertaCiudadano.objects.create(
+                    ciudadano=conversacion.ciudadano_relacionado,
+                    tipo='RIESGO_CRITICO_CONVERSACION',
+                    prioridad='CRITICA',
+                    mensaje=f'RIESGO CRÍTICO: Palabras de riesgo detectadas en conversación #{conversacion.id}'
+                )
+                AlertasService._enviar_notificacion_alerta(alerta)
+    except Exception as e:
+        print(f"Error verificando palabras de riesgo: {e}")
 
 
 def _generar_alerta_mensaje_ciudadano(conversacion, mensaje):
@@ -122,3 +164,5 @@ def _generar_alerta_mensaje_ciudadano(conversacion, mensaje):
         
     except Exception as e:
         print(f"Error generando alerta de mensaje ciudadano: {e}")
+
+

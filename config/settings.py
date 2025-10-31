@@ -54,7 +54,7 @@ INSTALLED_APPS = [
     "rest_framework",
     # "simple_history",  # Comentado temporalmente
     # "drf_spectacular",  # Comentado temporalmente
-    # "channels",  # Comentado temporalmente
+    "channels",
     # Apps propias
     "users",
     "core",
@@ -86,7 +86,7 @@ MIDDLEWARE = [
 # URLs / WSGI / ASGI
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
-# ASGI_APPLICATION = "config.asgi.application"  # Comentado temporalmente
+ASGI_APPLICATION = "config.asgi.application"
 
 # Templates
 TEMPLATES = [
@@ -167,12 +167,12 @@ CACHES = {
     }
 }
 
-# Channels - Comentado temporalmente
-# CHANNEL_LAYERS = {
-#     "default": {
-#         "BACKEND": "channels.layers.InMemoryChannelLayer"
-#     }
-# }
+# Channels
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
 
 # TTLs (segundos)
 DEFAULT_CACHE_TIMEOUT = 300

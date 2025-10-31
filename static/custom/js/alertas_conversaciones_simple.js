@@ -42,17 +42,19 @@ class AlertasConversacionesSimple {
             const data = await response.json();
             const nuevoConteo = data.count || 0;
             
-            // Si hay nuevos mensajes, actualizar UI
-            if (nuevoConteo > this.ultimoConteo) {
-                this.mostrarNuevaAlerta(nuevoConteo - this.ultimoConteo);
+            // Solo mostrar notificación si es la primera vez que hay alertas
+            if (nuevoConteo > 0 && this.ultimoConteo === 0) {
+                this.mostrarNuevaAlerta(nuevoConteo);
                 this.reproducirSonido();
             }
             
             this.ultimoConteo = nuevoConteo;
             this.actualizarContadorUI(nuevoConteo);
             
-            // Actualizar preview si el dropdown está abierto
-            this.actualizarPreview();
+            // Solo actualizar preview si hay alertas
+            if (nuevoConteo > 0) {
+                this.actualizarPreview();
+            }
             
         } catch (error) {
             console.error('Error verificando alertas:', error);
@@ -91,37 +93,45 @@ class AlertasConversacionesSimple {
             
             if (alertas.length > 0) {
                 // Agregar alertas de conversaciones al preview existente
-                const alertasHTML = alertas.map(alerta => `
-                    <div class="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer" 
-                         onclick="window.location.href='/conversaciones/${alerta.conversacion_id}/'">
-                        <div class="flex items-start justify-between">
-                            <div class="flex-1">
-                                <p class="text-sm font-medium text-gray-900">
-                                    <i class="fas fa-comment-dots mr-1 text-blue-500"></i>
-                                    ${alerta.ciudadano_nombre}
-                                </p>
-                                <p class="text-xs text-gray-600 mt-1">${alerta.contenido}</p>
-                                <p class="text-xs text-gray-400 mt-1">${alerta.fecha}</p>
+                const alertasHTML = alertas.map(alerta => {
+                    const esRiesgo = alerta.contenido && this.contieneRiesgo(alerta.contenido);
+                    const claseRiesgo = esRiesgo ? 'bg-red-50 border-red-200' : 'hover:bg-gray-50';
+                    const iconoRiesgo = esRiesgo ? 'fas fa-exclamation-triangle text-red-600' : 'fas fa-comment-dots text-blue-500';
+                    const badgeRiesgo = esRiesgo ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800';
+                    const textoRiesgo = esRiesgo ? 'RIESGO' : 'MENSAJE';
+                    
+                    return `
+                        <div class="p-3 border-b border-gray-100 ${claseRiesgo} cursor-pointer" 
+                             onclick="window.location.href='/conversaciones/${alerta.conversacion_id}/'">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900">
+                                        <i class="${iconoRiesgo} mr-1"></i>
+                                        ${alerta.ciudadano_nombre}
+                                    </p>
+                                    <p class="text-xs text-gray-600 mt-1">${alerta.contenido}</p>
+                                    <p class="text-xs text-gray-400 mt-1">${alerta.fecha}</p>
+                                </div>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badgeRiesgo}">
+                                    ${textoRiesgo}
+                                </span>
                             </div>
-                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                MENSAJE
-                            </span>
                         </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
                 
-                // Si el preview está vacío o solo tiene el mensaje de "no hay alertas"
-                if (preview.innerHTML.includes('No hay alertas activas') || 
-                    preview.innerHTML.includes('Cargando alertas')) {
-                    preview.innerHTML = alertasHTML;
-                } else {
-                    // Agregar al inicio del preview existente
-                    preview.innerHTML = alertasHTML + preview.innerHTML;
-                }
+                // Reemplazar todo el contenido para evitar duplicados
+                preview.innerHTML = alertasHTML;
             }
         } catch (error) {
             console.error('Error actualizando preview:', error);
         }
+    }
+    
+    contieneRiesgo(contenido) {
+        const palabrasRiesgo = ['suicidio', 'lastimar', 'drogas', 'violencia', 'matar', 'morir', 'suicidar'];
+        const contenidoLower = contenido.toLowerCase();
+        return palabrasRiesgo.some(palabra => contenidoLower.includes(palabra));
     }
 
     mostrarNuevaAlerta(cantidad) {
@@ -162,6 +172,32 @@ class AlertasConversacionesSimple {
             }
         }, 5000);
     }
+    
+    mostrarToastRiesgo(mensaje) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-4 right-4 bg-red-600 text-white px-4 py-3 rounded-lg shadow-lg z-50 max-w-sm animate-slide-in animate-pulse';
+        toast.innerHTML = `
+            <div class="flex items-start">
+                <i class="fas fa-exclamation-triangle mr-2 mt-1"></i>
+                <div class="flex-1">
+                    <div class="font-bold">¡ALERTA DE RIESGO!</div>
+                    <div class="text-sm opacity-90">Palabras de riesgo detectadas</div>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Auto-remover después de 10 segundos (más tiempo para riesgo)
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, 10000);
+    }
 
     reproducirSonido() {
         try {
@@ -191,15 +227,8 @@ class AlertasConversacionesSimple {
     }
 
     async marcarComoVisto() {
-        // Resetear contador local
+        // Resetear contador local para permitir nueva notificación
         this.ultimoConteo = 0;
-        
-        // Actualizar UI
-        const contador = document.getElementById('alertas-counter');
-        if (contador) {
-            contador.classList.add('hidden');
-            contador.classList.remove('animate-pulse');
-        }
     }
 
     destruir() {

@@ -206,6 +206,13 @@ class ConversacionesListConsumer(AsyncWebsocketConsumer):
             'mensaje': event['mensaje']
         }))
     
+    async def actualizar_lista(self, event):
+        # Notificar que se debe actualizar la lista
+        await self.send(text_data=json.dumps({
+            'type': 'actualizar_lista',
+            'mensaje': event['mensaje']
+        }))
+    
     @database_sync_to_async
     def tiene_permiso(self):
         user = self.scope['user']

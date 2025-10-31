@@ -108,6 +108,26 @@ def iniciar_conversacion(request):
             # Notificar nueva conversación
             NotificacionService.notificar_nueva_conversacion(conversacion)
             
+            # Notificar via WebSocket
+            try:
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+                
+                channel_layer = get_channel_layer()
+                if channel_layer:
+                    async_to_sync(channel_layer.group_send)(
+                        'conversaciones_list',
+                        {
+                            'type': 'nueva_conversacion',
+                            'mensaje': f'Nueva conversación #{conversacion.id} creada'
+                        }
+                    )
+                    print(f"DEBUG: Notificación WebSocket enviada para conversación {conversacion.id}")
+                else:
+                    print("DEBUG: Channel layer no disponible")
+            except Exception as e:
+                print(f"DEBUG: Error notificando WebSocket: {e}")
+            
             return JsonResponse({
                 'success': True,
                 'conversacion_id': conversacion.id
@@ -144,39 +164,23 @@ def enviar_mensaje_ciudadano(request, conversacion_id):
             print(f"DEBUG: Error al crear mensaje: {str(e)}")
             return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'})
         
-        # TODO: Notificar nuevo mensaje via WebSocket cuando channels esté funcionando
-        # from channels.layers import get_channel_layer
-        # from asgiref.sync import async_to_sync
-        # 
-        # channel_layer = get_channel_layer()
-        # 
-        # # Notificar en la conversación específica
-        # async_to_sync(channel_layer.group_send)(
-        #     f'conversacion_{conversacion_id}',
-        #     {
-        #         'type': 'chat_message',
-        #         'mensaje': {
-        #             'id': mensaje.id,
-        #             'contenido': mensaje.contenido,
-        #             'remitente': 'ciudadano',
-        #             'fecha': mensaje.fecha_envio.strftime('%H:%M'),
-        #             'usuario': 'Ciudadano'
-        #         }
-        #     }
-        # )
-        # 
-        # # Notificar en la lista de conversaciones
-        # async_to_sync(channel_layer.group_send)(
-        #     'conversaciones_list',
-        #     {
-        #         'type': 'nuevo_mensaje',
-        #         'conversacion_id': conversacion_id,
-        #         'mensaje': {
-        #             'contenido': contenido[:50] + '...' if len(contenido) > 50 else contenido,
-        #             'remitente': 'ciudadano'
-        #         }
-        #     }
-        # )
+        # Notificar nuevo mensaje via WebSocket
+        try:
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                async_to_sync(channel_layer.group_send)(
+                    'conversaciones_list',
+                    {
+                        'type': 'actualizar_lista',
+                        'mensaje': f'Nuevo mensaje en conversación #{conversacion_id}'
+                    }
+                )
+                print(f"DEBUG: Notificación mensaje enviada para conversación {conversacion_id}")
+        except Exception as e:
+            print(f"DEBUG: Error notificando WebSocket: {e}")
         
         return JsonResponse({
             'success': True,
@@ -362,6 +366,22 @@ def asignar_conversacion(request, conversacion_id):
         # Actualizar colas después de la asignación
         from .services import AsignadorAutomatico
         AsignadorAutomatico.actualizar_todas_las_colas()
+        
+        # Notificar via WebSocket
+        try:
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                'conversaciones_list',
+                {
+                    'type': 'actualizar_lista',
+                    'mensaje': f'Conversación #{conversacion_id} asignada'
+                }
+            )
+        except Exception as e:
+            print(f"Error notificando WebSocket: {e}")
     
     return redirect('conversaciones:lista')
 
@@ -400,6 +420,24 @@ def enviar_mensaje_operador(request, conversacion_id):
         # Notificar mensaje
         from .services import NotificacionService
         NotificacionService.notificar_mensaje(conversacion, mensaje)
+        
+        # Notificar via WebSocket
+        try:
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                async_to_sync(channel_layer.group_send)(
+                    'conversaciones_list',
+                    {
+                        'type': 'actualizar_lista',
+                        'mensaje': f'Respuesta del operador en conversación #{conversacion_id}'
+                    }
+                )
+                print(f"DEBUG: Notificación respuesta operador enviada para conversación {conversacion_id}")
+        except Exception as e:
+            print(f"DEBUG: Error notificando WebSocket: {e}")
         
         return JsonResponse({
             'success': True,
@@ -570,4 +608,50 @@ def api_metricas_tiempo_real(request):
     return JsonResponse({
         'success': True,
         'metricas': metricas
+    })
+
+
+@login_required
+@user_passes_test(tiene_permiso_conversaciones)
+def api_estadisticas_tiempo_real(request):
+    """API para obtener estadísticas de conversaciones en tiempo real"""
+    from datetime import datetime
+    
+    # Estadísticas básicas
+    chats_no_atendidos = Conversacion.objects.filter(operador_asignado=None, estado='activa').count()
+    
+    mes_actual = datetime.now().month
+    año_actual = datetime.now().year
+    atendidos_mes = Conversacion.objects.filter(
+        operador_asignado__isnull=False,
+        fecha_inicio__month=mes_actual,
+        fecha_inicio__year=año_actual
+    ).count()
+    
+    # Tiempo promedio de respuesta
+    tiempo_promedio = 0
+    conversaciones_con_respuesta = Conversacion.objects.filter(
+        operador_asignado__isnull=False,
+        mensajes__remitente='operador'
+    ).distinct()
+    
+    if conversaciones_con_respuesta.exists():
+        tiempos = []
+        for conv in conversaciones_con_respuesta:
+            primer_msg_ciudadano = conv.mensajes.filter(remitente='ciudadano').first()
+            primer_msg_operador = conv.mensajes.filter(remitente='operador').first()
+            if primer_msg_ciudadano and primer_msg_operador:
+                diff = primer_msg_operador.fecha_envio - primer_msg_ciudadano.fecha_envio
+                tiempos.append(diff.total_seconds() / 60)
+        
+        if tiempos:
+            tiempo_promedio = sum(tiempos) / len(tiempos)
+    
+    return JsonResponse({
+        'success': True,
+        'estadisticas': {
+            'chats_no_atendidos': chats_no_atendidos,
+            'atendidos_mes': atendidos_mes,
+            'tiempo_promedio': round(tiempo_promedio, 1)
+        }
     })

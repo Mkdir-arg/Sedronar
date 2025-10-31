@@ -40,7 +40,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-600">Chats no atendidos</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ chats_no_atendidos }}</p>
+                    <p class="text-2xl font-bold text-gray-900" data-stat="chats-no-atendidos">{{ chats_no_atendidos }}</p>
                 </div>
             </div>
         </div>
@@ -55,7 +55,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-600">Atendidos este mes</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ atendidos_mes }}</p>
+                    <p class="text-2xl font-bold text-gray-900" data-stat="atendidos-mes">{{ atendidos_mes }}</p>
                 </div>
             </div>
         </div>
@@ -70,7 +70,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-600">Tiempo promedio respuesta</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ tiempo_promedio }} min</p>
+                    <p class="text-2xl font-bold text-gray-900" data-stat="tiempo-promedio">{{ tiempo_promedio }} min</p>
                 </div>
             </div>
         </div>
@@ -407,33 +407,9 @@
     </div>
 </div>
 
+<!-- Cargar script de tiempo real -->
+<script src="{% static 'custom/js/conversaciones_tiempo_real.js' %}"></script>
 <script>
-    // TODO: WebSocket para notificaciones en tiempo real (deshabilitado temporalmente)
-    // let socket;
-    // 
-    // function conectarWebSocket() {
-    //     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    //     const wsUrl = `${protocol}//${window.location.host}/ws/conversaciones/`;
-    //     
-    //     socket = new WebSocket(wsUrl);
-    //     
-    //     socket.onmessage = function(event) {
-    //         const data = JSON.parse(event.data);
-    //         
-    //         if (data.type === 'nueva_conversacion') {
-    //             mostrarNotificacion('Nueva conversación iniciada', 'info');
-    //             setTimeout(() => location.reload(), 2000);
-    //         } else if (data.type === 'nuevo_mensaje') {
-    //             mostrarNotificacion(`Nuevo mensaje en conversación #${data.conversacion_id}`, 'info');
-    //             actualizarContadorMensajes(data.conversacion_id);
-    //         }
-    //     };
-    //     
-    //     socket.onclose = function() {
-    //         console.log('WebSocket desconectado');
-    //         setTimeout(conectarWebSocket, 5000);
-    //     };
-    // }
     
     function mostrarNotificacion(mensaje, tipo = 'info') {
         const notificacion = document.createElement('div');
@@ -493,8 +469,7 @@
         }
     });
     
-    // TODO: Conectar WebSocket al cargar la página (deshabilitado temporalmente)
-    // document.addEventListener('DOMContentLoaded', conectarWebSocket);
+    // Las funciones de tiempo real están en conversaciones_tiempo_real.js
 </script>
 
 {% endblock main-content %}

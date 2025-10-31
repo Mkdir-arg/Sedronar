@@ -10,20 +10,19 @@ from .models import Conversacion, Mensaje
 @login_required
 @api_view(['GET'])
 def alertas_conversaciones_count(request):
-    """Contador de mensajes no leídos para el operador"""
+    """Contador de conversaciones con mensajes no leídos"""
     if not request.user.groups.filter(name__in=['Conversaciones', 'OperadorCharla']).exists():
         return JsonResponse({'count': 0})
     
-    # Contar mensajes no leídos en conversaciones asignadas
-    mensajes_no_leidos = Mensaje.objects.filter(
-        conversacion__operador_asignado=request.user,
-        conversacion__estado='activa',
-        remitente='ciudadano',
-        leido=False
+    # Contar alertas no vistas en el historial
+    from .models import HistorialAlertaConversacion
+    total_alertas = HistorialAlertaConversacion.objects.filter(
+        operador=request.user,
+        vista=False
     ).count()
     
     return JsonResponse({
-        'count': mensajes_no_leidos,
+        'count': total_alertas,
         'tipo': 'conversaciones'
     })
 
@@ -53,6 +52,25 @@ def alertas_conversaciones_preview(request):
             'fecha': mensaje.fecha_envio.strftime('%d/%m/%Y %H:%M'),
             'prioridad': 'MEDIA',
             'ciudadano_nombre': f'Conversación #{mensaje.conversacion.id}'
+        })
+    
+    # Agregar nuevas conversaciones sin asignar
+    from .models import NuevaConversacionAlerta
+    nuevas = NuevaConversacionAlerta.objects.filter(
+        operador=request.user,
+        vista=False,
+        conversacion__estado='pendiente'
+    ).select_related('conversacion').order_by('-creado')[:3]
+    
+    for nueva in nuevas:
+        results.append({
+            'id': f'nueva_conv_{nueva.conversacion.id}',
+            'conversacion_id': nueva.conversacion.id,
+            'mensaje': f'Nueva conversación #{nueva.conversacion.id} disponible',
+            'contenido': 'Conversación sin asignar esperando atención',
+            'fecha': nueva.creado.strftime('%d/%m/%Y %H:%M'),
+            'prioridad': 'ALTA',
+            'ciudadano_nombre': f'Nueva Conversación #{nueva.conversacion.id}'
         })
     
     return JsonResponse({'results': results})

@@ -27,4 +27,5 @@ urlpatterns = [
     path('configurar-cola/', views.configurar_cola, name='configurar_cola'),
     path('asignacion-automatica/', views.asignacion_automatica, name='asignacion_automatica'),
     path('api/metricas/', views.api_metricas_tiempo_real, name='api_metricas'),
+    path('api/estadisticas/', views.api_estadisticas_tiempo_real, name='api_estadisticas'),
 ]

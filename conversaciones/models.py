@@ -198,3 +198,40 @@ class MetricasOperador(models.Model):
             self.satisfaccion_promedio = sum(satisfacciones) / len(satisfacciones)
         
         self.save()
+
+
+class NuevaConversacionAlerta(models.Model):
+    """Registro temporal de nuevas conversaciones para operadores"""
+    conversacion = models.ForeignKey(Conversacion, on_delete=models.CASCADE)
+    operador = models.ForeignKey(User, on_delete=models.CASCADE)
+    vista = models.BooleanField(default=False)
+    creado = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['conversacion', 'operador']
+        
+    def __str__(self):
+        return f'Nueva conversación #{self.conversacion.id} para {self.operador.username}'
+
+
+class HistorialAlertaConversacion(models.Model):
+    """Historial de alertas de conversaciones"""
+    TIPO_CHOICES = [
+        ('NUEVA_CONVERSACION', 'Nueva Conversación'),
+        ('NUEVO_MENSAJE', 'Nuevo Mensaje'),
+        ('RIESGO_CRITICO', 'Riesgo Crítico'),
+    ]
+    
+    conversacion = models.ForeignKey(Conversacion, on_delete=models.CASCADE)
+    operador = models.ForeignKey(User, on_delete=models.CASCADE)
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    mensaje = models.CharField(max_length=200)
+    vista = models.BooleanField(default=False)
+    fecha_vista = models.DateTimeField(null=True, blank=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-creado']
+        
+    def __str__(self):
+        return f'{self.tipo} - Conv #{self.conversacion.id} - {self.operador.username}'
