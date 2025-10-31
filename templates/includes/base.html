@@ -126,6 +126,11 @@
             <script src="{% static 'custom/js/notification_sound.js' %}"></script>
             <script src="{% static 'custom/js/alertas_websocket.js' %}"></script>
             <script src="{% static 'custom/js/alertas_conversaciones_simple.js' %}"></script>
+            
+            <!-- Sistema de tiempo real para conversaciones -->
+            {% if 'Conversaciones' in user_groups_list or 'OperadorCharla' in user_groups_list or user.is_superuser %}
+                <script src="{% static 'custom/js/conversaciones_tiempo_real_global.js' %}"></script>
+            {% endif %}
         {% endif %}
         
         {% block customJS %}{% endblock %}

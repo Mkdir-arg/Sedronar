@@ -80,6 +80,7 @@ def verificar_tiempo_respuesta(sender, instance, created, **kwargs):
             if conversacion.operador_asignado:
                 _verificar_palabras_riesgo(conversacion, instance)
                 _generar_alerta_mensaje_ciudadano(conversacion, instance)
+                _crear_historial_mensaje(conversacion, instance)
             
             # Verificar si hay operador asignado
             if not conversacion.operador_asignado:
@@ -164,5 +165,20 @@ def _generar_alerta_mensaje_ciudadano(conversacion, mensaje):
         
     except Exception as e:
         print(f"Error generando alerta de mensaje ciudadano: {e}")
+
+
+def _crear_historial_mensaje(conversacion, mensaje):
+    """Crea historial de alerta por nuevo mensaje"""
+    try:
+        from .models import HistorialAlertaConversacion
+        
+        HistorialAlertaConversacion.objects.create(
+            conversacion=conversacion,
+            operador=conversacion.operador_asignado,
+            tipo='NUEVO_MENSAJE',
+            mensaje=f'Nuevo mensaje en conversación #{conversacion.id}'
+        )
+    except Exception as e:
+        print(f"Error creando historial de mensaje: {e}")
 
 

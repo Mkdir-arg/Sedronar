@@ -24,6 +24,14 @@ def alertas_dashboard(request):
         prioridad='MEDIA'
     ).select_related('ciudadano', 'legajo').order_by('-creado')[:10]
     
+    # Alertas de conversaciones si el usuario tiene permisos
+    alertas_conversaciones = []
+    if request.user.groups.filter(name__in=['Conversaciones', 'OperadorCharla']).exists():
+        from conversaciones.models import HistorialAlertaConversacion
+        alertas_conversaciones = HistorialAlertaConversacion.objects.filter(
+            operador=request.user
+        ).select_related('conversacion').order_by('-creado')[:20]
+    
     # Estadísticas filtradas por usuario
     stats = FiltrosUsuarioService.obtener_estadisticas_usuario(request.user)
     
@@ -31,6 +39,7 @@ def alertas_dashboard(request):
         'alertas_criticas': alertas_criticas,
         'alertas_altas': alertas_altas,
         'alertas_medias': alertas_medias,
+        'alertas_conversaciones': alertas_conversaciones,
         'stats': stats,
     }
     
