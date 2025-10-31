@@ -105,6 +105,7 @@ def main():
     # Paso 5: Configurar grupos y permisos
     print("\n📋 PASO 5: Configurando grupos y permisos...")
     ejecutar_comando(['setup_groups'])
+    ejecutar_comando(['crear_usuarios_sistema'])
     ejecutar_comando(['setup_roles_contactos'])
     
     # Paso 6: Configurar conversaciones

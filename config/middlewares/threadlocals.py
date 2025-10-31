@@ -7,6 +7,10 @@ def get_current_user():
     return getattr(_thread_locals, "user", None)
 
 
+def get_current_request():
+    return getattr(_thread_locals, "request", None)
+
+
 class ThreadLocalMiddleware:
     """Guarda el usuario actual en una variable de thread-local storage."""
 
@@ -15,7 +19,9 @@ class ThreadLocalMiddleware:
 
     def __call__(self, request):
         _thread_locals.user = getattr(request, "user", None)
+        _thread_locals.request = request
         try:
             return self.get_response(request)
         finally:
             _thread_locals.user = None
+            _thread_locals.request = None

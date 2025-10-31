@@ -1,0 +1,115 @@
+{% extends "includes/base.html" %}
+{% load static %}
+
+{% block title %}Dashboard de Auditoría{% endblock %}
+
+{% block main-content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Dashboard de Auditoría</h1>
+            <p class="text-gray-600">Monitoreo y control de actividad del sistema</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'auditoria:exportar_logs' %}?tipo=acciones" 
+               class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-download mr-2"></i>Exportar Logs
+            </a>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow-sm border">
+            <div class="flex items-center">
+                <div class="p-3 bg-blue-100 rounded-lg">
+                    <i class="fas fa-chart-line text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-600">Acciones Hoy</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.acciones_hoy }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border">
+            <div class="flex items-center">
+                <div class="p-3 bg-green-100 rounded-lg">
+                    <i class="fas fa-download text-green-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-600">Descargas Hoy</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.descargas_hoy }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border">
+            <div class="flex items-center">
+                <div class="p-3 bg-yellow-100 rounded-lg">
+                    <i class="fas fa-users text-yellow-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-600">Sesiones Activas</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.sesiones_activas }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border">
+            <div class="flex items-center">
+                <div class="p-3 bg-red-100 rounded-lg">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-600">Alertas Pendientes</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.alertas_pendientes }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enlaces rápidos -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <a href="{% url 'auditoria:logs_acciones' %}" 
+           class="bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition-shadow">
+            <div class="flex items-center">
+                <div class="p-3 bg-blue-100 rounded-lg">
+                    <i class="fas fa-list text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h4 class="font-semibold text-gray-900">Logs de Acciones</h4>
+                    <p class="text-sm text-gray-600">Ver todas las acciones del sistema</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="{% url 'auditoria:logs_descargas' %}" 
+           class="bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition-shadow">
+            <div class="flex items-center">
+                <div class="p-3 bg-green-100 rounded-lg">
+                    <i class="fas fa-download text-green-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h4 class="font-semibold text-gray-900">Logs de Descargas</h4>
+                    <p class="text-sm text-gray-600">Tracking de archivos descargados</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="{% url 'auditoria:historial_cambios' %}" 
+           class="bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition-shadow">
+            <div class="flex items-center">
+                <div class="p-3 bg-purple-100 rounded-lg">
+                    <i class="fas fa-history text-purple-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h4 class="font-semibold text-gray-900">Historial de Cambios</h4>
+                    <p class="text-sm text-gray-600">Cambios detallados en registros</p>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}

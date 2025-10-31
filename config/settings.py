@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     # Libs
     "django_extensions",
     "rest_framework",
+    # "simple_history",  # Comentado temporalmente
     # "drf_spectacular",  # Comentado temporalmente
     # "channels",  # Comentado temporalmente
     # Apps propias
@@ -78,6 +79,8 @@ MIDDLEWARE = [
     "django.contrib.admindocs.middleware.XViewMiddleware",
     "config.middlewares.xss_protection.XSSProtectionMiddleware",
     "config.middlewares.threadlocals.ThreadLocalMiddleware",
+    # "simple_history.middleware.HistoryRequestMiddleware",  # Comentado temporalmente
+    "config.middlewares.auditoria.AuditoriaMiddleware",
 ]
 
 # URLs / WSGI / ASGI

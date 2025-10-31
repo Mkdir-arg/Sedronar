@@ -27,13 +27,15 @@ RUN echo "es_AR.UTF-8 UTF-8" >> /etc/locale.gen && \
     echo "LANG=es_AR.UTF-8" > /etc/default/locale && \
     echo "LC_ALL=es_AR.UTF-8" >> /etc/default/locale
 
+# Copiar archivos del proyecto
+COPY . .
+
 # Instalación de dependencias de la aplicación
-COPY ./requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt && \
     pip install pymysql
 
-# Agrega el script de entrypoint y hazlo ejecutable
-COPY ./docker/django/entrypoint.py ./docker/django/entrypoint.py
+# Hacer ejecutable el entrypoint
+RUN chmod +x ./docker/django/entrypoint_final.py
 
 # Comando de inicio de la aplicación
-CMD ["python", "./docker/django/entrypoint.py"]
+CMD ["python", "./docker/django/entrypoint_final.py"]

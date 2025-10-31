@@ -59,6 +59,7 @@
         <link rel="stylesheet" href="{% static 'custom/css/utils.css' %}" />
         <link rel="stylesheet" href="{% static 'custom/css/override.css' %}" />
         <link rel="stylesheet" href="{% static 'custom/css/responsive.css' %}" />
+        <link rel="stylesheet" href="{% static 'custom/css/alertas_notifications.css' %}" />
         
         <!-- Page specific CSS -->
         {% block page_css %}{% endblock %}
@@ -115,6 +116,11 @@
         
         <!-- Mobile Enhancements Script -->
         <script src="{% static 'custom/js/mobile-enhancements.js' %}"></script>
+        
+        <!-- Alertas WebSocket -->
+        {% if user.is_authenticated %}
+            <script src="{% static 'custom/js/alertas_websocket.js' %}"></script>
+        {% endif %}
         
         {% block customJS %}{% endblock %}
     </body>

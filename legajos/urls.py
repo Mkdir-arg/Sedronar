@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from . import views_dashboard_simple as views_simple
 from . import views_simple_contactos as views_contactos_simple
+from . import views_alertas
 
 app_name = 'legajos'
 
@@ -73,6 +74,11 @@ urlpatterns = [
     # API Alertas
     path('ciudadanos/<int:ciudadano_id>/alertas/', views_contactos_simple.alertas_ciudadano_api, name='alertas_ciudadano'),
     path('alertas/<int:alerta_id>/cerrar/', views_contactos_simple.cerrar_alerta_api, name='cerrar_alerta'),
+    
+    # Dashboard de Alertas
+    path('alertas/', views_alertas.alertas_dashboard, name='alertas_dashboard'),
+    path('alertas/<int:alerta_id>/cerrar-ajax/', views_alertas.cerrar_alerta_ajax, name='cerrar_alerta_ajax'),
+    path('alertas/count/', views_alertas.alertas_count_ajax, name='alertas_count_ajax'),
     
     # Instituciones
     path('instituciones/', views.InstitucionListView.as_view(), name='instituciones'),

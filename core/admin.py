@@ -11,6 +11,7 @@ from core.models import (
     Institucion,
     DocumentoRequerido,
 )
+from core.models_auditoria import LogAccion, LogDescargaArchivo, SesionUsuario, AlertaAuditoria
 
 admin.site.register(Provincia)
 admin.site.register(Municipio)
@@ -93,3 +94,58 @@ class DocumentoRequeridoAdmin(admin.ModelAdmin):
 
 # Alias para compatibilidad hacia atrás
 DispositivoRedAdmin = InstitucionAdmin
+
+
+# Modelos de Auditoría
+@admin.register(LogAccion)
+class LogAccionAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'accion', 'modelo', 'objeto_repr', 'timestamp', 'ip_address')
+    list_filter = ('accion', 'modelo', 'timestamp')
+    search_fields = ('usuario__username', 'modelo', 'objeto_repr')
+    readonly_fields = ('usuario', 'accion', 'modelo', 'objeto_id', 'objeto_repr', 'detalles', 'ip_address', 'user_agent', 'timestamp')
+    ordering = ('-timestamp',)
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(LogDescargaArchivo)
+class LogDescargaArchivoAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'archivo_nombre', 'timestamp', 'ip_address')
+    list_filter = ('timestamp',)
+    search_fields = ('usuario__username', 'archivo_nombre')
+    readonly_fields = ('usuario', 'archivo_nombre', 'archivo_path', 'modelo_origen', 'objeto_id', 'ip_address', 'user_agent', 'timestamp')
+    ordering = ('-timestamp',)
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(SesionUsuario)
+class SesionUsuarioAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'inicio_sesion', 'ultima_actividad', 'activa', 'ip_address')
+    list_filter = ('activa', 'inicio_sesion')
+    search_fields = ('usuario__username',)
+    readonly_fields = ('usuario', 'session_key', 'ip_address', 'user_agent', 'inicio_sesion', 'ultima_actividad', 'fin_sesion')
+    ordering = ('-inicio_sesion',)
+    
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(AlertaAuditoria)
+class AlertaAuditoriaAdmin(admin.ModelAdmin):
+    list_display = ('tipo', 'severidad', 'usuario_afectado', 'timestamp', 'revisada')
+    list_filter = ('tipo', 'severidad', 'revisada', 'timestamp')
+    search_fields = ('usuario_afectado__username', 'descripcion')
+    readonly_fields = ('tipo', 'severidad', 'usuario_afectado', 'descripcion', 'detalles', 'timestamp')
+    ordering = ('-timestamp',)
+    
+    def has_add_permission(self, request):
+        return False

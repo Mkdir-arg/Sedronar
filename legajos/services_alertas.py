@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 from django.utils import timezone
 from django.db.models import Q, Count
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 from .models import (
     AlertaCiudadano, LegajoAtencion, Ciudadano, EvaluacionInicial,
     PlanIntervencion, EventoCritico, Derivacion, Consentimiento
@@ -134,6 +136,39 @@ class AlertasService:
                 f'{derivaciones_pendientes} derivación(es) pendiente(s)'
             ))
         
+        # 9. Seguimientos Vencidos
+        try:
+            from .models import SeguimientoContacto
+            seguimientos_vencidos = SeguimientoContacto.objects.filter(
+                legajo=legajo,
+                fecha_proximo_contacto__lt=timezone.now().date(),
+                fecha_proximo_contacto__isnull=False
+            ).count()
+            
+            if seguimientos_vencidos > 0:
+                alertas.append(AlertasService._crear_alerta(
+                    legajo.ciudadano, legajo, 'SEGUIMIENTO_VENCIDO', 'ALTA',
+                    f'{seguimientos_vencidos} seguimiento(s) vencido(s)'
+                ))
+        except:
+            pass
+        
+        # 10. Adherencia Baja
+        try:
+            seguimientos_recientes = SeguimientoContacto.objects.filter(
+                legajo=legajo,
+                creado__gte=timezone.now() - timedelta(days=30),
+                adherencia__in=['BAJA', 'NULA']
+            ).count()
+            
+            if seguimientos_recientes >= 2:
+                alertas.append(AlertasService._crear_alerta(
+                    legajo.ciudadano, legajo, 'ADHERENCIA_BAJA', 'ALTA',
+                    f'Adherencia baja en {seguimientos_recientes} seguimientos recientes'
+                ))
+        except:
+            pass
+        
         return alertas
     
     @staticmethod
@@ -178,15 +213,58 @@ class AlertasService:
         ).first()
         
         if not alerta_existente:
-            return AlertaCiudadano.objects.create(
+            alerta = AlertaCiudadano.objects.create(
                 ciudadano=ciudadano,
                 legajo=legajo,
                 tipo=tipo,
                 prioridad=prioridad,
                 mensaje=mensaje
             )
+            
+            # Enviar notificación WebSocket
+            AlertasService._enviar_notificacion_alerta(alerta)
+            
+            return alerta
         
         return alerta_existente
+    
+    @staticmethod
+    def _enviar_notificacion_alerta(alerta):
+        """Envía notificación WebSocket para nueva alerta"""
+        try:
+            channel_layer = get_channel_layer()
+            
+            alerta_data = {
+                'id': alerta.id,
+                'ciudadano': alerta.ciudadano.nombre_completo,
+                'ciudadano_id': alerta.ciudadano.id,
+                'tipo': alerta.tipo,
+                'prioridad': alerta.prioridad,
+                'mensaje': alerta.mensaje,
+                'fecha': alerta.creado.strftime('%d/%m/%Y %H:%M'),
+                'legajo_id': alerta.legajo.id if alerta.legajo else None
+            }
+            
+            # Notificación general
+            async_to_sync(channel_layer.group_send)(
+                'alertas_sistema',
+                {
+                    'type': 'nueva_alerta',
+                    'alerta': alerta_data
+                }
+            )
+            
+            # Notificación especial para alertas críticas
+            if alerta.prioridad == 'CRITICA':
+                async_to_sync(channel_layer.group_send)(
+                    'alertas_sistema',
+                    {
+                        'type': 'alerta_critica',
+                        'alerta': alerta_data
+                    }
+                )
+        except Exception as e:
+            print(f"Error enviando notificación WebSocket: {e}")
     
     @staticmethod
     def obtener_alertas_ciudadano(ciudadano_id):
@@ -202,6 +280,76 @@ class AlertasService:
         try:
             alerta = AlertaCiudadano.objects.get(id=alerta_id, activa=True)
             alerta.cerrar(usuario)
+            
+            # Notificar cierre de alerta
+            try:
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    'alertas_sistema',
+                    {
+                        'type': 'alerta_cerrada',
+                        'alerta_id': alerta_id
+                    }
+                )
+            except:
+                pass
+            
             return True
         except AlertaCiudadano.DoesNotExist:
             return False
+    
+    @staticmethod
+    def generar_alerta_mensaje_ciudadano(conversacion):
+        """Genera alerta cuando ciudadano envía mensaje"""
+        try:
+            if hasattr(conversacion, 'ciudadano_relacionado') and conversacion.ciudadano_relacionado:
+                if not conversacion.operador_asignado:
+                    alerta = AlertaCiudadano.objects.create(
+                        ciudadano=conversacion.ciudadano_relacionado,
+                        tipo='MENSAJE_SIN_OPERADOR',
+                        prioridad='ALTA',
+                        mensaje='Nuevo mensaje de ciudadano sin operador asignado'
+                    )
+                    AlertasService._enviar_notificacion_alerta(alerta)
+        except Exception as e:
+            print(f"Error generando alerta de mensaje: {e}")
+    
+    @staticmethod
+    def generar_alerta_seguimiento_vencido(seguimiento):
+        """Genera alerta cuando un seguimiento está vencido"""
+        try:
+            if seguimiento.fecha_proximo_contacto and seguimiento.fecha_proximo_contacto < timezone.now().date():
+                dias_vencido = (timezone.now().date() - seguimiento.fecha_proximo_contacto).days
+                prioridad = 'CRITICA' if dias_vencido > 7 else 'ALTA'
+                
+                alerta = AlertaCiudadano.objects.create(
+                    ciudadano=seguimiento.legajo.ciudadano,
+                    legajo=seguimiento.legajo,
+                    tipo='SEGUIMIENTO_VENCIDO',
+                    prioridad=prioridad,
+                    mensaje=f'Seguimiento vencido hace {dias_vencido} días'
+                )
+                
+                AlertasService._enviar_notificacion_alerta(alerta)
+                return alerta
+        except Exception as e:
+            print(f"Error generando alerta de seguimiento vencido: {e}")
+            return None
+    
+    @staticmethod
+    def generar_alerta_evento_critico(legajo, tipo_evento, descripcion):
+        """Genera alerta inmediata por evento crítico"""
+        try:
+            alerta = AlertaCiudadano.objects.create(
+                ciudadano=legajo.ciudadano,
+                legajo=legajo,
+                tipo='EVENTO_CRITICO_INMEDIATO',
+                prioridad='CRITICA',
+                mensaje=f'EVENTO CRÍTICO: {tipo_evento} - {descripcion}'
+            )
+            
+            AlertasService._enviar_notificacion_alerta(alerta)
+            return alerta
+        except Exception as e:
+            print(f"Error generando alerta crítica: {e}")
+            return None

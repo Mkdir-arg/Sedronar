@@ -12,6 +12,51 @@
     <div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
         <div class="relative flex flex-1"></div>
         <div class="flex items-center gap-x-4 lg:gap-x-6">
+            <!-- Indicador de alertas -->
+            <div class="relative" x-data="{ showDropdown: false }">
+                <button @click="showDropdown = !showDropdown" class="text-white hover:text-gray-300 transition-colors relative">
+                    <i class="fas fa-bell text-lg"></i>
+                    <span id="alertas-counter" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1 min-w-[16px] h-4 flex items-center justify-center hidden">0</span>
+                </button>
+                
+                <!-- Dropdown de alertas -->
+                <div x-show="showDropdown" @click.away="showDropdown = false" 
+                     x-transition:enter="transition ease-out duration-100"
+                     x-transition:enter-start="transform opacity-0 scale-95"
+                     x-transition:enter-end="transform opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-75"
+                     x-transition:leave-start="transform opacity-100 scale-100"
+                     x-transition:leave-end="transform opacity-0 scale-95"
+                     class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+                    
+                    <div class="p-4 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-medium text-gray-900">Alertas Activas</h3>
+                            <a href="{% url 'legajos:alertas_dashboard' %}" class="text-blue-600 hover:text-blue-800 text-sm">
+                                Ver todas
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div id="alertas-preview" class="max-h-64 overflow-y-auto">
+                        <div class="p-4 text-center text-gray-500">
+                            <i class="fas fa-spinner fa-spin mb-2"></i>
+                            <p>Cargando alertas...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="p-3 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+                        <a href="{% url 'legajos:alertas_dashboard' %}" class="block w-full text-center bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-external-link-alt mr-2"></i>Dashboard de Alertas
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Estado WebSocket -->
+            <div class="flex items-center">
+                <span id="websocket-status" class="w-2 h-2 rounded-full bg-gray-400" title="Estado de conexión"></span>
+            </div>
             <!-- Profile dropdown -->
             <div class="relative" x-data="{ open: false }">
                 <button type="button" class="-m-1.5 flex items-center p-1.5" @click="open = !open">

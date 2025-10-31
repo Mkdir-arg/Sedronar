@@ -4,6 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.core.exceptions import ValidationError
 from core.models import TimeStamped, LegajoBase, Institucion
+# from simple_history.models import HistoricalRecords  # Comentado temporalmente
 
 # Alias para compatibilidad
 DispositivoRed = Institucion
@@ -26,6 +27,9 @@ class Ciudadano(TimeStamped):
     email = models.EmailField(blank=True)
     domicilio = models.CharField(max_length=240, blank=True)
     activo = models.BooleanField(default=True)
+    
+    # Historial de cambios
+    # history = HistoricalRecords()  # Comentado temporalmente
     
     class Meta:
         verbose_name = "Ciudadano"
@@ -101,6 +105,9 @@ class LegajoAtencion(LegajoBase):
         choices=NivelRiesgo.choices, 
         default=NivelRiesgo.BAJO
     )
+    
+    # Historial de cambios
+    # history = HistoricalRecords()  # Comentado temporalmente
     
     class Meta:
         verbose_name = "Acompañamiento"

@@ -1,24 +1,21 @@
 #!/usr/bin/env python
 """
-Entrypoint para el contenedor Django
-Ejecuta la configuración completa del sistema y luego inicia el servidor
+Entrypoint simple para el contenedor Django
+Ejecuta la configuración y luego inicia el servidor
 """
 
 import os
 import sys
 import time
 import subprocess
-from pathlib import Path
 
 def wait_for_db():
-    """Espera a que la base de datos esté disponible"""
+    """Espera a que la base de datos esté disponible usando mysql client"""
     print("🔄 Esperando conexión a la base de datos...")
-    max_attempts = 30
-    attempt = 0
     
-    while attempt < max_attempts:
+    max_attempts = 30
+    for attempt in range(max_attempts):
         try:
-            # Intentar conectar usando el cliente MySQL
             result = subprocess.run([
                 'mysql', 
                 '-h', os.environ.get('DATABASE_HOST', 'sedronar-mysql'),
@@ -32,11 +29,10 @@ def wait_for_db():
                 print("✅ Base de datos disponible!")
                 return True
                 
-        except Exception as e:
+        except Exception:
             pass
             
-        attempt += 1
-        print(f"⏳ Intento {attempt}/{max_attempts} - Reintentando en 2 segundos...")
+        print(f"⏳ Intento {attempt + 1}/{max_attempts} - Reintentando en 2 segundos...")
         time.sleep(2)
     
     print("❌ No se pudo conectar a la base de datos")
@@ -47,13 +43,10 @@ def run_setup():
     print("\n🚀 Ejecutando configuración completa del sistema...")
     
     try:
-        # Cambiar al directorio del proyecto
-        os.chdir('/sisoc')
-        
-        # Ejecutar el script de configuración
+        # Ejecutar el script usando subprocess
         result = subprocess.run([
             sys.executable, 'setup_sistema_completo.py'
-        ], check=True)
+        ], cwd='/sisoc', check=True)
         
         print("✅ Configuración completada exitosamente!")
         return True
@@ -70,11 +63,9 @@ def start_server():
     print("\n🌐 Iniciando servidor Django...")
     
     try:
-        # Ejecutar el servidor Django
         subprocess.run([
             sys.executable, 'manage.py', 'runserver', '0.0.0.0:8000'
-        ], check=True)
-        
+        ], cwd='/sisoc', check=True)
     except KeyboardInterrupt:
         print("\n👋 Servidor detenido por el usuario")
     except Exception as e:
@@ -86,6 +77,9 @@ def main():
     print("=" * 60)
     print("🐳 SISOC - ENTRYPOINT DOCKER")
     print("=" * 60)
+    
+    # Cambiar al directorio del proyecto
+    os.chdir('/sisoc')
     
     # Esperar a que la base de datos esté disponible
     if not wait_for_db():

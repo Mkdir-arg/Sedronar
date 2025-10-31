@@ -6,13 +6,18 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from .models import (
     Ciudadano, LegajoAtencion, EvaluacionInicial,
-    PlanIntervencion, SeguimientoContacto, Derivacion, EventoCritico
+    PlanIntervencion, SeguimientoContacto, Derivacion, EventoCritico, AlertaCiudadano
 )
 from .serializers import (
     CiudadanoSerializer, LegajoAtencionSerializer, EvaluacionInicialSerializer,
     PlanIntervencionSerializer, SeguimientoContactoSerializer, 
     DerivacionSerializer, EventoCriticoSerializer
 )
+try:
+    from .serializers import AlertaCiudadanoSerializer
+except ImportError:
+    AlertaCiudadanoSerializer = None
+from .services_alertas import AlertasService
 
 
 @extend_schema_view(
@@ -92,6 +97,37 @@ class LegajoAtencionViewSet(viewsets.ModelViewSet):
             return Response(
                 {'error': str(e)}, 
                 status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @extend_schema(description="Obtiene alertas del ciudadano del legajo")
+    @action(detail=True, methods=['get'])
+    def alertas(self, request, pk=None):
+        """Obtiene las alertas activas del ciudadano"""
+        legajo = self.get_object()
+        alertas = AlertaCiudadano.objects.filter(
+            ciudadano=legajo.ciudadano,
+            activa=True
+        ).order_by('-creado')
+        
+        serializer = AlertaCiudadanoSerializer(alertas, many=True)
+        return Response(serializer.data)
+    
+    @extend_schema(description="Genera alertas automáticas para el legajo")
+    @action(detail=True, methods=['post'])
+    def generar_alertas(self, request, pk=None):
+        """Genera alertas automáticas para el ciudadano del legajo"""
+        legajo = self.get_object()
+        
+        try:
+            alertas = AlertasService.generar_alertas_ciudadano(legajo.ciudadano.id)
+            return Response({
+                'message': f'Se generaron {len(alertas)} alertas',
+                'alertas': AlertaCiudadanoSerializer(alertas, many=True).data
+            })
+        except Exception as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
@@ -191,3 +227,44 @@ class EventoCriticoViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['tipo', 'legajo']
     ordering = ['-creado']
+
+
+@extend_schema_view(
+    list=extend_schema(description="Lista todas las alertas del sistema"),
+)
+class AlertasViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet para consultar alertas del sistema.
+    """
+    queryset = AlertaCiudadano.objects.filter(activa=True).select_related('ciudadano', 'legajo')
+    serializer_class = AlertaCiudadanoSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['prioridad', 'tipo', 'ciudadano']
+    ordering = ['prioridad', '-creado']
+    
+    @extend_schema(description="Obtiene contador de alertas activas")
+    @action(detail=False, methods=['get'])
+    def count(self, request):
+        """Obtiene el contador de alertas activas"""
+        count = self.get_queryset().count()
+        count_criticas = self.get_queryset().filter(prioridad='CRITICA').count()
+        
+        return Response({
+            'count': count,
+            'criticas': count_criticas
+        })
+    
+    @extend_schema(description="Cierra una alerta específica")
+    @action(detail=True, methods=['post'])
+    def cerrar(self, request, pk=None):
+        """Cierra una alerta específica"""
+        success = AlertasService.cerrar_alerta(pk, request.user)
+        
+        if success:
+            return Response({'message': 'Alerta cerrada correctamente'})
+        else:
+            return Response(
+                {'error': 'Alerta no encontrada'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
