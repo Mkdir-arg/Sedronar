@@ -102,6 +102,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "legajos.context_processors.alertas_eventos_criticos",
                 "core.context_processors.dispositivos_context",
+                "conversaciones.context_processors.user_groups",
             ],
         },
     },

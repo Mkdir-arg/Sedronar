@@ -119,7 +119,13 @@
         
         <!-- Alertas WebSocket -->
         {% if user.is_authenticated %}
+            <script>
+                // Pasar grupos del usuario al JavaScript
+                window.userGroups = {{ user_groups_json|safe }};
+            </script>
+            <script src="{% static 'custom/js/notification_sound.js' %}"></script>
             <script src="{% static 'custom/js/alertas_websocket.js' %}"></script>
+            <script src="{% static 'custom/js/alertas_conversaciones_simple.js' %}"></script>
         {% endif %}
         
         {% block customJS %}{% endblock %}

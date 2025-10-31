@@ -269,3 +269,45 @@ class AlertasConsumer(AsyncWebsocketConsumer):
         
         return (user.groups.filter(name__in=['Legajos', 'Supervisores', 'Coordinadores']).exists() 
                 or user.is_superuser)
+
+
+class AlertasConversacionesConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        # Verificar permisos para conversaciones
+        if not await self.tiene_permiso_conversaciones():
+            await self.close()
+            return
+        
+        user_id = self.scope['user'].id
+        self.room_group_name = f'conversaciones_operador_{user_id}'
+        
+        # Unirse al grupo específico del operador
+        await self.channel_layer.group_add(
+            self.room_group_name,
+            self.channel_name
+        )
+        
+        await self.accept()
+    
+    async def disconnect(self, close_code):
+        # Salir del grupo
+        await self.channel_layer.group_discard(
+            self.room_group_name,
+            self.channel_name
+        )
+    
+    async def nueva_alerta_conversacion(self, event):
+        # Notificar nueva alerta de conversación
+        await self.send(text_data=json.dumps({
+            'type': 'nueva_alerta_conversacion',
+            'alerta': event['alerta']
+        }))
+    
+    @database_sync_to_async
+    def tiene_permiso_conversaciones(self):
+        user = self.scope['user']
+        if not user.is_authenticated:
+            return False
+        
+        return (user.groups.filter(name__in=['Conversaciones', 'OperadorCharla']).exists() 
+                or user.is_superuser)

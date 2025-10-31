@@ -59,6 +59,10 @@ def verificar_tiempo_respuesta(sender, instance, created, **kwargs):
         try:
             conversacion = instance.conversacion
             
+            # Generar alerta para operador asignado cuando ciudadano envía mensaje
+            if conversacion.operador_asignado:
+                _generar_alerta_mensaje_ciudadano(conversacion, instance)
+            
             # Verificar si hay operador asignado
             if not conversacion.operador_asignado:
                 return
@@ -86,3 +90,35 @@ def verificar_tiempo_respuesta(sender, instance, created, **kwargs):
                         AlertasService._enviar_notificacion_alerta(alerta)
         except Exception as e:
             print(f"Error verificando tiempo de respuesta: {e}")
+
+
+def _generar_alerta_mensaje_ciudadano(conversacion, mensaje):
+    """Genera alerta específica para operadores de conversaciones"""
+    try:
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        
+        # Datos de la alerta
+        alerta_data = {
+            'id': f'conv_{conversacion.id}_{mensaje.id}',
+            'conversacion_id': conversacion.id,
+            'tipo': 'NUEVO_MENSAJE_CIUDADANO',
+            'prioridad': 'MEDIA',
+            'mensaje': f'Nuevo mensaje en conversación #{conversacion.id}',
+            'fecha': mensaje.fecha_envio.strftime('%d/%m/%Y %H:%M'),
+            'operador_id': conversacion.operador_asignado.id,
+            'contenido_mensaje': mensaje.contenido[:100] + '...' if len(mensaje.contenido) > 100 else mensaje.contenido
+        }
+        
+        # Enviar notificación WebSocket específica para conversaciones
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'conversaciones_operador_{conversacion.operador_asignado.id}',
+            {
+                'type': 'nueva_alerta_conversacion',
+                'alerta': alerta_data
+            }
+        )
+        
+    except Exception as e:
+        print(f"Error generando alerta de mensaje ciudadano: {e}")

@@ -57,7 +57,16 @@
                 
                 <div>
                     <label for="{{ form.groups.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Grupos</label>
-                    {{ form.groups }}
+                    <div class="space-y-3">
+                        <div class="space-y-2">
+                            <div class="hidden">
+                                {{ form.groups }}
+                            </div>
+                            <div id="group-options" class="flex flex-wrap gap-2"></div>
+                        </div>
+                        <div id="selected-groups-tags" class="flex flex-wrap gap-2"></div>
+                        <p class="text-xs text-gray-500">Selecciona uno o más grupos. Puedes quitar un grupo haciendo clic en su etiqueta.</p>
+                    </div>
                     {% if form.groups.errors %}
                         <div class="text-red-600 text-sm mt-1">{{ form.groups.errors }}</div>
                     {% endif %}
@@ -105,4 +114,97 @@
 </div>
 
 <script src="{% static 'custom/js/usuarioprovincial.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const select = document.getElementById('id_groups') || document.getElementById('id_groups_edit');
+        const tagsContainer = document.getElementById('selected-groups-tags');
+        const optionsContainer = document.getElementById('group-options');
+
+        if (!select || !tagsContainer || !optionsContainer) {
+            return;
+        }
+
+        const optionButtons = new Map();
+
+        const baseButtonClasses = 'px-3 py-2 text-sm rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400';
+        const selectedClasses = 'bg-blue-600 text-white border-blue-600 shadow';
+        const unselectedClasses = 'bg-white text-gray-700 border-gray-300 hover:bg-blue-50';
+
+        const updateButtonState = (button, isSelected) => {
+            button.className = `${baseButtonClasses} ${isSelected ? selectedClasses : unselectedClasses}`;
+            button.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+        };
+
+        Array.from(select.options).forEach((option) => {
+            if (!option.value) {
+                return;
+            }
+
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = option.text;
+
+            updateButtonState(button, option.selected);
+
+            button.addEventListener('click', () => {
+                option.selected = !option.selected;
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                updateButtonState(button, option.selected);
+                renderTags();
+            });
+
+            optionsContainer.appendChild(button);
+            optionButtons.set(option.value, button);
+        });
+
+        const renderTags = () => {
+            const selected = Array.from(select.selectedOptions);
+
+            tagsContainer.innerHTML = '';
+
+            if (selected.length === 0) {
+                const empty = document.createElement('span');
+                empty.className = 'text-gray-400 text-sm';
+                empty.textContent = 'Ningun grupo seleccionado';
+                tagsContainer.appendChild(empty);
+                return;
+            }
+
+            selected.forEach((option) => {
+                const tag = document.createElement('button');
+                tag.type = 'button';
+                tag.className = 'flex items-center space-x-1 bg-blue-100 text-blue-800 text-xs font-medium px-3 py-1 rounded-full shadow-sm hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400';
+                tag.dataset.value = option.value;
+
+                const label = document.createElement('span');
+                label.textContent = option.text;
+
+                const close = document.createElement('span');
+                close.className = 'text-blue-600 text-sm font-semibold leading-none';
+                close.innerHTML = '&times;';
+
+                tag.appendChild(label);
+                tag.appendChild(close);
+
+                tag.addEventListener('click', () => {
+                    option.selected = false;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                    renderTags();
+                });
+
+                tagsContainer.appendChild(tag);
+            });
+
+            optionButtons.forEach((button, value) => {
+                const option = Array.from(select.options).find(opt => opt.value === value);
+                if (option) {
+                    updateButtonState(button, option.selected);
+                }
+            });
+        };
+
+        select.addEventListener('change', renderTags);
+        renderTags();
+    });
+</script>
 {% endblock %}

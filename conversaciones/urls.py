@@ -1,9 +1,11 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 app_name = 'conversaciones'
 
 urlpatterns = [
+    # API URLs
+    path('api/', include('conversaciones.api_urls')),
     # URLs públicas para ciudadanos
     path('chat/', views.chat_ciudadano, name='chat_ciudadano'),
     path('consultar-renaper/', views.consultar_renaper, name='consultar_renaper'),
