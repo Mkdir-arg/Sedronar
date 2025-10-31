@@ -80,17 +80,22 @@ def log_user_login(sender, request, user, **kwargs):
         user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
     )
     
-    # Crear/actualizar sesión
-    SesionUsuario.objects.update_or_create(
-        session_key=request.session.session_key,
-        defaults={
-            'usuario': user,
-            'ip_address': _get_client_ip(request),
-            'user_agent': request.META.get('HTTP_USER_AGENT', '')[:500],
-            'activa': True,
-            'fin_sesion': None
-        }
-    )
+    # Asegurar que la sesión tenga una clave
+    if not request.session.session_key:
+        request.session.save()
+    
+    # Crear/actualizar sesión solo si tenemos session_key
+    if request.session.session_key:
+        SesionUsuario.objects.update_or_create(
+            session_key=request.session.session_key,
+            defaults={
+                'usuario': user,
+                'ip_address': _get_client_ip(request),
+                'user_agent': request.META.get('HTTP_USER_AGENT', '')[:500],
+                'activa': True,
+                'fin_sesion': None
+            }
+        )
 
 
 @receiver(user_logged_out)

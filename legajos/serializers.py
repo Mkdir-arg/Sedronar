@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from .models import (
     Ciudadano, LegajoAtencion, EvaluacionInicial, 
     PlanIntervencion, SeguimientoContacto, Derivacion, 
-    EventoCritico, Profesional
+    EventoCritico, Profesional, AlertaCiudadano
 )
 from core.models import DispositivoRed
 
@@ -123,6 +123,21 @@ class EventoCriticoSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'legajo', 'tipo', 'detalle', 'notificado_a',
             'creado', 'modificado'
+        ]
+        read_only_fields = ['id', 'creado', 'modificado']
+
+
+class AlertaCiudadanoSerializer(serializers.ModelSerializer):
+    """Serializer para AlertaCiudadano"""
+    ciudadano_nombre = serializers.CharField(source='ciudadano.nombre_completo', read_only=True)
+    legajo_codigo = serializers.CharField(source='legajo.codigo', read_only=True)
+    
+    class Meta:
+        model = AlertaCiudadano
+        fields = [
+            'id', 'ciudadano', 'ciudadano_nombre', 'legajo', 'legajo_codigo',
+            'tipo', 'prioridad', 'mensaje', 'activa', 'fecha_cierre',
+            'cerrada_por', 'creado', 'modificado'
         ]
         read_only_fields = ['id', 'creado', 'modificado']
 

@@ -79,6 +79,9 @@ urlpatterns = [
     path('alertas/', views_alertas.alertas_dashboard, name='alertas_dashboard'),
     path('alertas/<int:alerta_id>/cerrar-ajax/', views_alertas.cerrar_alerta_ajax, name='cerrar_alerta_ajax'),
     path('alertas/count/', views_alertas.alertas_count_ajax, name='alertas_count_ajax'),
+    path('alertas/preview/', views_alertas.alertas_preview_ajax, name='alertas_preview_ajax'),
+    path('alertas/debug/', views_alertas.debug_alertas, name='debug_alertas'),
+    path('alertas/test/', views_alertas.test_alertas_page, name='test_alertas'),
     
     # Instituciones
     path('instituciones/', views.InstitucionListView.as_view(), name='instituciones'),

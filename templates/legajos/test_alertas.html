@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Alertas - SEDRONAR</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8 text-gray-800">
+            <i class="fas fa-bell text-blue-600 mr-3"></i>
+            Test Sistema de Alertas
+        </h1>
+        
+        <!-- Estado del Sistema -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Estado del Sistema</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-blue-600" id="total-alertas">-</div>
+                    <div class="text-sm text-gray-600">Total Alertas</div>
+                </div>
+                <div class="bg-red-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-red-600" id="alertas-criticas">-</div>
+                    <div class="text-sm text-gray-600">Críticas</div>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-green-600" id="conexion-status">Desconectado</div>
+                    <div class="text-sm text-gray-600">Conexión</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Endpoints Test -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Test de Endpoints</h2>
+            <div class="space-y-3">
+                <button onclick="testEndpoint('/legajos/alertas/count/', 'count-result')" 
+                        class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    <i class="fas fa-hashtag mr-2"></i>Test Count Endpoint
+                </button>
+                <div id="count-result" class="bg-gray-50 p-3 rounded text-sm hidden"></div>
+                
+                <button onclick="testEndpoint('/legajos/alertas/preview/', 'preview-result')" 
+                        class="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    <i class="fas fa-eye mr-2"></i>Test Preview Endpoint
+                </button>
+                <div id="preview-result" class="bg-gray-50 p-3 rounded text-sm hidden"></div>
+                
+                <button onclick="testEndpoint('/api/legajos/alertas/', 'api-result')" 
+                        class="w-full bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+                    <i class="fas fa-code mr-2"></i>Test API Endpoint
+                </button>
+                <div id="api-result" class="bg-gray-50 p-3 rounded text-sm hidden"></div>
+            </div>
+        </div>
+        
+        <!-- Alertas Preview -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Preview de Alertas</h2>
+            <div id="alertas-list" class="space-y-2">
+                <div class="text-center text-gray-500 py-8">
+                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                    <p>Cargando alertas...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Acciones -->
+        <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Acciones</h2>
+            <div class="space-y-3">
+                <a href="/legajos/alertas/" class="block w-full bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-center">
+                    <i class="fas fa-tachometer-alt mr-2"></i>Ir al Dashboard de Alertas
+                </a>
+                <a href="/legajos/alertas/debug/" class="block w-full bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-center">
+                    <i class="fas fa-bug mr-2"></i>Ver Debug Info
+                </a>
+                <button onclick="location.reload()" class="w-full bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">
+                    <i class="fas fa-refresh mr-2"></i>Recargar Página
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Test de endpoints
+        function testEndpoint(url, resultId) {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Probando...';
+            
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    resultDiv.innerHTML = `
+                        <div class="text-green-600 font-semibold mb-2">✅ Éxito</div>
+                        <pre class="text-xs overflow-x-auto">${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = `
+                        <div class="text-red-600 font-semibold mb-2">❌ Error</div>
+                        <div class="text-red-700">${error.message}</div>
+                    `;
+                });
+        }
+        
+        // Cargar estado inicial
+        function loadStatus() {
+            // Test count endpoint
+            fetch('/legajos/alertas/count/')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total-alertas').textContent = data.count || 0;
+                    document.getElementById('alertas-criticas').textContent = data.criticas || 0;
+                    document.getElementById('conexion-status').textContent = 'Conectado';
+                    document.getElementById('conexion-status').className = 'text-2xl font-bold text-green-600';
+                })
+                .catch(error => {
+                    console.error('Error loading status:', error);
+                    document.getElementById('conexion-status').textContent = 'Error';
+                    document.getElementById('conexion-status').className = 'text-2xl font-bold text-red-600';
+                });
+            
+            // Load alertas preview
+            loadAlertas();
+        }
+        
+        function loadAlertas() {
+            const alertasList = document.getElementById('alertas-list');
+            
+            fetch('/legajos/alertas/preview/')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.results && data.results.length > 0) {
+                        alertasList.innerHTML = data.results.map(alerta => `
+                            <div class="border rounded-lg p-3 ${getPriorityClass(alerta.prioridad)}">
+                                <div class="flex justify-between items-start">
+                                    <div class="flex-1">
+                                        <div class="font-medium text-gray-900">${alerta.ciudadano_nombre}</div>
+                                        <div class="text-sm text-gray-600 mt-1">${alerta.mensaje}</div>
+                                        <div class="text-xs text-gray-400 mt-1">${new Date(alerta.creado).toLocaleString()}</div>
+                                    </div>
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full ${getPriorityBadgeClass(alerta.prioridad)}">
+                                        ${alerta.prioridad}
+                                    </span>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        alertasList.innerHTML = `
+                            <div class="text-center text-gray-500 py-8">
+                                <i class="fas fa-check-circle text-green-500 text-2xl mb-2"></i>
+                                <p>No hay alertas activas</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading alertas:', error);
+                    alertasList.innerHTML = `
+                        <div class="text-center text-red-500 py-8">
+                            <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                            <p>Error cargando alertas: ${error.message}</p>
+                        </div>
+                    `;
+                });
+        }
+        
+        function getPriorityClass(prioridad) {
+            const classes = {
+                'CRITICA': 'border-red-200 bg-red-50',
+                'ALTA': 'border-orange-200 bg-orange-50',
+                'MEDIA': 'border-yellow-200 bg-yellow-50',
+                'BAJA': 'border-blue-200 bg-blue-50'
+            };
+            return classes[prioridad] || 'border-gray-200 bg-gray-50';
+        }
+        
+        function getPriorityBadgeClass(prioridad) {
+            const classes = {
+                'CRITICA': 'bg-red-100 text-red-800',
+                'ALTA': 'bg-orange-100 text-orange-800',
+                'MEDIA': 'bg-yellow-100 text-yellow-800',
+                'BAJA': 'bg-blue-100 text-blue-800'
+            };
+            return classes[prioridad] || 'bg-gray-100 text-gray-800';
+        }
+        
+        // Cargar al iniciar
+        document.addEventListener('DOMContentLoaded', loadStatus);
+        
+        // Recargar cada 30 segundos
+        setInterval(loadStatus, 30000);
+    </script>
+</body>
+</html>

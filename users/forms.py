@@ -5,7 +5,57 @@ from core.models import Provincia
 from .models import Profile
 
 
+def _normalize_groups_data(data):
+    """
+    Permite aceptar tanto 'groups' como 'groups[]' cuando el formulario se envía desde JS.
+    Algunos frontends serializan listas como 'field[]', lo que hacía que Django ignorara el campo.
+    """
+    if not data:
+        return data
+
+    try:
+        has_groups_key = "groups" in data
+    except TypeError:
+        # Si data no es iterable (raro en formularios), lo dejamos igual
+        return data
+
+    if has_groups_key or "groups[]" not in data:
+        return data
+
+    if hasattr(data, "getlist") and hasattr(data, "setlist"):
+        mutable_data = data.copy()
+        mutable_data.setlist("groups", mutable_data.getlist("groups[]"))
+        try:
+            del mutable_data["groups[]"]
+        except KeyError:
+            pass
+        return mutable_data
+
+    mutable_data = data.copy()
+    raw_value = mutable_data.pop("groups[]", [])
+    if isinstance(raw_value, (list, tuple)):
+        values = list(raw_value)
+    else:
+        values = [raw_value]
+    mutable_data["groups"] = values
+    return mutable_data
+
+
+def _normalize_groups_args(args, kwargs):
+    if args:
+        first = _normalize_groups_data(args[0])
+        if first is not args[0]:
+            args = (first, *args[1:])
+    elif kwargs.get("data") is not None:
+        kwargs["data"] = _normalize_groups_data(kwargs["data"])
+    return args, kwargs
+
+
 class UserCreationForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        args, kwargs = _normalize_groups_args(args, kwargs)
+        super().__init__(*args, **kwargs)
+
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={
             'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
@@ -88,24 +138,40 @@ class UserCreationForm(forms.ModelForm):
         return cleaned
 
     def save(self, commit=True):
+        from django.db import transaction
+        import logging
+        
+        logger = logging.getLogger(__name__)
         user = super().save(commit=False)
         user.set_password(self.cleaned_data["password"])
 
         if commit:
-            user.save()
-            user.groups.set(self.cleaned_data.get("groups", []))
+            with transaction.atomic():
+                user.save()
+                
+                # Asegurar que los grupos se asignen correctamente
+                groups = self.cleaned_data.get("groups", [])
+                logger.info(f"Grupos a asignar: {[g.name for g in groups]}")
+                
+                # Usar set() en lugar de clear() + add() para mayor confiabilidad
+                user.groups.set(groups)
+                
+                # Verificar que se asignaron correctamente
+                assigned_groups = user.groups.all()
+                logger.info(f"Grupos asignados en BD: {[g.name for g in assigned_groups]}")
 
-            profile, _ = Profile.objects.get_or_create(user=user)
-            profile.es_usuario_provincial = self.cleaned_data.get(
-                "es_usuario_provincial", False
-            )
-            profile.provincia = (
-                self.cleaned_data.get("provincia")
-                if self.cleaned_data.get("es_usuario_provincial")
-                else None
-            )
-            profile.rol = self.cleaned_data.get("rol")
-            profile.save()
+                # Crear o actualizar perfil
+                profile, created = Profile.objects.get_or_create(user=user)
+                profile.es_usuario_provincial = self.cleaned_data.get(
+                    "es_usuario_provincial", False
+                )
+                profile.provincia = (
+                    self.cleaned_data.get("provincia")
+                    if self.cleaned_data.get("es_usuario_provincial")
+                    else None
+                )
+                profile.rol = self.cleaned_data.get("rol")
+                profile.save()
 
         return user
 
@@ -187,6 +253,7 @@ class CustomUserChangeForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        args, kwargs = _normalize_groups_args(args, kwargs)
         super().__init__(*args, **kwargs)
         self._original_password_hash = self.instance.password
         self.fields["password"].initial = ""
@@ -209,6 +276,10 @@ class CustomUserChangeForm(forms.ModelForm):
         return cleaned
 
     def save(self, commit=True):
+        from django.db import transaction
+        import logging
+        
+        logger = logging.getLogger(__name__)
         new_pwd = self.cleaned_data.get("password")
         user = super().save(commit=False)
 
@@ -218,19 +289,31 @@ class CustomUserChangeForm(forms.ModelForm):
             user.password = self._original_password_hash
 
         if commit:
-            user.save()
-            user.groups.set(self.cleaned_data.get("groups", []))
+            with transaction.atomic():
+                user.save()
+                
+                # Asegurar que los grupos se asignen correctamente
+                groups = self.cleaned_data.get("groups", [])
+                logger.info(f"Grupos a asignar: {[g.name for g in groups]}")
+                
+                # Usar set() en lugar de clear() + add() para mayor confiabilidad
+                user.groups.set(groups)
+                
+                # Verificar que se asignaron correctamente
+                assigned_groups = user.groups.all()
+                logger.info(f"Grupos asignados en BD: {[g.name for g in assigned_groups]}")
 
-            profile, _ = Profile.objects.get_or_create(user=user)
-            profile.es_usuario_provincial = self.cleaned_data.get(
-                "es_usuario_provincial", False
-            )
-            profile.provincia = (
-                self.cleaned_data.get("provincia")
-                if self.cleaned_data.get("es_usuario_provincial")
-                else None
-            )
-            profile.rol = self.cleaned_data.get("rol")
-            profile.save()
+                # Crear o actualizar perfil
+                profile, created = Profile.objects.get_or_create(user=user)
+                profile.es_usuario_provincial = self.cleaned_data.get(
+                    "es_usuario_provincial", False
+                )
+                profile.provincia = (
+                    self.cleaned_data.get("provincia")
+                    if self.cleaned_data.get("es_usuario_provincial")
+                    else None
+                )
+                profile.rol = self.cleaned_data.get("rol")
+                profile.save()
 
         return user

@@ -198,15 +198,23 @@ class AlertasWebSocket {
         const counter = document.querySelector('#alertas-counter');
         if (counter) {
             fetch('/legajos/alertas/count/')
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     counter.textContent = data.count;
-                    counter.style.display = data.count > 0 ? 'flex' : 'none';
+                    counter.classList.toggle('hidden', data.count === 0);
                     
                     // Cargar preview de alertas
                     this.loadAlertasPreview();
                 })
-                .catch(() => {});
+                .catch(error => {
+                    console.error('Error actualizando contador de alertas:', error);
+                    counter.classList.add('hidden');
+                });
         }
     }
     
@@ -214,11 +222,18 @@ class AlertasWebSocket {
         const preview = document.querySelector('#alertas-preview');
         if (!preview) return;
         
-        fetch('/api/legajos/alertas/?limit=5')
-            .then(response => response.json())
+        // Intentar primero el endpoint simple
+        fetch('/legajos/alertas/preview/')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
-                if (data.results && data.results.length > 0) {
-                    preview.innerHTML = data.results.map(alerta => `
+                const alertas = data.results || data;
+                if (alertas && alertas.length > 0) {
+                    preview.innerHTML = alertas.map(alerta => `
                         <div class="p-3 border-b border-gray-100 hover:bg-gray-50">
                             <div class="flex items-start justify-between">
                                 <div class="flex-1">
@@ -237,6 +252,38 @@ class AlertasWebSocket {
                             </div>
                         </div>
                     `).join('');
+                } else {
+                    preview.innerHTML = `
+                        <div class="p-4 text-center text-gray-500">
+                            <i class="fas fa-check-circle text-green-500 text-2xl mb-2"></i>
+                            <p>No hay alertas activas</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error cargando alertas:', error);
+                // Fallback: intentar endpoint alternativo
+                this.loadAlertasPreviewFallback();
+            });
+    }
+    
+    loadAlertasPreviewFallback() {
+        const preview = document.querySelector('#alertas-preview');
+        if (!preview) return;
+        
+        // Usar endpoint de views_alertas como fallback
+        fetch('/legajos/alertas/count/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.count > 0) {
+                    preview.innerHTML = `
+                        <div class="p-4 text-center text-blue-600">
+                            <i class="fas fa-bell text-2xl mb-2"></i>
+                            <p class="font-medium">${data.count} alertas activas</p>
+                            <p class="text-xs text-gray-500 mt-1">${data.criticas || 0} críticas</p>
+                        </div>
+                    `;
                 } else {
                     preview.innerHTML = `
                         <div class="p-4 text-center text-gray-500">

@@ -41,6 +41,11 @@ class Ciudadano(TimeStamped):
     
     def __str__(self):
         return f"{self.apellido}, {self.nombre} ({self.dni})"
+    
+    @property
+    def nombre_completo(self):
+        """Retorna el nombre completo del ciudadano"""
+        return f"{self.nombre} {self.apellido}"
 
 
 class Profesional(TimeStamped):

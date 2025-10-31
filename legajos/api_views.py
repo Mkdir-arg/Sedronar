@@ -11,13 +11,10 @@ from .models import (
 from .serializers import (
     CiudadanoSerializer, LegajoAtencionSerializer, EvaluacionInicialSerializer,
     PlanIntervencionSerializer, SeguimientoContactoSerializer, 
-    DerivacionSerializer, EventoCriticoSerializer
+    DerivacionSerializer, EventoCriticoSerializer, AlertaCiudadanoSerializer
 )
-try:
-    from .serializers import AlertaCiudadanoSerializer
-except ImportError:
-    AlertaCiudadanoSerializer = None
 from .services_alertas import AlertasService
+from .services_filtros_usuario import FiltrosUsuarioService
 
 
 @extend_schema_view(
@@ -236,19 +233,24 @@ class AlertasViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet para consultar alertas del sistema.
     """
-    queryset = AlertaCiudadano.objects.filter(activa=True).select_related('ciudadano', 'legajo')
+    queryset = AlertaCiudadano.objects.all()
     serializer_class = AlertaCiudadanoSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['prioridad', 'tipo', 'ciudadano']
-    ordering = ['prioridad', '-creado']
+    ordering = ['-creado']  # Ordenar por fecha de creación descendente
+    
+    def get_queryset(self):
+        """Filtrar alertas según el usuario autenticado"""
+        return FiltrosUsuarioService.obtener_alertas_usuario(self.request.user).select_related('ciudadano', 'legajo')
     
     @extend_schema(description="Obtiene contador de alertas activas")
     @action(detail=False, methods=['get'])
     def count(self, request):
         """Obtiene el contador de alertas activas"""
-        count = self.get_queryset().count()
-        count_criticas = self.get_queryset().filter(prioridad='CRITICA').count()
+        alertas_usuario = self.get_queryset()
+        count = alertas_usuario.count()
+        count_criticas = alertas_usuario.filter(prioridad='CRITICA').count()
         
         return Response({
             'count': count,

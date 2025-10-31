@@ -3,7 +3,7 @@
 
 {% block title %}{% if object %}Editar{% else %}Nuevo{% endif %} Usuario{% endblock %}
 
-{% block content %}
+{% block main-content %}
 <div class="p-6">
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900">{% if object %}Editar{% else %}Nuevo{% endif %} Usuario</h1>
@@ -56,19 +56,10 @@
                 {% endif %}
                 
                 <div>
-                    <label style="display: block; font-size: 14px; font-weight: 500; color: #374151; margin-bottom: 8px;">Grupos</label>
-                    <div style="position: relative;">
-                        <select id="custom-groups-select" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; outline: none; font-size: 14px;">
-                            <option value="">Seleccionar grupo...</option>
-                            <option value="1">Administrador</option>
-                            <option value="2">Ciudadanos</option>
-                            <option value="3">Responsable</option>
-                        </select>
-                    </div>
-                    <div id="selected-tags" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;"></div>
-                    {{ form.groups.as_hidden }}
+                    <label for="{{ form.groups.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Grupos</label>
+                    {{ form.groups }}
                     {% if form.groups.errors %}
-                        <div style="color: #dc2626; font-size: 12px; margin-top: 4px;">{{ form.groups.errors }}</div>
+                        <div class="text-red-600 text-sm mt-1">{{ form.groups.errors }}</div>
                     {% endif %}
                 </div>
                 
@@ -114,80 +105,4 @@
 </div>
 
 <script src="{% static 'custom/js/usuarioprovincial.js' %}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const customSelect = document.getElementById('custom-groups-select');
-    const tagsContainer = document.getElementById('selected-tags');
-    const hiddenField = document.getElementById('{{ form.groups.id_for_label }}');
-    let selectedGroups = [];
-    
-    // Mapeo de grupos
-    const groupsMap = {
-        '1': 'Administrador',
-        '2': 'Ciudadanos', 
-        '3': 'Responsable'
-    };
-    
-    // Inicializar con valores existentes
-    if (hiddenField) {
-        Array.from(hiddenField.selectedOptions).forEach(option => {
-            if (option.value && groupsMap[option.value]) {
-                selectedGroups.push({
-                    id: option.value,
-                    name: groupsMap[option.value]
-                });
-            }
-        });
-        updateDisplay();
-    }
-    
-    customSelect.addEventListener('change', function() {
-        const value = this.value;
-        const name = groupsMap[value];
-        
-        if (value && name && !selectedGroups.find(g => g.id === value)) {
-            selectedGroups.push({ id: value, name: name });
-            updateDisplay();
-        }
-        
-        this.value = '';
-    });
-    
-    function updateDisplay() {
-        // Actualizar etiquetas
-        tagsContainer.innerHTML = '';
-        selectedGroups.forEach(group => {
-            const tag = document.createElement('span');
-            tag.style.cssText = 'display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; background-color: #dbeafe; color: #1e40af; margin-right: 4px;';
-            tag.innerHTML = `
-                ${group.name}
-                <button type="button" style="margin-left: 8px; color: #1e40af; background: none; border: none; cursor: pointer; font-size: 10px;" onclick="removeGroup('${group.id}')">
-                    ✕
-                </button>
-            `;
-            tagsContainer.appendChild(tag);
-        });
-        
-        // Ocultar opciones seleccionadas
-        Array.from(customSelect.options).forEach(option => {
-            if (option.value) {
-                const isSelected = selectedGroups.find(g => g.id === option.value);
-                option.style.display = isSelected ? 'none' : 'block';
-            }
-        });
-        
-        // Actualizar campo oculto
-        if (hiddenField) {
-            Array.from(hiddenField.options).forEach(option => {
-                option.selected = selectedGroups.find(g => g.id === option.value) !== undefined;
-            });
-        }
-    }
-    
-    window.removeGroup = function(groupId) {
-        selectedGroups = selectedGroups.filter(g => g.id !== groupId);
-        updateDisplay();
-    };
-});
-</script>
 {% endblock %}
