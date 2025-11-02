@@ -36,6 +36,7 @@ urlpatterns = [
     path('<uuid:legajo_id>/derivaciones/', views.DerivacionListView.as_view(), name='derivaciones'),
     path('<uuid:legajo_id>/derivacion/', views.DerivacionCreateView.as_view(), name='derivacion_nueva'),
     path('derivacion/<int:pk>/editar/', views.DerivacionUpdateView.as_view(), name='derivacion_editar'),
+    path('actividades-por-institucion/<int:institucion_id>/', views.actividades_por_institucion, name='actividades_por_institucion'),
     
     # Eventos Críticos
     path('<uuid:legajo_id>/eventos/', views.EventoListView.as_view(), name='eventos'),
@@ -69,6 +70,7 @@ urlpatterns = [
     
     # API Archivos
     path('ciudadanos/<int:ciudadano_id>/archivos/', views_contactos_simple.archivos_ciudadano_api, name='archivos_ciudadano'),
+    path('ciudadanos/<int:ciudadano_id>/subir-archivos/', views_contactos_simple.subir_archivos_ciudadano, name='subir_archivos_ciudadano'),
     path('archivos/<int:archivo_id>/eliminar/', views_contactos_simple.eliminar_archivo, name='eliminar_archivo'),
     
     # API Alertas
@@ -88,4 +90,10 @@ urlpatterns = [
     path('instituciones/crear/', views.InstitucionCreateView.as_view(), name='institucion_crear'),
     path('instituciones/<int:pk>/editar/', views.InstitucionUpdateView.as_view(), name='institucion_editar'),
     path('instituciones/<int:pk>/eliminar/', views.InstitucionDeleteView.as_view(), name='institucion_eliminar'),
+    
+    # Legajos Institucionales
+    path('legajos-institucionales/', views.LegajoInstitucionalListView.as_view(), name='legajos_institucionales'),
+    path('legajos-institucionales/crear/', views.LegajoInstitucionalCreateView.as_view(), name='legajo_institucional_crear'),
+    path('legajos-institucionales/<int:pk>/', views.LegajoInstitucionalDetailView.as_view(), name='legajo_institucional_detalle'),
+    path('legajos-institucionales/<int:pk>/editar/', views.LegajoInstitucionalUpdateView.as_view(), name='legajo_institucional_editar'),
 ]

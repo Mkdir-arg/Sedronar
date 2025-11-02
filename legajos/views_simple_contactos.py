@@ -50,25 +50,25 @@ def actividades_ciudadano_api(request, ciudadano_id):
         
         # Actividades básicas de legajos
         for legajo in legajos:
-            # Apertura de legajo
+            # Apertura de acompañamiento
             if legajo.fecha_apertura:
                 actividades.append({
                     'fecha_hora': legajo.fecha_apertura.isoformat(),
                     'tipo': 'APERTURA',
-                    'tipo_display': 'Apertura de Legajo',
-                    'descripcion': f'Legajo abierto en {legajo.dispositivo.nombre if legajo.dispositivo else "Dispositivo no especificado"}',
+                    'tipo_display': 'Apertura de Acompañamiento',
+                    'descripcion': f'Acompañamiento abierto en {legajo.dispositivo.nombre if legajo.dispositivo else "Dispositivo no especificado"}',
                     'usuario_nombre': legajo.responsable.get_full_name() if legajo.responsable else 'Sistema',
                     'legajo_id': str(legajo.id),
                     'legajo_codigo': str(legajo.codigo)[:12] + '...' if legajo.codigo else str(legajo.id)
                 })
             
-            # Cierre de legajo
+            # Cierre de acompañamiento
             if hasattr(legajo, 'fecha_cierre') and legajo.fecha_cierre:
                 actividades.append({
                     'fecha_hora': legajo.fecha_cierre.isoformat(),
                     'tipo': 'CIERRE',
-                    'tipo_display': 'Cierre de Legajo',
-                    'descripcion': 'Legajo cerrado',
+                    'tipo_display': 'Cierre de Acompañamiento',
+                    'descripcion': 'Acompañamiento cerrado',
                     'usuario_nombre': 'Sistema',
                     'legajo_id': str(legajo.id),
                     'legajo_codigo': str(legajo.codigo)[:12] + '...' if legajo.codigo else str(legajo.id)
@@ -105,6 +105,60 @@ def actividades_ciudadano_api(request, ciudadano_id):
             'count': 0,
             'error': str(e)
         })
+
+def subir_archivos_ciudadano(request, ciudadano_id):
+    """Vista para subir archivos a un ciudadano"""
+    if request.method == 'POST':
+        try:
+            ciudadano = get_object_or_404(Ciudadano, id=ciudadano_id)
+            
+            archivos = request.FILES.getlist('archivo')
+            etiqueta = request.POST.get('etiqueta', '')
+            
+            if not archivos:
+                return JsonResponse({'success': False, 'error': 'No se seleccionaron archivos'})
+            
+            archivos_subidos = []
+            
+            for archivo in archivos:
+                # Validar tamaño (10MB máximo)
+                if archivo.size > 10 * 1024 * 1024:
+                    return JsonResponse({'success': False, 'error': f'El archivo {archivo.name} es muy grande (máx. 10MB)'})
+                
+                # Validar extensión
+                extensiones_permitidas = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png']
+                nombre_archivo = archivo.name.lower()
+                if not any(nombre_archivo.endswith(ext) for ext in extensiones_permitidas):
+                    return JsonResponse({'success': False, 'error': f'Formato no permitido: {archivo.name}'})
+                
+                # Crear adjunto usando el modelo genérico
+                from django.contrib.contenttypes.models import ContentType
+                from .models import Adjunto
+                
+                content_type = ContentType.objects.get_for_model(Ciudadano)
+                adjunto = Adjunto.objects.create(
+                    content_type=content_type,
+                    object_id=ciudadano.id,
+                    archivo=archivo,
+                    etiqueta=etiqueta or archivo.name
+                )
+                
+                archivos_subidos.append({
+                    'id': adjunto.id,
+                    'nombre': archivo.name,
+                    'etiqueta': adjunto.etiqueta
+                })
+            
+            return JsonResponse({
+                'success': True,
+                'archivos': archivos_subidos,
+                'mensaje': f'{len(archivos_subidos)} archivo(s) subido(s) exitosamente'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Método no permitido'})
 
 def subir_archivos_legajo(request, legajo_id):
     """Vista para subir archivos a un legajo"""
@@ -169,25 +223,59 @@ def archivos_ciudadano_api(request, ciudadano_id):
         from django.contrib.contenttypes.models import ContentType
         from .models import Adjunto
         
-        content_type = ContentType.objects.get_for_model(LegajoAtencion)
-        archivos = Adjunto.objects.filter(
-            content_type=content_type,
+        # Obtener archivos del ciudadano y de sus legajos
+        ciudadano_content_type = ContentType.objects.get_for_model(Ciudadano)
+        legajo_content_type = ContentType.objects.get_for_model(LegajoAtencion)
+        
+        archivos_ciudadano = Adjunto.objects.filter(
+            content_type=ciudadano_content_type,
+            object_id=ciudadano_id
+        )
+        
+        archivos_legajos = Adjunto.objects.filter(
+            content_type=legajo_content_type,
             object_id__in=[str(legajo.id) for legajo in legajos]
+        )
+        
+        # Combinar ambos querysets
+        from django.db.models import Q
+        archivos = Adjunto.objects.filter(
+            Q(content_type=ciudadano_content_type, object_id=ciudadano_id) |
+            Q(content_type=legajo_content_type, object_id__in=[str(legajo.id) for legajo in legajos])
         ).order_by('-creado')
         
         archivos_data = []
         for archivo in archivos:
-            legajo = LegajoAtencion.objects.get(id=archivo.object_id)
-            archivos_data.append({
-                'id': archivo.id,
-                'nombre': archivo.archivo.name.split('/')[-1],
-                'etiqueta': archivo.etiqueta,
-                'url': archivo.archivo.url,
-                'tamano': archivo.archivo.size,
-                'fecha_subida': archivo.creado.isoformat(),
-                'legajo_id': str(legajo.id),
-                'legajo_codigo': str(legajo.codigo)[:12] + '...' if legajo.codigo else str(legajo.id)
-            })
+            if archivo.content_type.model == 'ciudadano':
+                # Archivo del ciudadano
+                archivos_data.append({
+                    'id': archivo.id,
+                    'nombre': archivo.archivo.name.split('/')[-1],
+                    'etiqueta': archivo.etiqueta,
+                    'url': archivo.archivo.url,
+                    'tamano': archivo.archivo.size,
+                    'fecha_subida': archivo.creado.isoformat(),
+                    'legajo_id': '-',
+                    'legajo_codigo': 'Ciudadano',
+                    'tipo_origen': 'ciudadano'
+                })
+            else:
+                # Archivo del legajo
+                try:
+                    legajo = LegajoAtencion.objects.get(id=archivo.object_id)
+                    archivos_data.append({
+                        'id': archivo.id,
+                        'nombre': archivo.archivo.name.split('/')[-1],
+                        'etiqueta': archivo.etiqueta,
+                        'url': archivo.archivo.url,
+                        'tamano': archivo.archivo.size,
+                        'fecha_subida': archivo.creado.isoformat(),
+                        'legajo_id': str(legajo.id),
+                        'legajo_codigo': str(legajo.codigo)[:12] + '...' if legajo.codigo else str(legajo.id),
+                        'tipo_origen': 'legajo'
+                    })
+                except LegajoAtencion.DoesNotExist:
+                    continue
         
         return JsonResponse({
             'results': archivos_data,

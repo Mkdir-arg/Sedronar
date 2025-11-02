@@ -132,8 +132,9 @@ class AdmisionLegajoForm(forms.ModelForm):
         responsables_queryset = User.objects.filter(
             models.Q(groups__name='Responsable') |
             models.Q(groups__name='Ciudadanos') |
+            models.Q(groups__name='Administrador') |
             models.Q(is_superuser=True)
-        ).distinct()
+        ).filter(is_active=True).distinct()
         
         self.fields['responsable'].queryset = responsables_queryset
         self.fields['responsable'].empty_label = "Seleccionar responsable (opcional)"
@@ -372,14 +373,23 @@ class DerivacionForm(forms.ModelForm):
             }),
         }
     
+    actividad_destino = forms.ModelChoiceField(
+        queryset=None,
+        required=False,
+        label='Actividad Específica (opcional)',
+        widget=forms.Select(attrs={
+            'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'
+        })
+    )
+    
     def __init__(self, *args, **kwargs):
         legajo = kwargs.pop('legajo', None)
         super().__init__(*args, **kwargs)
         if legajo:
-            # Excluir el dispositivo actual del legajo
-            self.fields['destino'].queryset = self.fields['destino'].queryset.exclude(
-                id=legajo.dispositivo.id
-            ).filter(activo=True)
+            self.fields['destino'].queryset = self.fields['destino'].queryset.filter(activo=True)
+            
+            from .models import PlanFortalecimiento
+            self.fields['actividad_destino'].queryset = PlanFortalecimiento.objects.none()
 
 
 class EventoCriticoForm(forms.ModelForm):
@@ -421,3 +431,17 @@ class EventoCriticoForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+
+class LegajoCerrarForm(forms.Form):
+    """Formulario para cerrar legajo"""
+    motivo_cierre = forms.CharField(
+        max_length=500,
+        required=False,
+        label='Motivo de cierre',
+        widget=forms.Textarea(attrs={
+            'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500',
+            'rows': 3,
+            'placeholder': 'Motivo del cierre (opcional)'
+        })
+    )

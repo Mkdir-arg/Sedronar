@@ -1,0 +1,84 @@
+{% extends "includes/base.html" %}
+{% load static %}
+
+{% block title %}Legajos Institucionales{% endblock %}
+
+{% block main-content %}
+<div class="mb-8">
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-lora font-bold text-gray-900">Legajos Institucionales</h1>
+            <p class="text-gray-600 mt-2">Gestión y seguimiento de instituciones de la red</p>
+        </div>
+        <a href="{% url 'legajos:legajo_institucional_crear' %}" class="bg-arg-azul text-white px-6 py-3 rounded-xl hover:bg-arg-secundario transition-colors font-medium text-center">
+            <i class="fas fa-plus mr-2"></i>Nuevo Legajo Institucional
+        </a>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        {% if legajos_institucionales %}
+            <div class="overflow-x-auto">
+                <table class="w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Código</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Institución</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Tipo</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Estado</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Responsable</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Fecha Apertura</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for legajo in legajos_institucionales %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ legajo.codigo }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">
+                                <div>
+                                    <p class="font-medium">{{ legajo.institucion.nombre }}</p>
+                                    <p class="text-gray-500 text-xs">{{ legajo.institucion.municipio }}, {{ legajo.institucion.provincia }}</p>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600">{{ legajo.institucion.get_tipo_display }}</td>
+                            <td class="px-6 py-4 text-sm">
+                                <span class="px-2 py-1 rounded-full text-xs font-medium
+                                    {% if legajo.estado == 'ACTIVO' %}bg-green-100 text-green-800
+                                    {% elif legajo.estado == 'OBSERVACION' %}bg-yellow-100 text-yellow-800
+                                    {% elif legajo.estado == 'SUSPENDIDO' %}bg-red-100 text-red-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ legajo.get_estado_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600">
+                                {{ legajo.responsable_sedronar.get_full_name|default:legajo.responsable_sedronar.username|default:"-" }}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600">{{ legajo.fecha_apertura|date:"d/m/Y" }}</td>
+                            <td class="px-6 py-4 text-sm">
+                                <div class="flex gap-2">
+                                    <a href="{% url 'legajos:legajo_institucional_detalle' legajo.pk %}" class="text-blue-600 hover:text-blue-800" title="Ver detalle">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'legajos:legajo_institucional_editar' legajo.pk %}" class="text-green-600 hover:text-green-800" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="p-12 text-center">
+                <i class="fas fa-building text-6xl text-gray-300 mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">No hay legajos institucionales</h3>
+                <p class="text-gray-600 mb-6">Comienza creando el primer legajo institucional</p>
+                <a href="{% url 'legajos:legajo_institucional_crear' %}" class="bg-arg-azul text-white px-6 py-3 rounded-xl hover:bg-arg-secundario transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Crear Legajo Institucional
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

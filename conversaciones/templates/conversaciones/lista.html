@@ -167,7 +167,7 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for conversacion in conversaciones %}
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-gray-50" data-conversacion-id="{{ conversacion.id }}">
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             #{{ conversacion.id }}
                         </td>
@@ -204,7 +204,7 @@
                                 {{ conversacion.mensajes.count }}
                             </span>
                             {% if conversacion.mensajes_no_leidos %}
-                                <span class="ml-1 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                <span class="contador-mensajes ml-1 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                                     {{ conversacion.mensajes_no_leidos }} sin leer
                                 </span>
                             {% endif %}
@@ -443,7 +443,7 @@
             const contadorCell = fila.querySelector('.contador-mensajes');
             if (contadorCell) {
                 // Incrementar contador (implementación básica)
-                location.reload();
+                // location.reload();
             }
         }
     }

@@ -23,7 +23,16 @@ urlpatterns = [
     path('localidades/<int:pk>/editar/', login_required(views.LocalidadUpdateView.as_view()), name='localidad_editar'),
     path('localidades/<int:pk>/eliminar/', login_required(views.LocalidadDeleteView.as_view()), name='localidad_eliminar'),
     
-    # Dispositivos (compatibilidad - redirige a legajos)
+    # Instituciones
+    path('instituciones/<int:pk>/', login_required(views.InstitucionDetailView.as_view()), name='institucion_detalle'),
+    
+    # Gestión de legajo institucional
+    path('instituciones/<int:institucion_pk>/personal/crear/', login_required(views.PersonalInstitucionCreateView.as_view()), name='personal_crear'),
+    path('instituciones/<int:institucion_pk>/evaluaciones/crear/', login_required(views.EvaluacionInstitucionCreateView.as_view()), name='evaluacion_crear'),
+    path('instituciones/<int:institucion_pk>/planes/crear/', login_required(views.PlanFortalecimientoCreateView.as_view()), name='plan_crear'),
+    path('instituciones/<int:institucion_pk>/indicadores/crear/', login_required(views.IndicadorInstitucionCreateView.as_view()), name='indicador_crear'),
+    
+    # Dispositivos (compatibilidad)
     path('dispositivos/', login_required(views.InstitucionListView.as_view()), name='dispositivos'),
     path('dispositivos/crear/', login_required(views.InstitucionCreateView.as_view()), name='dispositivo_crear'),
     path('dispositivos/<int:pk>/editar/', login_required(views.InstitucionUpdateView.as_view()), name='dispositivo_editar'),

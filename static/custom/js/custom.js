@@ -187,7 +187,15 @@ $(function () {
 			console.log(api.columns(":visible"));
 			if (visibleColumns === 0) {
 				api.column(column).visible(true);
-				alert("Debe haber al menos una columna visible.");
+				if (window.ModernModal) {
+					window.ModernModal.show({
+						type: 'warning',
+						title: 'Columnas Visibles',
+						message: 'Debe haber al menos una columna visible en la tabla.'
+					});
+				} else {
+					alert("Debe haber al menos una columna visible.");
+				}
 			}
 		})
 		.buttons()

@@ -230,6 +230,49 @@ $.widget.bridge("uibutton", $.ui.button);
     });
 })(jQuery);
 
+// Sistema global de modales modernos
+window.showModernAlert = function(message, type = 'info', title = null) {
+    if (window.ModernModal) {
+        const titles = {
+            success: 'Éxito',
+            error: 'Error', 
+            warning: 'Advertencia',
+            info: 'Información'
+        };
+        
+        window.ModernModal.show({
+            type: type,
+            title: title || titles[type] || 'Información',
+            message: message
+        });
+    } else {
+        alert(message);
+    }
+};
+
+// Reemplazar alert global si ModernModal está disponible
+if (typeof window.ModernModal !== 'undefined') {
+    window.originalAlert = window.alert;
+    window.alert = function(message) {
+        window.showModernAlert(message, 'info');
+    };
+}
+
+// Función para mostrar mensajes de éxito específicos
+window.showSuccessMessage = function(message) {
+    window.showModernAlert(message, 'success', 'Operación Exitosa');
+};
+
+// Función para mostrar errores
+window.showErrorMessage = function(message) {
+    window.showModernAlert(message, 'error', 'Error');
+};
+
+// Función para mostrar advertencias
+window.showWarningMessage = function(message) {
+    window.showModernAlert(message, 'warning', 'Advertencia');
+};
+
 window.mostrarRespuesta = function() {
     const selectElement = document.getElementById("id_nombre3");
     const respuestaDetalle = document.getElementById("respuestaDetalle");
