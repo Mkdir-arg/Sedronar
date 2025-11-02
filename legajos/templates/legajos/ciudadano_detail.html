@@ -100,7 +100,7 @@
                         <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
                             <div class="flex items-center space-x-2 mb-2">
                                 <i class="fas fa-folder text-orange-300"></i>
-                                <span class="text-blue-100 text-sm font-medium">Legajos</span>
+                                <span class="text-blue-100 text-sm font-medium">Acompañamiento</span>
                             </div>
                             <p class="text-white font-semibold text-xl">{{ legajos.count }}</p>
                         </div>
@@ -139,7 +139,7 @@
             <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg transform hover:scale-105 transition-all duration-300 hover:shadow-xl">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-blue-100 text-sm font-medium mb-1">Total Legajos</p>
+                        <p class="text-blue-100 text-sm font-medium mb-1">Total Acompañamiento</p>
                         <p class="text-3xl font-bold" id="total-legajos">{{ legajos.count }}</p>
                     </div>
                     <div class="bg-white bg-opacity-20 rounded-full p-4">
@@ -148,7 +148,7 @@
                 </div>
                 <div class="mt-4 flex items-center">
                     <div class="bg-white bg-opacity-20 rounded-full w-2 h-2 mr-2 animate-pulse"></div>
-                    <span class="text-xs text-blue-100">Expedientes activos</span>
+                    <span class="text-xs text-blue-100">Total de acompañamiento</span>
                 </div>
             </div>
 
@@ -214,11 +214,11 @@
                     <div class="flex justify-between items-center">
                         <div>
                             <h2 class="text-2xl font-bold mb-1">📋 Acompañamiento</h2>
-                            <p class="text-blue-100">Historial completo de atenciones</p>
+                            <p class="text-blue-100">Historial completo de acompañamientos</p>
                         </div>
                         <div class="bg-white bg-opacity-20 px-4 py-2 rounded-full">
                             <span class="text-lg font-bold">{{ legajos.count }}</span>
-                            <span class="text-sm">legajo{{ legajos.count|pluralize }}</span>
+                            <span class="text-sm">acompañamiento{{ legajos.count|pluralize }}</span>
                         </div>
                     </div>
                 </div>
@@ -235,8 +235,8 @@
                                             {{ forloop.counter }}
                                         </div>
                                         <div>
-                                            <h3 class="text-lg font-bold text-gray-900">{{ legajo.codigo|slice:":12" }}...</h3>
-                                            <p class="text-sm text-gray-500">ID: {{ legajo.id }}</p>
+                                            <h3 class="text-lg font-bold text-gray-900">{{ legajo.fecha_apertura|date:"d/m/Y" }}</h3>
+                                            <p class="text-sm text-gray-500">{{ legajo.dispositivo.nombre }}</p>
                                         </div>
                                     </div>
                                     <a href="{% url 'legajos:detalle' legajo.pk %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2">
@@ -287,7 +287,7 @@
                                         {% if legajo.responsable %}
                                         <div class="flex items-center text-gray-600">
                                             <i class="fas fa-user-md w-5 text-purple-500"></i>
-                                            <span class="ml-2 text-sm">{{ legajo.responsable.get_full_name|default:legajo.responsable.username }}</span>
+                                            <span class="ml-2 text-sm font-medium">{{ legajo.responsable.get_full_name|default:legajo.responsable.username }}</span>
                                         </div>
                                         {% endif %}
                                         {% if legajo.fecha_cierre %}
@@ -451,11 +451,17 @@
                 <div class="flex justify-between items-center">
                     <div>
                         <h2 class="text-2xl font-bold mb-1">📁 Archivos</h2>
-                        <p class="text-orange-100">Documentos de todos los legajos</p>
+                        <p class="text-orange-100">Todos los documentos</p>
                     </div>
-                    <div class="bg-white bg-opacity-20 px-4 py-2 rounded-full">
-                        <span class="text-lg font-bold" id="total-archivos">-</span>
-                        <span class="text-sm">archivos</span>
+                    <div class="flex items-center space-x-4">
+                        <button onclick="abrirModalArchivosGeneral()" class="bg-white bg-opacity-20 backdrop-blur-sm text-white px-6 py-3 rounded-xl hover:bg-opacity-30 transition-all duration-300 border border-white border-opacity-30 flex items-center space-x-2">
+                            <i class="fas fa-upload"></i>
+                            <span>Subir Archivo</span>
+                        </button>
+                        <div class="bg-white bg-opacity-20 px-4 py-2 rounded-full">
+                            <span class="text-lg font-bold" id="total-archivos">-</span>
+                            <span class="text-sm">archivos</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -467,7 +473,7 @@
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Archivo</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Etiqueta</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Legajo</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Origen</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                             </tr>
@@ -478,8 +484,13 @@
                     </table>
                 </div>
                 <div id="mensaje-sin-archivos" class="text-center py-12 hidden">
-                    <div class="text-gray-400 text-4xl mb-2">📁</div>
-                    <p class="text-gray-500">No hay archivos subidos</p>
+                    <div class="text-gray-400 text-4xl mb-4">📁</div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">No hay archivos subidos</h3>
+                    <p class="text-gray-500 mb-6">Sube documentos, imágenes y otros archivos relacionados con los legajos</p>
+                    <button onclick="abrirModalArchivosGeneral()" class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg transition-colors flex items-center space-x-2 mx-auto">
+                        <i class="fas fa-upload"></i>
+                        <span>Subir Primer Archivo</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -546,14 +557,13 @@
     <div class="flex items-center justify-center min-h-screen p-4">
         <div class="bg-white rounded-lg max-w-md w-full p-6">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold">Subir Archivos al Legajo</h3>
+                <h3 class="text-lg font-semibold">Subir Archivos</h3>
                 <button onclick="cerrarModal('modalArchivos')" class="text-gray-400 hover:text-gray-600">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <form id="formArchivos" enctype="multipart/form-data">
                 {% csrf_token %}
-                <input type="hidden" id="legajoIdArchivos" name="legajo_id">
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Archivo</label>
@@ -767,9 +777,10 @@ function cargarArchivos() {
                                 ${archivo.etiqueta || '-'}
                             </td>
                             <td class="px-4 py-4 whitespace-nowrap text-sm">
-                                <a href="/legajos/${archivo.legajo_id}/" class="text-blue-600 hover:text-blue-900">
-                                    ${archivo.legajo_codigo}
-                                </a>
+                                ${archivo.tipo_origen === 'ciudadano' ? 
+                                    '<span class="text-gray-600">Ciudadano</span>' : 
+                                    `<a href="/legajos/${archivo.legajo_id}/" class="text-blue-600 hover:text-blue-900">Acompañamiento</a>`
+                                }
                             </td>
                             <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                                 ${fecha}
@@ -1150,18 +1161,35 @@ document.getElementById('formVinculo').addEventListener('submit', function(e) {
 });
 // Funciones para archivos
 function abrirModalArchivos(legajoId) {
-    document.getElementById('legajoIdArchivos').value = legajoId;
     document.getElementById('modalArchivos').classList.remove('hidden');
 }
+
+function abrirModalArchivosGeneral() {
+    document.getElementById('modalArchivos').classList.remove('hidden');
+}
+
+// Función para mostrar alertas modernas
+function showModernAlert(type, title, message) {
+    if (typeof ModernModal !== 'undefined') {
+        ModernModal.show({
+            type: type,
+            title: title,
+            message: message
+        });
+    } else {
+        alert(message);
+    }
+}
+
+
 
 // Manejar envío de archivos
 document.getElementById('formArchivos').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const formData = new FormData(this);
-    const legajoId = document.getElementById('legajoIdArchivos').value;
     
-    fetch(`/legajos/${legajoId}/subir-archivos/`, {
+    fetch(`/legajos/ciudadanos/{{ ciudadano.id }}/subir-archivos/`, {
         method: 'POST',
         body: formData,
         headers: {
@@ -1174,9 +1202,17 @@ document.getElementById('formArchivos').addEventListener('submit', function(e) {
             cerrarModal('modalArchivos');
             this.reset();
             cargarArchivos(); // Recargar tabla de archivos
-            alert('Archivos subidos exitosamente');
+            if (typeof showModernAlert === 'function') {
+                showModernAlert('success', 'Éxito', data.mensaje || 'Archivos subidos exitosamente');
+            } else {
+                alert('Archivos subidos exitosamente');
+            }
         } else {
-            alert(data.error || 'Error al subir archivos');
+            if (typeof showModernAlert === 'function') {
+                showModernAlert('error', 'Error', data.error || 'Error al subir archivos');
+            } else {
+                alert(data.error || 'Error al subir archivos');
+            }
         }
     })
     .catch(error => {

@@ -149,6 +149,7 @@ class LegajoAtencion(LegajoBase):
     
     def cerrar(self, motivo_cierre=None, usuario=None):
         """Cierra el legajo"""
+        from datetime import datetime
         puede, mensaje = self.puede_cerrar()
         if not puede and not motivo_cierre:
             raise ValidationError(mensaje)
@@ -439,6 +440,14 @@ class Derivacion(TimeStamped):
         related_name="derivaciones_destino",
         verbose_name="Institución Destino"
     )
+    actividad_destino = models.ForeignKey(
+        'PlanFortalecimiento',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="derivaciones",
+        verbose_name="Actividad Específica"
+    )
     motivo = models.TextField()
     urgencia = models.CharField(
         max_length=20, 
@@ -636,6 +645,273 @@ class AlertaCiudadano(TimeStamped):
             'BAJA': 'bg-blue-100 text-blue-800 border-blue-200',
         }
         return colores.get(self.prioridad, 'bg-gray-100 text-gray-800 border-gray-200')
+
+
+class LegajoInstitucional(TimeStamped):
+    """Legajo institucional para gestión de instituciones"""
+    
+    class Estado(models.TextChoices):
+        ACTIVO = "ACTIVO", "Activo"
+        OBSERVACION = "OBSERVACION", "En Observación"
+        SUSPENDIDO = "SUSPENDIDO", "Suspendido"
+        CERRADO = "CERRADO", "Cerrado"
+    
+    institucion = models.OneToOneField(
+        Institucion,
+        on_delete=models.CASCADE,
+        related_name="legajo_institucional"
+    )
+    codigo = models.CharField(max_length=50, unique=True, editable=False)
+    estado = models.CharField(
+        max_length=20,
+        choices=Estado.choices,
+        default=Estado.ACTIVO
+    )
+    responsable_sedronar = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="legajos_institucionales_responsable"
+    )
+    fecha_apertura = models.DateField(auto_now_add=True)
+    fecha_cierre = models.DateField(null=True, blank=True)
+    observaciones = models.TextField(blank=True)
+    
+    class Meta:
+        verbose_name = "Legajo Institucional"
+        verbose_name_plural = "Legajos Institucionales"
+    
+    def __str__(self):
+        return f"Legajo {self.codigo} - {self.institucion.nombre}"
+    
+    def save(self, *args, **kwargs):
+        if not self.codigo:
+            from datetime import datetime
+            self.codigo = f"INST-{datetime.now().strftime('%Y%m%d')}-{self.institucion.id:04d}"
+        super().save(*args, **kwargs)
+
+
+class PersonalInstitucion(TimeStamped):
+    """Personal de la institución"""
+    
+    class TipoPersonal(models.TextChoices):
+        DIRECTOR = "DIRECTOR", "Director/a"
+        COORDINADOR = "COORDINADOR", "Coordinador/a"
+        PROFESIONAL = "PROFESIONAL", "Profesional"
+        OPERADOR = "OPERADOR", "Operador/a"
+        ADMINISTRATIVO = "ADMINISTRATIVO", "Administrativo/a"
+        OTRO = "OTRO", "Otro"
+    
+    legajo_institucional = models.ForeignKey(
+        LegajoInstitucional,
+        on_delete=models.CASCADE,
+        related_name="personal"
+    )
+    nombre = models.CharField(max_length=100)
+    apellido = models.CharField(max_length=100)
+    dni = models.CharField(max_length=20)
+    tipo = models.CharField(max_length=20, choices=TipoPersonal.choices)
+    titulo_profesional = models.CharField(max_length=200, blank=True)
+    matricula = models.CharField(max_length=50, blank=True)
+    activo = models.BooleanField(default=True)
+    
+    class Meta:
+        verbose_name = "Personal de Institución"
+        verbose_name_plural = "Personal de Instituciones"
+    
+    def __str__(self):
+        return f"{self.apellido}, {self.nombre} - {self.get_tipo_display()}"
+
+
+class CapacitacionPersonal(TimeStamped):
+    """Capacitaciones del personal"""
+    
+    personal = models.ForeignKey(
+        PersonalInstitucion,
+        on_delete=models.CASCADE,
+        related_name="capacitaciones"
+    )
+    nombre_capacitacion = models.CharField(max_length=200)
+    institucion_capacitadora = models.CharField(max_length=200)
+    fecha_inicio = models.DateField()
+    fecha_fin = models.DateField(null=True, blank=True)
+    horas_catedra = models.PositiveIntegerField(null=True, blank=True)
+    certificado = models.FileField(upload_to="capacitaciones/", blank=True)
+    
+    class Meta:
+        verbose_name = "Capacitación de Personal"
+        verbose_name_plural = "Capacitaciones de Personal"
+    
+    def __str__(self):
+        return f"{self.nombre_capacitacion} - {self.personal}"
+
+
+class EvaluacionInstitucional(TimeStamped):
+    """Evaluación de capacidades institucionales"""
+    
+    legajo_institucional = models.ForeignKey(
+        LegajoInstitucional,
+        on_delete=models.CASCADE,
+        related_name="evaluaciones"
+    )
+    fecha_evaluacion = models.DateField()
+    evaluador = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    
+    # Capacidades institucionales
+    infraestructura = models.PositiveIntegerField(
+        help_text="Puntuación 1-10",
+        choices=[(i, i) for i in range(1, 11)]
+    )
+    recursos_humanos = models.PositiveIntegerField(
+        help_text="Puntuación 1-10",
+        choices=[(i, i) for i in range(1, 11)]
+    )
+    programas_servicios = models.PositiveIntegerField(
+        help_text="Puntuación 1-10",
+        choices=[(i, i) for i in range(1, 11)]
+    )
+    gestion_administrativa = models.PositiveIntegerField(
+        help_text="Puntuación 1-10",
+        choices=[(i, i) for i in range(1, 11)]
+    )
+    
+    observaciones = models.TextField(blank=True)
+    recomendaciones = models.TextField(blank=True)
+    
+    class Meta:
+        verbose_name = "Evaluación Institucional"
+        verbose_name_plural = "Evaluaciones Institucionales"
+    
+    def __str__(self):
+        return f"Evaluación {self.fecha_evaluacion} - {self.legajo_institucional.institucion.nombre}"
+    
+    @property
+    def puntaje_total(self):
+        return (self.infraestructura + self.recursos_humanos + 
+                self.programas_servicios + self.gestion_administrativa) / 4
+
+
+class PlanFortalecimiento(TimeStamped):
+    """Actividades y programas institucionales"""
+    
+    class TipoActividad(models.TextChoices):
+        PREVENCION = "PREVENCION", "Prevención"
+        TRATAMIENTO = "TRATAMIENTO", "Tratamiento"
+        REDUCCION_RIESGO = "REDUCCION_RIESGO", "Reducción de Riesgo"
+        REINSERCION = "REINSERCION", "Reinserción Social"
+        CAPACITACION = "CAPACITACION", "Capacitación"
+        OTRO = "OTRO", "Otro"
+    
+    class SubtipoActividad(models.TextChoices):
+        # Prevención
+        PREVENCION_UNIVERSAL = "PREVENCION_UNIVERSAL", "Prevención Universal"
+        PREVENCION_SELECTIVA = "PREVENCION_SELECTIVA", "Prevención Selectiva"
+        PREVENCION_INDICADA = "PREVENCION_INDICADA", "Prevención Indicada"
+        # Tratamiento
+        AMBULATORIO = "AMBULATORIO", "Ambulatorio"
+        INTERNACION = "INTERNACION", "Internación"
+        HOSPITAL_DIA = "HOSPITAL_DIA", "Hospital de Día"
+        # Reducción de Riesgo
+        INTERCAMBIO_JERINGAS = "INTERCAMBIO_JERINGAS", "Intercambio de Jeringas"
+        TESTEO_VIH = "TESTEO_VIH", "Testeo VIH"
+        CONSEJERIA = "CONSEJERIA", "Consejería"
+        # Reinserción
+        LABORAL = "LABORAL", "Laboral"
+        EDUCATIVA = "EDUCATIVA", "Educativa"
+        SOCIAL = "SOCIAL", "Social"
+        # Capacitación
+        PROFESIONAL = "PROFESIONAL", "Profesional"
+        OPERADORES = "OPERADORES", "Operadores"
+        COMUNIDAD = "COMUNIDAD", "Comunidad"
+    
+    class Estado(models.TextChoices):
+        ACTIVO = "ACTIVO", "Activo"
+        SUSPENDIDO = "SUSPENDIDO", "Suspendido"
+        FINALIZADO = "FINALIZADO", "Finalizado"
+    
+    legajo_institucional = models.ForeignKey(
+        LegajoInstitucional,
+        on_delete=models.CASCADE,
+        related_name="planes_fortalecimiento"
+    )
+    nombre = models.CharField(max_length=200)
+    tipo = models.CharField(max_length=20, choices=TipoActividad.choices)
+    subtipo = models.CharField(max_length=30, choices=SubtipoActividad.choices)
+    descripcion = models.TextField(blank=True)
+    cupo_ciudadanos = models.PositiveIntegerField(default=0, help_text="Capacidad máxima de ciudadanos")
+    fecha_inicio = models.DateField()
+    fecha_fin = models.DateField(null=True, blank=True)
+    estado = models.CharField(max_length=15, choices=Estado.choices, default=Estado.ACTIVO)
+    
+    class Meta:
+        verbose_name = "Actividad Institucional"
+        verbose_name_plural = "Actividades Institucionales"
+    
+    def __str__(self):
+        return f"{self.nombre} - {self.get_tipo_display()}"
+
+
+class StaffActividad(TimeStamped):
+    """Staff asignado a una actividad"""
+    
+    actividad = models.ForeignKey(
+        PlanFortalecimiento,
+        on_delete=models.CASCADE,
+        related_name="staff"
+    )
+    personal = models.ForeignKey(
+        PersonalInstitucion,
+        on_delete=models.CASCADE
+    )
+    rol_en_actividad = models.CharField(
+        max_length=100,
+        help_text="Ej: Coordinador, Terapeuta, Operador"
+    )
+    activo = models.BooleanField(default=True)
+    
+    class Meta:
+        verbose_name = "Staff de Actividad"
+        verbose_name_plural = "Staff de Actividades"
+        unique_together = ['actividad', 'personal']
+    
+    def __str__(self):
+        return f"{self.personal} - {self.actividad.nombre}"
+
+
+class IndicadorInstitucional(TimeStamped):
+    """Indicadores y métricas institucionales"""
+    
+    legajo_institucional = models.ForeignKey(
+        LegajoInstitucional,
+        on_delete=models.CASCADE,
+        related_name="indicadores"
+    )
+    periodo = models.CharField(
+        max_length=20,
+        help_text="Ej: 2024-01, 2024-Q1"
+    )
+    beneficiarios_atendidos = models.PositiveIntegerField(default=0)
+    derivaciones_recibidas = models.PositiveIntegerField(default=0)
+    derivaciones_enviadas = models.PositiveIntegerField(default=0)
+    servicios_brindados = models.JSONField(
+        blank=True,
+        null=True,
+        help_text="Lista de servicios y cantidades"
+    )
+    observaciones = models.TextField(blank=True)
+    
+    class Meta:
+        verbose_name = "Indicador Institucional"
+        verbose_name_plural = "Indicadores Institucionales"
+        unique_together = ['legajo_institucional', 'periodo']
+    
+    def __str__(self):
+        return f"Indicadores {self.periodo} - {self.legajo_institucional.institucion.nombre}"
 
 
 # Importar modelos de contactos

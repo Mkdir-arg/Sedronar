@@ -1,8 +1,10 @@
 from django.urls import reverse_lazy
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
+from django.http import JsonResponse
 from core.models import Provincia, Municipio, Localidad, Institucion
+from legajos.models import LegajoInstitucional, PersonalInstitucion, EvaluacionInstitucional, PlanFortalecimiento, IndicadorInstitucional, StaffActividad
 from .forms import ProvinciaForm, MunicipioForm, LocalidadForm, InstitucionForm
 
 # Alias para compatibilidad
@@ -162,5 +164,99 @@ class InstitucionDeleteView(LoginRequiredMixin, DeleteView):
             return Institucion.objects.filter(encargados=self.request.user)
 
 
-# Alias para compatibilidad
-DispositivoDeleteView = InstitucionDeleteView
+class InstitucionDetailView(LoginRequiredMixin, DetailView):
+    model = Institucion
+    template_name = 'configuracion/institucion_detail.html'
+    context_object_name = 'institucion'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        institucion = self.get_object()
+        
+        # Obtener o crear legajo institucional
+        legajo, created = LegajoInstitucional.objects.get_or_create(
+            institucion=institucion,
+            defaults={'estado': 'ACTIVO'}
+        )
+        
+        context['legajo'] = legajo
+        context['personal'] = PersonalInstitucion.objects.filter(legajo_institucional=legajo)
+        context['evaluaciones'] = EvaluacionInstitucional.objects.filter(legajo_institucional=legajo).order_by('-fecha_evaluacion')
+        context['planes'] = PlanFortalecimiento.objects.filter(legajo_institucional=legajo).order_by('-fecha_inicio')
+        context['indicadores'] = IndicadorInstitucional.objects.filter(legajo_institucional=legajo).order_by('-periodo')
+        
+        return context
+
+
+
+
+class PersonalInstitucionCreateView(LoginRequiredMixin, CreateView):
+    model = PersonalInstitucion
+    fields = ['nombre', 'apellido', 'dni', 'tipo', 'titulo_profesional', 'matricula', 'activo']
+    template_name = 'configuracion/personal_form.html'
+    
+    def form_valid(self, form):
+        institucion = get_object_or_404(Institucion, pk=self.kwargs['institucion_pk'])
+        legajo, created = LegajoInstitucional.objects.get_or_create(
+            institucion=institucion,
+            defaults={'estado': 'ACTIVO'}
+        )
+        form.instance.legajo_institucional = legajo
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse_lazy('configuracion:institucion_detalle', kwargs={'pk': self.kwargs['institucion_pk']})
+
+
+class EvaluacionInstitucionCreateView(LoginRequiredMixin, CreateView):
+    model = EvaluacionInstitucional
+    fields = ['fecha_evaluacion', 'observaciones']
+    template_name = 'configuracion/evaluacion_form.html'
+    
+    def form_valid(self, form):
+        institucion = get_object_or_404(Institucion, pk=self.kwargs['institucion_pk'])
+        legajo, created = LegajoInstitucional.objects.get_or_create(
+            institucion=institucion,
+            defaults={'estado': 'ACTIVO'}
+        )
+        form.instance.legajo_institucional = legajo
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse_lazy('configuracion:institucion_detalle', kwargs={'pk': self.kwargs['institucion_pk']})
+
+
+class PlanFortalecimientoCreateView(LoginRequiredMixin, CreateView):
+    model = PlanFortalecimiento
+    fields = ['nombre', 'tipo', 'subtipo', 'descripcion', 'cupo_ciudadanos', 'fecha_inicio', 'fecha_fin', 'estado']
+    template_name = 'configuracion/plan_form.html'
+    
+    def form_valid(self, form):
+        institucion = get_object_or_404(Institucion, pk=self.kwargs['institucion_pk'])
+        legajo, created = LegajoInstitucional.objects.get_or_create(
+            institucion=institucion,
+            defaults={'estado': 'ACTIVO'}
+        )
+        form.instance.legajo_institucional = legajo
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse_lazy('configuracion:institucion_detalle', kwargs={'pk': self.kwargs['institucion_pk']})
+
+
+class IndicadorInstitucionCreateView(LoginRequiredMixin, CreateView):
+    model = IndicadorInstitucional
+    fields = ['periodo', 'observaciones']
+    template_name = 'configuracion/indicador_form.html'
+    
+    def form_valid(self, form):
+        institucion = get_object_or_404(Institucion, pk=self.kwargs['institucion_pk'])
+        legajo, created = LegajoInstitucional.objects.get_or_create(
+            institucion=institucion,
+            defaults={'estado': 'ACTIVO'}
+        )
+        form.instance.legajo_institucional = legajo
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse_lazy('configuracion:institucion_detalle', kwargs={'pk': self.kwargs['institucion_pk']})

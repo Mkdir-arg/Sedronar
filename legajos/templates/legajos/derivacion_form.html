@@ -27,6 +27,12 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">Dispositivo Destino</label>
                     {{ form.destino }}
                 </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Actividad Específica</label>
+                    {{ form.actividad_destino }}
+                    <p class="text-xs text-gray-500 mt-1">Opcional: Selecciona una actividad específica dentro de la institución</p>
+                </div>
             </div>
             
             <div class="mt-6">
@@ -52,4 +58,37 @@
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const destinoSelect = document.getElementById('id_destino');
+    const actividadSelect = document.getElementById('id_actividad_destino');
+    
+    if (destinoSelect && actividadSelect) {
+        destinoSelect.addEventListener('change', function() {
+            const institucionId = this.value;
+            
+            if (institucionId) {
+                fetch(`/legajos/actividades-por-institucion/${institucionId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        actividadSelect.innerHTML = '<option value="">---------</option>';
+                        data.actividades.forEach(actividad => {
+                            const option = document.createElement('option');
+                            option.value = actividad.id;
+                            option.textContent = `${actividad.nombre} (${actividad.tipo_display})`;
+                            actividadSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        actividadSelect.innerHTML = '<option value="">Error cargando actividades</option>';
+                    });
+            } else {
+                actividadSelect.innerHTML = '<option value="">---------</option>';
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

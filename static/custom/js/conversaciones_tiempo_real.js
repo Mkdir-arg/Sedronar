@@ -26,10 +26,10 @@ function actualizarDatos() {
                 if (valorNuevo > valorActual) {
                     // Hay nuevas conversaciones - recargar página
                     mostrarNotificacion(`🆕 ${valorNuevo - valorActual} nueva(s) conversación(es)`, 'success');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                    return;
+                    // setTimeout(() => {
+                    //     window.location.reload();
+                    // }, 1000);
+                    // return;
                 }
                 
                 // Actualizar valor

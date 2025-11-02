@@ -23,14 +23,14 @@
                 {% if legajo.estado != 'CERRADO' %}
                     <a href="{% url 'legajos:cerrar' legajo.pk %}" 
                        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-                       title="Cerrar legajo">
-                        <i class="fas fa-times-circle mr-1"></i>Cerrar Legajo
+                       title="Cerrar acompañamiento">
+                        <i class="fas fa-times-circle mr-1"></i>Cerrar Acompañamiento
                     </a>
                 {% else %}
                     <a href="{% url 'legajos:reabrir' legajo.pk %}" 
                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                       title="Reabrir legajo">
-                        <i class="fas fa-folder-open mr-1"></i>Reabrir Legajo
+                       title="Reabrir acompañamiento">
+                        <i class="fas fa-folder-open mr-1"></i>Reabrir Acompañamiento
                     </a>
                 {% endif %}
             </div>
@@ -214,6 +214,23 @@
                         <div class="text-xs font-medium text-orange-600 uppercase tracking-wide">Eventos críticos</div>
                         <div class="text-2xl font-bold text-orange-900">{{ legajo.eventos.count }}</div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Archivos del Acompañamiento -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900">Archivos</h2>
+                    <button onclick="abrirModalArchivos('{{ legajo.id }}')" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium">
+                        <i class="fas fa-upload mr-1"></i>Subir Archivo
+                    </button>
+                </div>
+                <div id="archivos-container" class="space-y-2">
+                    <!-- Los archivos se cargarán aquí -->
+                </div>
+                <div id="sin-archivos" class="text-center py-8 text-gray-500 hidden">
+                    <i class="fas fa-folder-open text-3xl mb-2"></i>
+                    <p>No hay archivos subidos</p>
                 </div>
             </div>
 
@@ -415,7 +432,7 @@
                         <div class="flex items-center">
                             <i class="fas fa-info-circle text-blue-500 mr-3"></i>
                             <div>
-                                <h4 class="text-sm font-semibold text-blue-900">Estado del Legajo</h4>
+                                <h4 class="text-sm font-semibold text-blue-900">Estado del Acompañamiento</h4>
                                 <p class="text-sm text-blue-700">{{ legajo.dias_desde_admision }} días desde admisión • Última actualización: {{ legajo.modificado|date:"d/m/Y" }}</p>
                             </div>
                         </div>
@@ -425,6 +442,88 @@
                                 {% if legajo.evaluacion %}<span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>{% else %}<span class="w-2 h-2 bg-gray-300 rounded-full mr-1"></span>{% endif %}
                                 {% if legajo.plan_vigente %}<span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>{% else %}<span class="w-2 h-2 bg-gray-300 rounded-full mr-1"></span>{% endif %}
                                 {% if legajo.seguimientos.count %}<span class="w-2 h-2 bg-green-500 rounded-full"></span>{% else %}<span class="w-2 h-2 bg-gray-300 rounded-full"></span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Timeline Innovador -->
+                <div class="mt-8 bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl p-6 border border-blue-100">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-semibold text-gray-900 flex items-center">
+                            <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-2 mr-3">
+                                <i class="fas fa-history text-white"></i>
+                            </div>
+                            Línea Temporal del Acompañamiento
+                        </h3>
+                        <div class="text-sm text-gray-500">
+                            <i class="fas fa-clock mr-1"></i>Historial completo de actividades
+                        </div>
+                    </div>
+                    
+                    <!-- Timeline Container -->
+                    <div class="relative pl-4">
+
+                        
+                        <!-- Eventos del timeline -->
+                        <div id="timeline-container" class="space-y-8 relative z-10">
+                            <!-- Evento de apertura -->
+                            <div class="flex items-start relative">
+                                <div class="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center shadow-lg border-4 border-white relative z-20">
+                                    <i class="fas fa-play text-white text-lg"></i>
+                                    <div class="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-pulse"></div>
+                                </div>
+                                <div class="ml-8 bg-white rounded-xl shadow-md p-4 flex-1 border-l-4 border-green-400 hover:shadow-lg transition-shadow min-h-[100px]">
+                                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-2">
+                                        <h4 class="font-semibold text-gray-900">Apertura del Acompañamiento</h4>
+                                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium whitespace-nowrap">{{ legajo.fecha_apertura|date:"d/m/Y" }}</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Acompañamiento iniciado en {{ legajo.dispositivo.nombre }}</p>
+                                    <div class="flex items-center text-xs text-gray-500">
+                                        <i class="fas fa-user-md mr-1"></i>
+                                        {{ legajo.responsable.get_full_name|default:legajo.responsable.username }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Eventos dinámicos se cargarán aquí -->
+                            <div id="eventos-dinamicos" class="space-y-8">
+                                <!-- Los eventos se cargarán vía JavaScript -->
+                            </div>
+                            
+                            <!-- Punto actual -->
+                            <div class="flex items-start relative">
+                                <div class="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-full flex items-center justify-center shadow-lg border-4 border-white relative z-20">
+                                    <i class="fas fa-clock text-white text-lg"></i>
+                                    <div class="absolute -top-2 -right-2 w-6 h-6 bg-blue-400 rounded-full animate-ping"></div>
+                                </div>
+                                <div class="ml-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-md p-4 flex-1 border-l-4 border-blue-400 min-h-[100px]">
+                                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-2">
+                                        <h4 class="font-semibold text-gray-900">Estado Actual</h4>
+                                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium animate-pulse whitespace-nowrap">ACTIVO</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-3">{{ legajo.get_estado_display }} • {{ legajo.dias_desde_admision }} días activo</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">{{ legajo.seguimientos.count }} seguimientos</span>
+                                        <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">{{ legajo.eventos.count }} eventos</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Indicador de progreso -->
+                        <div class="mt-6 bg-white rounded-lg p-4 shadow-sm">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-medium text-gray-700">Progreso del Acompañamiento</span>
+                                <span class="text-sm text-gray-500" id="progreso-porcentaje">Calculando...</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                <div id="barra-progreso" class="h-full bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-600 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500 mt-2">
+                                <span>Inicio</span>
+                                <span>En progreso</span>
+                                <span>Completado</span>
                             </div>
                         </div>
                     </div>
@@ -468,7 +567,223 @@
     </div>
 </div>
 
+<!-- Modal Subir Archivos -->
+<div id="modalArchivos" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">Subir Archivos</h3>
+                <button onclick="cerrarModal('modalArchivos')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="formArchivos" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Archivo</label>
+                        <input type="file" name="archivo" class="w-full border border-gray-300 rounded-lg px-3 py-2" required multiple>
+                        <p class="text-xs text-gray-500 mt-1">Formatos permitidos: PDF, DOC, DOCX, JPG, PNG (Máx. 10MB)</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Etiqueta/Descripción</label>
+                        <input type="text" name="etiqueta" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Ej: Informe médico, Consentimiento, etc.">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="cerrarModal('modalArchivos')" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+                        Subir Archivos
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
+// Cargar archivos al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    cargarArchivos();
+    cargarTimelineEventos();
+    calcularProgreso();
+});
+
+// Funciones para archivos
+function abrirModalArchivos(legajoId) {
+    document.getElementById('modalArchivos').classList.remove('hidden');
+}
+
+function cerrarModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+}
+
+function cargarArchivos() {
+    // Simular carga de archivos del legajo
+    const container = document.getElementById('archivos-container');
+    const sinArchivos = document.getElementById('sin-archivos');
+    
+    // Por ahora mostrar mensaje sin archivos
+    container.innerHTML = '';
+    sinArchivos.classList.remove('hidden');
+}
+
+// Manejar envío de archivos
+document.getElementById('formArchivos').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch(`/legajos/{{ legajo.id }}/subir-archivos/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            cerrarModal('modalArchivos');
+            this.reset();
+            cargarArchivos();
+            alert('Archivos subidos exitosamente');
+        } else {
+            alert(data.error || 'Error al subir archivos');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al subir archivos');
+    });
+});
+
+// Funciones del Timeline
+function cargarTimelineEventos() {
+    const eventos = [
+        {% if legajo.evaluacion %}
+        {
+            tipo: 'evaluacion',
+            titulo: 'Evaluación Inicial Completada',
+            descripcion: 'Evaluación clínico-psicosocial realizada',
+            fecha: '{{ legajo.evaluacion.creado|date:"d/m/Y" }}',
+            icono: 'fa-stethoscope',
+            color: 'purple'
+        },
+        {% endif %}
+        {% for seguimiento in legajo.seguimientos.all|slice:":3" %}
+        {
+            tipo: 'seguimiento',
+            titulo: 'Seguimiento Registrado',
+            descripcion: '{{ seguimiento.observaciones|truncatechars:50 }}',
+            fecha: '{{ seguimiento.fecha|date:"d/m/Y" }}',
+            icono: 'fa-comments',
+            color: 'blue'
+        },
+        {% endfor %}
+        {% for evento in legajo.eventos.all|slice:":2" %}
+        {
+            tipo: 'evento',
+            titulo: 'Evento Crítico',
+            descripcion: '{{ evento.descripcion|truncatechars:50 }}',
+            fecha: '{{ evento.fecha|date:"d/m/Y" }}',
+            icono: 'fa-exclamation-triangle',
+            color: 'red'
+        },
+        {% endfor %}
+    ];
+    
+    const container = document.getElementById('eventos-dinamicos');
+    container.innerHTML = '';
+    
+    eventos.forEach((evento, index) => {
+        const colorClasses = {
+            purple: 'from-purple-400 to-violet-600 border-purple-400',
+            blue: 'from-blue-400 to-cyan-600 border-blue-400',
+            red: 'from-red-400 to-rose-600 border-red-400',
+            green: 'from-green-400 to-emerald-600 border-green-400'
+        };
+        
+        const eventoHTML = `
+            <div class="flex items-start timeline-event relative" style="animation-delay: ${index * 0.2}s">
+                <div class="flex-shrink-0 w-16 h-16 bg-gradient-to-br ${colorClasses[evento.color]} rounded-full flex items-center justify-center shadow-lg border-4 border-white transform hover:scale-110 transition-transform relative z-20">
+                    <i class="fas ${evento.icono} text-white text-lg"></i>
+                </div>
+                <div class="ml-8 bg-white rounded-xl shadow-md p-4 flex-1 border-l-4 ${evento.color === 'purple' ? 'border-purple-400' : evento.color === 'blue' ? 'border-blue-400' : 'border-red-400'} hover:shadow-lg transition-all transform hover:-translate-y-1 min-h-[100px]">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-2">
+                        <h4 class="font-semibold text-gray-900">${evento.titulo}</h4>
+                        <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full font-medium whitespace-nowrap">${evento.fecha}</span>
+                    </div>
+                    <p class="text-sm text-gray-600">${evento.descripcion}</p>
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML += eventoHTML;
+    });
+    
+    // Animar entrada de eventos
+    setTimeout(() => {
+        document.querySelectorAll('.timeline-event').forEach((el, i) => {
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateX(-20px)';
+                el.style.transition = 'all 0.5s ease-out';
+                setTimeout(() => {
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateX(0)';
+                }, 100);
+            }, i * 200);
+        });
+    }, 100);
+}
+
+function calcularProgreso() {
+    // Calcular progreso basado en hitos completados
+    let progreso = 0;
+    const hitos = {
+        apertura: 20,
+        evaluacion: 30,
+        plan: 25,
+        seguimientos: 25
+    };
+    
+    // Apertura (siempre completado)
+    progreso += hitos.apertura;
+    
+    // Evaluación
+    {% if legajo.evaluacion %}
+    progreso += hitos.evaluacion;
+    {% endif %}
+    
+    // Plan
+    {% if legajo.plan_vigente %}
+    progreso += hitos.plan;
+    {% endif %}
+    
+    // Seguimientos
+    const seguimientos = {{ legajo.seguimientos.count }};
+    if (seguimientos > 0) {
+        progreso += Math.min(hitos.seguimientos, seguimientos * 5);
+    }
+    
+    // Animar barra de progreso
+    setTimeout(() => {
+        const barra = document.getElementById('barra-progreso');
+        const porcentaje = document.getElementById('progreso-porcentaje');
+        
+        barra.style.width = progreso + '%';
+        porcentaje.textContent = progreso + '%';
+        
+        // Efecto de pulso en la barra
+        if (progreso > 75) {
+            barra.classList.add('animate-pulse');
+        }
+    }, 500);
+}
+
 function abrirModalCambiarResponsable() {
     // Cargar usuarios disponibles
     fetch('{% url "legajos:cambiar_responsable" legajo.pk %}')

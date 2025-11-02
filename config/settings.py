@@ -6,40 +6,46 @@ from pathlib import Path
 from django.contrib.messages import constants as messages
 from dotenv import load_dotenv
 
-# Cargar variables de entorno
-load_dotenv()
+# --- Paths y .env (en este orden) ---
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 
-# Entorno
+# --- Entorno ---
 DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")  # dev|qa|prd
-BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Secret Key
+# --- Secret Key ---
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
-# Internacionalización / Zona horaria
+# --- i18n/Timezone ---
 LANGUAGE_CODE = "es-ar"
 TIME_ZONE = "America/Argentina/Buenos_Aires"
 USE_I18N = True
 USE_TZ = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Hosts / Orígenes
-hosts = [
-    h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()
-]
-ALLOWED_HOSTS = hosts
+# --- Hosts / CSRF ---
+# Tomo del .env si existe; si no, fuerzo dominio de PythonAnywhere para evitar 400.
+hosts_env = os.getenv("DJANGO_ALLOWED_HOSTS", "")
+hosts = [h.strip() for h in hosts_env.split(",") if h.strip()]
+if "mlepera.pythonanywhere.com" not in hosts:
+    hosts += ["mlepera.pythonanywhere.com"]
+# en desarrollo, también localhost
+if DEBUG:
+    for h in ("localhost", "127.0.0.1"):
+        if h not in hosts:
+            hosts.append(h)
+
+ALLOWED_HOSTS = list(dict.fromkeys(hosts))  # sin duplicados
 
 DEFAULT_SCHEME = "https" if ENVIRONMENT == "prd" else "http"
 
+# CSRF_TRUSTED_ORIGINS requiere esquema. Para PA siempre https.
+CSRF_TRUSTED_ORIGINS = ["https://mlepera.pythonanywhere.com"]
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS += ["http://localhost", "http://127.0.0.1"]
 
-def _to_origin(h: str) -> str:
-    return h if h.startswith(("http://", "https://")) else f"{DEFAULT_SCHEME}://{h}"
-
-
-CSRF_TRUSTED_ORIGINS = [_to_origin(h) for h in ALLOWED_HOSTS]
-
-# Apps
+# --- Apps ---
 INSTALLED_APPS = [
     # Django
     "django.contrib.admin",
@@ -52,8 +58,6 @@ INSTALLED_APPS = [
     # Libs
     "django_extensions",
     "rest_framework",
-    # "simple_history",  # Comentado temporalmente
-    # "drf_spectacular",  # Comentado temporalmente
     "channels",
     # Apps propias
     "users",
@@ -65,9 +69,12 @@ INSTALLED_APPS = [
     "conversaciones",
     "portal",
     "tramites",
+    "healthcheck",  # la usás en urls
+    # "simple_history",       # si la reactivás, agregala también acá
+    # "drf_spectacular",      # si vas a usar docs de API
 ]
 
-# Middleware (orden CORS correcto)
+# --- Middleware ---
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -79,16 +86,16 @@ MIDDLEWARE = [
     "django.contrib.admindocs.middleware.XViewMiddleware",
     "config.middlewares.xss_protection.XSSProtectionMiddleware",
     "config.middlewares.threadlocals.ThreadLocalMiddleware",
-    # "simple_history.middleware.HistoryRequestMiddleware",  # Comentado temporalmente
+    # "simple_history.middleware.HistoryRequestMiddleware",
     "config.middlewares.auditoria.AuditoriaMiddleware",
 ]
 
-# URLs / WSGI / ASGI
+# --- URLs / WSGI / ASGI ---
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-# Templates
+# --- Templates ---
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -108,27 +115,27 @@ TEMPLATES = [
     },
 ]
 
-# Archivos estáticos y media
+# --- Static & Media ---
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
-STATIC_ROOT = BASE_DIR / "static_root"
+STATIC_ROOT = BASE_DIR / "staticfiles"   # coherente con mapeo en panel Web
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# Autenticación / Redirecciones
+# --- Auth / Redirects ---
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "inicio"
 LOGOUT_REDIRECT_URL = "login"
 ACCOUNT_FORMS = {"login": "users.forms.UserLoginForm"}
 
-# Email
+# --- Email ---
 if ENVIRONMENT == "prd":
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-# Mensajes
+# --- Mensajes ---
 MESSAGE_TAGS = {
     messages.DEBUG: "bg-gray-800 text-white",
     messages.INFO: "bg-blue-500 text-white",
@@ -137,7 +144,7 @@ MESSAGE_TAGS = {
     messages.ERROR: "bg-red-500 text-white",
 }
 
-# DB
+# --- DB ---
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
@@ -154,12 +161,10 @@ DATABASES = {
     }
 }
 
-if "pytest" in sys.argv or os.environ.get("PYTEST_RUNNING") == "1":  # DB para testing
-    DATABASES = {
-        "default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}
-    }
+if "pytest" in sys.argv or os.environ.get("PYTEST_RUNNING") == "1":
+    DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}}
 
-# Cache
+# --- Cache ---
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
@@ -167,50 +172,30 @@ CACHES = {
     }
 }
 
-# Channels
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer"
-    }
-}
+# --- Channels ---
+CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 
-# TTLs (segundos)
+# --- TTLs ---
 DEFAULT_CACHE_TIMEOUT = 300
 DASHBOARD_CACHE_TIMEOUT = 300
 CIUDADANO_CACHE_TIMEOUT = 300
 
-
-
-# REST Framework
+# --- DRF ---
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
-    # "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",  # Comentado temporalmente
+    # "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
-# Swagger/OpenAPI Configuration - Comentado temporalmente
-# SPECTACULAR_SETTINGS = {
-#     "TITLE": "SISOC API",
-#     "DESCRIPTION": "Sistema de gestión SISOC - API Documentation",
-#     "VERSION": "1.0.0",
-#     "SERVE_INCLUDE_SCHEMA": False,
-#     "COMPONENT_SPLIT_REQUEST": True,
-#     "SCHEMA_PATH_PREFIX": "/api/",
-# }
-
-# Dominios / Integraciones
+# --- Integraciones ---
 DOMINIO = os.environ.get("DOMINIO", "localhost:8001")
 RENAPER_API_USERNAME = os.getenv("RENAPER_API_USERNAME")
 RENAPER_API_PASSWORD = os.getenv("RENAPER_API_PASSWORD")
 RENAPER_API_URL = os.getenv("RENAPER_API_URL")
 RENAPER_TEST_MODE = os.getenv("RENAPER_TEST_MODE", "False") == "True"
-
-# OpenAI Configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-
-
-# Logging (asegurar directorio)
+# --- Logging ---
 LOG_DIR = BASE_DIR / "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
@@ -218,120 +203,43 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "filters": {
-        "info_only": {
-            "()": "django.utils.log.CallbackFilter",
-            "callback": lambda r: r.levelno == logging.INFO,
-        },
-        "error_only": {
-            "()": "django.utils.log.CallbackFilter",
-            "callback": lambda r: r.levelno == logging.ERROR,
-        },
-        "warning_only": {
-            "()": "django.utils.log.CallbackFilter",
-            "callback": lambda r: r.levelno == logging.WARNING,
-        },
-        "critical_only": {
-            "()": "django.utils.log.CallbackFilter",
-            "callback": lambda r: r.levelno == logging.CRITICAL,
-        },
-        "data_only": {
-            "()": "django.utils.log.CallbackFilter",
-            "callback": lambda r: hasattr(r, "data"),
-        },
+        "info_only": {"()": "django.utils.log.CallbackFilter", "callback": lambda r: r.levelno == logging.INFO},
+        "error_only": {"()": "django.utils.log.CallbackFilter", "callback": lambda r: r.levelno == logging.ERROR},
+        "warning_only": {"()": "django.utils.log.CallbackFilter", "callback": lambda r: r.levelno == logging.WARNING},
+        "critical_only": {"()": "django.utils.log.CallbackFilter", "callback": lambda r: r.levelno == logging.CRITICAL},
+        "data_only": {"()": "django.utils.log.CallbackFilter", "callback": lambda r: hasattr(r, "data")},
     },
     "formatters": {
-        "verbose": {
-            "format": "[{asctime}] {module} {levelname} {name}: {message}",
-            "style": "{",
-        },
+        "verbose": {"format": "[{asctime}] {module} {levelname} {name}: {message}", "style": "{"},
         "simple": {"format": "[{asctime}] {levelname} {message}", "style": "{"},
-        "json_data": {
-            "()": "core.utils.JSONDataFormatter",
-        },
+        "json_data": {"()": "core.utils.JSONDataFormatter"},
     },
     "handlers": {
-        "info_file": {
-            "level": "INFO",
-            "filters": ["info_only"],
-            "class": "core.utils.DailyFileHandler",
-            "filename": str(LOG_DIR / "info.log"),
-            "formatter": "verbose",
-        },
-        "error_file": {
-            "level": "ERROR",
-            "filters": ["error_only"],
-            "class": "core.utils.DailyFileHandler",
-            "filename": str(LOG_DIR / "error.log"),
-            "formatter": "verbose",
-        },
-        "warning_file": {
-            "level": "WARNING",
-            "filters": ["warning_only"],
-            "class": "core.utils.DailyFileHandler",
-            "filename": str(LOG_DIR / "warning.log"),
-            "formatter": "verbose",
-        },
-        "critical_file": {
-            "level": "CRITICAL",
-            "filters": ["critical_only"],
-            "class": "core.utils.DailyFileHandler",
-            "filename": str(LOG_DIR / "critical.log"),
-            "formatter": "verbose",
-        },
-        "data_file": {
-            "level": "INFO",
-            "filters": ["data_only"],
-            "class": "core.utils.DailyFileHandler",
-            "filename": str(LOG_DIR / "data.log"),
-            "formatter": "json_data",
-        },
+        "info_file": {"level": "INFO", "filters": ["info_only"], "class": "core.utils.DailyFileHandler", "filename": str(LOG_DIR / "info.log"), "formatter": "verbose"},
+        "error_file": {"level": "ERROR", "filters": ["error_only"], "class": "core.utils.DailyFileHandler", "filename": str(LOG_DIR / "error.log"), "formatter": "verbose"},
+        "warning_file": {"level": "WARNING", "filters": ["warning_only"], "class": "core.utils.DailyFileHandler", "filename": str(LOG_DIR / "warning.log"), "formatter": "verbose"},
+        "critical_file": {"level": "CRITICAL", "filters": ["critical_only"], "class": "core.utils.DailyFileHandler", "filename": str(LOG_DIR / "critical.log"), "formatter": "verbose"},
+        "data_file": {"level": "INFO", "filters": ["data_only"], "class": "core.utils.DailyFileHandler", "filename": str(LOG_DIR / "data.log"), "formatter": "json_data"},
     },
-    "root": {
-        "handlers": [
-            "info_file",
-            "error_file",
-            "warning_file",
-            "critical_file",
-            "data_file",
-        ],
-        "level": "DEBUG" if DEBUG else "INFO",
-    },
-    "loggers": {
-        "django": {
-            "handlers": [],
-            "level": "DEBUG" if DEBUG else "INFO",
-            "propagate": True,
-        },
-        "django.request": {
-            "handlers": ["error_file"],
-            "level": "ERROR",
-            "propagate": False,
-        },
-    },
+    "root": {"handlers": ["info_file", "error_file", "warning_file", "critical_file", "data_file"], "level": "DEBUG" if DEBUG else "INFO"},
+    "loggers": {"django": {"handlers": [], "level": "DEBUG" if DEBUG else "INFO", "propagate": True}, "django.request": {"handlers": ["error_file"], "level": "ERROR", "propagate": False}},
 }
 
-# Validadores de contraseña
+# --- Password validators ---
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-        "OPTIONS": {"min_length": 8},
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# Herramientas debug en desarrollo
+# --- Debug tools ---
 if DEBUG:
     INTERNAL_IPS = ["127.0.0.1", "::1"]
 
-# Seguridad por entorno
+# --- Seguridad por entorno ---
 if ENVIRONMENT == "prd":
-    STATICFILES_STORAGE = (
-        "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
-    )
+    STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_SSL_REDIRECT = True
@@ -346,5 +254,3 @@ else:
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
-
-

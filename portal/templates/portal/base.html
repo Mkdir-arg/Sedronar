@@ -5,15 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Portal SEDRONAR{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    {% load static %}
+    <link href="{% static 'custom/css/portal-modern.css' %}" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .formal-card { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); }
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12); }
+        .w-18 { width: 4.5rem; }
+        .h-18 { height: 4.5rem; }
+        @keyframes fadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-20px); } }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <header class="bg-blue-900 text-white py-4">
-        <div class="container mx-auto px-4">
-            <h1 class="text-2xl font-bold">
-                <i class="fas fa-building mr-2"></i>
-                Portal de Registro de Instituciones - SEDRONAR
-            </h1>
+<body class="min-h-screen bg-gray-50 relative">
+    <header class="bg-gradient-to-r from-slate-50 to-blue-50 shadow-lg border-b border-blue-100">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <img src="https://www.argentina.gob.ar/profiles/argentinagobar/themes/argentinagobar/argentinagobar_theme/logo_argentina-azul.svg" alt="Argentina" class="w-30 h-30">
+                    <div>
+                        <h1 class="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-gray-900 bg-clip-text text-transparent tracking-tight whitespace-nowrap">
+                            Portal SEDRONAR
+                        </h1>
+                        <p class="text-blue-600 text-base font-semibold tracking-wide uppercase">
+                            Registro de Instituciones
+                        </p>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <div class="flex items-center space-x-2 text-gray-700">
+                        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-phone text-blue-900 text-sm"></i>
+                        </div>
+                        <span class="font-medium">0800-222-1133</span>
+                    </div>
+                    <div class="flex items-center space-x-2 text-gray-700">
+                        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-envelope text-blue-900 text-sm"></i>
+                        </div>
+                        <span class="font-medium">info@sedronar.gob.ar</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -29,44 +64,280 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="bg-gray-800 text-white py-4 mt-12">
-        <div class="container mx-auto px-4 text-center">
-            <p>&copy; 2024 SEDRONAR - Secretaría de Políticas Integrales sobre Drogas</p>
+    <footer class="bg-gray-900 text-white py-8 mt-16">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-3 gap-8 text-center md:text-left">
+                <div>
+                    <h3 class="font-semibold text-lg mb-3">SEDRONAR</h3>
+                    <p class="text-gray-300 text-sm leading-relaxed">
+                        Secretaría de Políticas Integrales sobre Drogas de la Nación Argentina
+                    </p>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-lg mb-3">Contacto</h3>
+                    <div class="space-y-2 text-sm text-gray-300">
+                        <p><i class="fas fa-phone mr-2"></i>0800-222-1133</p>
+                        <p><i class="fas fa-envelope mr-2"></i>info@sedronar.gob.ar</p>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-lg mb-3">Horarios de Atención</h3>
+                    <p class="text-gray-300 text-sm">
+                        Lunes a Viernes<br>
+                        9:00 - 17:00 hs
+                    </p>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center">
+                <p class="text-gray-400 text-sm">
+                    &copy; 2024 SEDRONAR - Todos los derechos reservados
+                </p>
+            </div>
         </div>
     </footer>
 
     <!-- Chat en Vivo -->
-    <div id="chat-widget" class="fixed bottom-4 right-4 z-50">
-        <div id="chat-button" class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg cursor-pointer transition-all duration-300">
-            <i class="fas fa-comments text-xl"></i>
+    <div id="chat-widget" class="fixed bottom-6 right-6 z-50">
+        <div id="chat-button" class="bg-blue-900 hover:bg-blue-800 text-white p-3 rounded-full shadow-lg cursor-pointer transition-all duration-200">
+            <i class="fas fa-comments text-lg"></i>
         </div>
         
         <div id="chat-window" class="hidden absolute bottom-16 right-0 w-80 h-96 bg-white rounded-lg shadow-xl border border-gray-200">
-            <div class="bg-blue-600 text-white p-4 rounded-t-lg flex justify-between items-center">
-                <h3 class="font-bold">Chat SEDRONAR</h3>
+            <div class="bg-blue-900 text-white p-4 rounded-t-lg flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <h3 class="font-medium">Mesa de Ayuda SEDRONAR</h3>
+                </div>
                 <button id="close-chat" class="text-white hover:text-gray-200">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="p-4 h-80 flex items-center justify-center text-gray-500">
-                <p>Chat disponible próximamente</p>
+            <div class="p-6 h-80 flex flex-col items-center justify-center text-gray-600">
+                <div class="text-center">
+                    <i class="fas fa-headset text-3xl text-blue-900 mb-3"></i>
+                    <p class="font-medium mb-2">Asistencia Técnica</p>
+                    <p class="text-sm text-gray-500">Disponible próximamente</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sistema de Modales Modernos -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 hidden transition-opacity duration-300">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div id="modal-content" class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300 scale-95 opacity-0">
+                <!-- Modal Header -->
+                <div id="modal-header" class="p-6 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div id="modal-icon" class="w-10 h-10 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-info-circle text-xl"></i>
+                            </div>
+                            <h3 id="modal-title" class="text-lg font-semibold text-gray-900">Información</h3>
+                        </div>
+                        <button id="modal-close" class="text-gray-400 hover:text-gray-600 transition-colors">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- Modal Body -->
+                <div id="modal-body" class="p-6">
+                    <p id="modal-message" class="text-gray-600 leading-relaxed"></p>
+                </div>
+                <!-- Modal Footer -->
+                <div id="modal-footer" class="p-6 border-t border-gray-200 flex justify-end space-x-3">
+                    <button id="modal-cancel" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors hidden">
+                        Cancelar
+                    </button>
+                    <button id="modal-confirm" class="px-6 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors">
+                        Aceptar
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="{% static 'custom/js/portal-effects.js' %}" defer></script>
+    <script src="{% static 'custom/js/modern-messages.js' %}" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Chat functionality
             const chatButton = document.getElementById('chat-button');
             const chatWindow = document.getElementById('chat-window');
             const closeChat = document.getElementById('close-chat');
             
             chatButton.addEventListener('click', function() {
                 chatWindow.classList.toggle('hidden');
+                if (!chatWindow.classList.contains('hidden')) {
+                    chatWindow.style.animation = 'fadeInUp 0.3s ease-out';
+                }
             });
             
             closeChat.addEventListener('click', function() {
-                chatWindow.classList.add('hidden');
+                chatWindow.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => {
+                    chatWindow.classList.add('hidden');
+                }, 300);
+            });
+            
+            // Scroll animations
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate-fadeInUp');
+                    }
+                });
+            }, observerOptions);
+            
+            // Observe all cards and sections
+            document.querySelectorAll('.card-hover, .glass').forEach(el => {
+                observer.observe(el);
+            });
+            
+            // Smooth scroll for internal links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+            
+            // Sistema de Modales Modernos
+            window.ModernModal = {
+                show: function(options) {
+                    const overlay = document.getElementById('modal-overlay');
+                    const content = document.getElementById('modal-content');
+                    const icon = document.getElementById('modal-icon');
+                    const title = document.getElementById('modal-title');
+                    const message = document.getElementById('modal-message');
+                    const confirmBtn = document.getElementById('modal-confirm');
+                    const cancelBtn = document.getElementById('modal-cancel');
+                    const closeBtn = document.getElementById('modal-close');
+                    
+                    // Configurar tipo de modal
+                    const types = {
+                        success: { icon: 'fa-check-circle', color: 'bg-green-100 text-green-600', btnColor: 'bg-green-600 hover:bg-green-700' },
+                        error: { icon: 'fa-exclamation-triangle', color: 'bg-red-100 text-red-600', btnColor: 'bg-red-600 hover:bg-red-700' },
+                        warning: { icon: 'fa-exclamation-triangle', color: 'bg-yellow-100 text-yellow-600', btnColor: 'bg-yellow-600 hover:bg-yellow-700' },
+                        info: { icon: 'fa-info-circle', color: 'bg-blue-100 text-blue-600', btnColor: 'bg-blue-900 hover:bg-blue-800' },
+                        confirm: { icon: 'fa-question-circle', color: 'bg-purple-100 text-purple-600', btnColor: 'bg-purple-600 hover:bg-purple-700' }
+                    };
+                    
+                    const type = types[options.type] || types.info;
+                    
+                    // Configurar contenido
+                    icon.className = `w-10 h-10 rounded-lg flex items-center justify-center ${type.color}`;
+                    icon.querySelector('i').className = `fas ${type.icon} text-xl`;
+                    title.textContent = options.title || 'Información';
+                    message.textContent = options.message || '';
+                    
+                    // Configurar botones
+                    confirmBtn.textContent = options.confirmText || 'Aceptar';
+                    confirmBtn.className = `px-6 py-2 text-white rounded-lg transition-colors ${type.btnColor}`;
+                    
+                    if (options.type === 'confirm') {
+                        cancelBtn.classList.remove('hidden');
+                        cancelBtn.textContent = options.cancelText || 'Cancelar';
+                    } else {
+                        cancelBtn.classList.add('hidden');
+                    }
+                    
+                    // Mostrar modal
+                    overlay.classList.remove('hidden');
+                    setTimeout(() => {
+                        overlay.style.opacity = '1';
+                        content.style.transform = 'scale(1)';
+                        content.style.opacity = '1';
+                    }, 10);
+                    
+                    // Configurar eventos
+                    const closeModal = () => {
+                        overlay.style.opacity = '0';
+                        content.style.transform = 'scale(0.95)';
+                        content.style.opacity = '0';
+                        setTimeout(() => {
+                            overlay.classList.add('hidden');
+                        }, 300);
+                    };
+                    
+                    confirmBtn.onclick = () => {
+                        if (options.onConfirm) options.onConfirm();
+                        closeModal();
+                    };
+                    
+                    cancelBtn.onclick = () => {
+                        if (options.onCancel) options.onCancel();
+                        closeModal();
+                    };
+                    
+                    closeBtn.onclick = closeModal;
+                    
+                    overlay.onclick = (e) => {
+                        if (e.target === overlay) closeModal();
+                    };
+                }
+            };
+            
+            // Reemplazar alert nativo
+            window.alert = function(message) {
+                ModernModal.show({
+                    type: 'info',
+                    title: 'Información',
+                    message: message
+                });
+            };
+            
+            // Reemplazar confirm nativo
+            window.confirm = function(message) {
+                return new Promise((resolve) => {
+                    ModernModal.show({
+                        type: 'confirm',
+                        title: 'Confirmación',
+                        message: message,
+                        onConfirm: () => resolve(true),
+                        onCancel: () => resolve(false)
+                    });
+                });
+            };
+            
+            // Add loading states to buttons
+            document.querySelectorAll('a[href], button').forEach(button => {
+                button.addEventListener('click', function() {
+                    if (this.href && !this.href.includes('#')) {
+                        const originalContent = this.innerHTML;
+                        this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Cargando...';
+                        this.style.pointerEvents = 'none';
+                        
+                        // Restore after 3 seconds if page hasn't changed
+                        setTimeout(() => {
+                            this.innerHTML = originalContent;
+                            this.style.pointerEvents = 'auto';
+                        }, 3000);
+                    }
+                });
+            });
+            
+            // Add parallax effect to background elements
+            window.addEventListener('scroll', function() {
+                const scrolled = window.pageYOffset;
+                const parallaxElements = document.querySelectorAll('.floating');
+                
+                parallaxElements.forEach(element => {
+                    const speed = 0.5;
+                    element.style.transform = `translateY(${scrolled * speed}px)`;
+                });
             });
         });
     </script>
