@@ -1,0 +1,338 @@
+{% extends "includes/base.html" %}
+{% load static %}
+
+{% block title %}{{ actividad.nombre }}{% endblock %}
+
+{% block main-content %}
+<div class="mb-8">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center mb-4">
+            <a href="{% url 'configuracion:institucion_detalle' actividad.legajo_institucional.institucion.pk %}" class="text-gray-500 hover:text-gray-700 mr-4">
+                <i class="fas fa-arrow-left text-xl"></i>
+            </a>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-lora font-bold text-gray-900">{{ actividad.nombre }}</h1>
+                <p class="text-gray-600 mt-2">{{ actividad.legajo_institucional.institucion.nombre }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información principal -->
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
+        <div class="bg-gradient-to-r from-green-600 to-emerald-600 p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="bg-white bg-opacity-20 rounded-full p-3 mr-4">
+                        <i class="fas fa-tasks text-2xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold mb-1">{{ actividad.nombre }}</h2>
+                        <p class="text-green-100">{{ actividad.get_tipo_display }} - {{ actividad.get_subtipo_display }}</p>
+                    </div>
+                </div>
+                <div>
+                    <a href="{% url 'configuracion:actividad_editar' actividad.pk %}" 
+                       class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-edit mr-2"></i>Editar
+                    </a>
+                </div>
+            </div>
+            <div class="flex items-center">
+                <span class="px-3 py-1 rounded-full text-sm font-medium
+                    {% if actividad.estado == 'ACTIVO' %}bg-green-100 text-green-800
+                    {% elif actividad.estado == 'FINALIZADO' %}bg-blue-100 text-blue-800
+                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                    {{ actividad.get_estado_display }}
+                </span>
+            </div>
+        </div>
+
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Información General</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <span class="text-gray-500 font-medium">Tipo:</span>
+                            <span class="text-gray-900 ml-2">{{ actividad.get_tipo_display }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500 font-medium">Subtipo:</span>
+                            <span class="text-gray-900 ml-2">{{ actividad.get_subtipo_display }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500 font-medium">Cupo:</span>
+                            <span class="text-gray-900 ml-2">{{ nomina.count }}/{{ actividad.cupo_ciudadanos }} ciudadanos</span>
+                            {% if nomina.count >= actividad.cupo_ciudadanos %}
+                                <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium ml-2">Completo</span>
+                            {% else %}
+                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium ml-2">Disponible</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <span class="text-gray-500 font-medium">Staff:</span>
+                            <span class="text-gray-900 ml-2">{{ staff.count }} personas</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Fechas</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <span class="text-gray-500 font-medium">Inicio:</span>
+                            <span class="text-gray-900 ml-2">{{ actividad.fecha_inicio|date:"d/m/Y" }}</span>
+                        </div>
+                        {% if actividad.fecha_fin %}
+                        <div>
+                            <span class="text-gray-500 font-medium">Fin:</span>
+                            <span class="text-gray-900 ml-2">{{ actividad.fecha_fin|date:"d/m/Y" }}</span>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <span class="text-gray-500 font-medium">Estado:</span>
+                            <span class="text-gray-900 ml-2">{{ actividad.get_estado_display }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if actividad.descripcion %}
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">Descripción</h3>
+                <p class="text-gray-700 leading-relaxed">{{ actividad.descripcion }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow-lg p-6 text-center">
+            <div class="text-3xl font-bold text-green-600 mb-2">{{ actividad.cupo_ciudadanos }}</div>
+            <div class="text-sm text-gray-600">Cupo Total</div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 text-center">
+            <div class="text-3xl font-bold text-purple-600 mb-2">{{ staff.count }}</div>
+            <div class="text-sm text-gray-600">Staff Asignado</div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 text-center">
+            <div class="text-3xl font-bold text-blue-600 mb-2">{{ derivaciones.count }}</div>
+            <div class="text-sm text-gray-600">Derivaciones</div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 text-center">
+            <div class="text-3xl font-bold text-green-600 mb-2">{{ nomina.count }}</div>
+            <div class="text-sm text-gray-600">Inscritos</div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 text-center">
+            <div class="text-3xl font-bold text-orange-600 mb-2">
+                {% if actividad.fecha_fin %}
+                    {{ actividad.fecha_fin|timeuntil:actividad.fecha_inicio }}
+                {% else %}
+                    Indefinido
+                {% endif %}
+            </div>
+            <div class="text-sm text-gray-600">Duración</div>
+        </div>
+    </div>
+
+    <!-- Staff de la Actividad -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-users text-purple-600 mr-3"></i>
+            Staff Asignado ({{ staff.count }})
+        </h3>
+        
+        <div class="mb-4 flex space-x-3">
+            <a href="{% url 'configuracion:staff_crear' actividad.pk %}" 
+               class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                <i class="fas fa-plus mr-2"></i>Asignar Staff
+            </a>
+            <a href="{% url 'configuracion:asistencia' actividad.pk %}" 
+               class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                <i class="fas fa-calendar-check mr-2"></i>Asistencia
+            </a>
+        </div>
+        
+        {% if staff %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for miembro in staff %}
+            <div class="bg-gray-50 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="font-semibold text-gray-900">{{ miembro.personal.nombre }} {{ miembro.personal.apellido }}</h4>
+                    {% if miembro.activo %}
+                        <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">Activo</span>
+                    {% else %}
+                        <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">Inactivo</span>
+                    {% endif %}
+                </div>
+                <p class="text-sm text-gray-600 mb-1">{{ miembro.personal.get_tipo_display }}</p>
+                <p class="text-sm text-blue-600 font-medium">{{ miembro.rol_en_actividad }}</p>
+                {% if miembro.personal.titulo_profesional %}
+                <p class="text-xs text-gray-500 mt-1">{{ miembro.personal.titulo_profesional }}</p>
+                {% endif %}
+                <div class="mt-2">
+                    <a href="{% url 'configuracion:staff_editar' miembro.pk %}" 
+                       class="text-xs text-blue-600 hover:text-blue-800">Gestionar</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <i class="fas fa-user-plus text-4xl text-gray-300 mb-4"></i>
+            <p class="text-gray-500">No hay staff asignado a esta actividad</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Nómina de la Actividad -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-users text-green-600 mr-3"></i>
+            Nómina de la Actividad ({{ nomina.count }})
+        </h3>
+        
+        {% if nomina %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ciudadano</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Inscripción</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Observaciones</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for inscripto in nomina %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="font-medium text-gray-900">{{ inscripto.ciudadano.nombre_completo }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ inscripto.ciudadano.dni }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if inscripto.estado == 'ACTIVO' %}bg-green-100 text-green-800
+                                {% elif inscripto.estado == 'FINALIZADO' %}bg-blue-100 text-blue-800
+                                {% elif inscripto.estado == 'ABANDONADO' %}bg-red-100 text-red-800
+                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ inscripto.get_estado_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ inscripto.fecha_inscripcion|date:"d/m/Y" }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900">{{ inscripto.observaciones|truncatechars:30 }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="{% url 'configuracion:inscripto_editar' inscripto.pk %}" 
+                               class="text-blue-600 hover:text-blue-900">Gestionar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <i class="fas fa-user-plus text-4xl text-gray-300 mb-4"></i>
+            <p class="text-gray-500">No hay ciudadanos inscritos en esta actividad</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Derivaciones -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-exchange-alt text-blue-600 mr-3"></i>
+            Derivaciones Recibidas ({{ derivaciones.count }})
+        </h3>
+        
+        {% if derivaciones %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ciudadano</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Origen</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motivo</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Urgencia</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for derivacion in derivaciones|slice:":10" %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="font-medium text-gray-900">{{ derivacion.legajo.ciudadano.nombre_completo }}</div>
+                            <div class="text-sm text-gray-500">DNI: {{ derivacion.legajo.ciudadano.dni }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ derivacion.origen.nombre }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900">{{ derivacion.motivo|truncatechars:50 }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if derivacion.urgencia == 'ALTA' %}bg-red-100 text-red-800
+                                {% elif derivacion.urgencia == 'MEDIA' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-green-100 text-green-800{% endif %}">
+                                {{ derivacion.get_urgencia_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if derivacion.estado == 'ACEPTADA' %}bg-green-100 text-green-800
+                                {% elif derivacion.estado == 'RECHAZADA' %}bg-red-100 text-red-800
+                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ derivacion.get_estado_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ derivacion.creado|date:"d/m/Y H:i" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            {% if derivacion.estado == 'PENDIENTE' %}
+                                {% if nomina.count < actividad.cupo_ciudadanos %}
+                                    <form method="post" action="{% url 'configuracion:derivacion_aceptar' derivacion.pk %}" class="inline mr-2">
+                                        {% csrf_token %}
+                                        <button type="submit" class="text-green-600 hover:text-green-900">Aceptar</button>
+                                    </form>
+                                {% else %}
+                                    <span class="text-gray-400">Cupo completo</span>
+                                {% endif %}
+                                <form method="post" action="{% url 'configuracion:derivacion_rechazar' derivacion.pk %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-red-600 hover:text-red-900">Rechazar</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <i class="fas fa-inbox text-4xl text-gray-300 mb-4"></i>
+            <p class="text-gray-500">No hay derivaciones registradas para esta actividad</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

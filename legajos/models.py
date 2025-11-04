@@ -922,3 +922,200 @@ from .models_contactos import (
 
 # Importar timezone
 from django.utils import timezone
+
+
+class HistorialActividad(TimeStamped):
+    """Historial de cambios en actividades"""
+    
+    class TipoAccion(models.TextChoices):
+        CREACION = "CREACION", "Creación"
+        MODIFICACION = "MODIFICACION", "Modificación"
+        SUSPENSION = "SUSPENSION", "Suspensión"
+        FINALIZACION = "FINALIZACION", "Finalización"
+        REACTIVACION = "REACTIVACION", "Reactivación"
+    
+    actividad = models.ForeignKey(
+        PlanFortalecimiento,
+        on_delete=models.CASCADE,
+        related_name="historial"
+    )
+    accion = models.CharField(max_length=20, choices=TipoAccion.choices)
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    descripcion = models.TextField()
+    datos_anteriores = models.JSONField(null=True, blank=True)
+    
+    class Meta:
+        verbose_name = "Historial de Actividad"
+        verbose_name_plural = "Historiales de Actividades"
+        ordering = ["-creado"]
+
+
+class HistorialStaff(TimeStamped):
+    """Historial de asignaciones de staff"""
+    
+    class TipoAccion(models.TextChoices):
+        ASIGNACION = "ASIGNACION", "Asignación"
+        DESASIGNACION = "DESASIGNACION", "Desasignación"
+        CAMBIO_ROL = "CAMBIO_ROL", "Cambio de Rol"
+    
+    staff = models.ForeignKey(
+        StaffActividad,
+        on_delete=models.CASCADE,
+        related_name="historial"
+    )
+    accion = models.CharField(max_length=20, choices=TipoAccion.choices)
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    descripcion = models.TextField()
+    
+    class Meta:
+        verbose_name = "Historial de Staff"
+        verbose_name_plural = "Historiales de Staff"
+        ordering = ["-creado"]
+
+
+class HistorialDerivacion(TimeStamped):
+    """Historial de cambios en derivaciones"""
+    
+    class TipoAccion(models.TextChoices):
+        CREACION = "CREACION", "Creación"
+        ACEPTACION = "ACEPTACION", "Aceptación"
+        RECHAZO = "RECHAZO", "Rechazo"
+    
+    derivacion = models.ForeignKey(
+        Derivacion,
+        on_delete=models.CASCADE,
+        related_name="historial"
+    )
+    accion = models.CharField(max_length=20, choices=TipoAccion.choices)
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    descripcion = models.TextField()
+    estado_anterior = models.CharField(max_length=20, blank=True)
+    
+    class Meta:
+        verbose_name = "Historial de Derivación"
+        verbose_name_plural = "Historiales de Derivaciones"
+        ordering = ["-creado"]
+
+
+class InscriptoActividad(TimeStamped):
+    """Ciudadanos inscritos en actividades"""
+    
+    class Estado(models.TextChoices):
+        INSCRITO = "INSCRITO", "Inscrito"
+        ACTIVO = "ACTIVO", "Activo"
+        FINALIZADO = "FINALIZADO", "Finalizado"
+        ABANDONADO = "ABANDONADO", "Abandonado"
+    
+    actividad = models.ForeignKey(
+        PlanFortalecimiento,
+        on_delete=models.CASCADE,
+        related_name="inscriptos"
+    )
+    ciudadano = models.ForeignKey(
+        Ciudadano,
+        on_delete=models.CASCADE,
+        related_name="actividades_inscrito"
+    )
+    estado = models.CharField(max_length=20, choices=Estado.choices, default=Estado.INSCRITO)
+    fecha_inscripcion = models.DateField(auto_now_add=True)
+    fecha_finalizacion = models.DateField(null=True, blank=True)
+    observaciones = models.TextField(blank=True)
+    
+    class Meta:
+        verbose_name = "Inscripto en Actividad"
+        verbose_name_plural = "Inscriptos en Actividades"
+        unique_together = ['actividad', 'ciudadano']
+        ordering = ["-fecha_inscripcion"]
+
+
+class HistorialInscripto(TimeStamped):
+    """Historial de cambios en inscripciones"""
+    
+    class TipoAccion(models.TextChoices):
+        INSCRIPCION = "INSCRIPCION", "Inscripción"
+        ACTIVACION = "ACTIVACION", "Activación"
+        FINALIZACION = "FINALIZACION", "Finalización"
+        ABANDONO = "ABANDONO", "Abandono"
+    
+    inscripto = models.ForeignKey(
+        InscriptoActividad,
+        on_delete=models.CASCADE,
+        related_name="historial"
+    )
+    accion = models.CharField(max_length=20, choices=TipoAccion.choices)
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    descripcion = models.TextField()
+    estado_anterior = models.CharField(max_length=20, blank=True)
+    
+    class Meta:
+        verbose_name = "Historial de Inscripto"
+        verbose_name_plural = "Historiales de Inscriptos"
+        ordering = ["-creado"]
+
+
+class RegistroAsistencia(TimeStamped):
+    """Registro de asistencia a actividades"""
+    
+    class Estado(models.TextChoices):
+        PRESENTE = "PRESENTE", "Presente"
+        AUSENTE = "AUSENTE", "Ausente"
+        JUSTIFICADO = "JUSTIFICADO", "Ausente Justificado"
+        TARDANZA = "TARDANZA", "Tardanza"
+    
+    inscripto = models.ForeignKey(
+        InscriptoActividad,
+        on_delete=models.CASCADE,
+        related_name="asistencias"
+    )
+    fecha = models.DateField()
+    estado = models.CharField(max_length=15, choices=Estado.choices)
+    observaciones = models.TextField(blank=True)
+    registrado_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="asistencias_registradas"
+    )
+    
+    class Meta:
+        verbose_name = "Registro de Asistencia"
+        verbose_name_plural = "Registros de Asistencia"
+        unique_together = ['inscripto', 'fecha']
+        ordering = ['-fecha']
+    
+    def __str__(self):
+        return f"{self.inscripto.ciudadano.nombre_completo} - {self.fecha} - {self.get_estado_display()}"
+
+
+class AlertaAusentismo(TimeStamped):
+    """Alertas por ausentismo prolongado"""
+    
+    class TipoAlerta(models.TextChoices):
+        AUSENTISMO_3_DIAS = "AUSENTISMO_3", "3 días consecutivos"
+        AUSENTISMO_5_DIAS = "AUSENTISMO_5", "5 días consecutivos"
+        AUSENTISMO_SEMANAL = "AUSENTISMO_SEMANAL", "Más del 50% semanal"
+    
+    inscripto = models.ForeignKey(
+        InscriptoActividad,
+        on_delete=models.CASCADE,
+        related_name="alertas_ausentismo"
+    )
+    tipo = models.CharField(max_length=20, choices=TipoAlerta.choices)
+    dias_ausente = models.PositiveIntegerField()
+    fecha_inicio_ausencia = models.DateField()
+    activa = models.BooleanField(default=True)
+    vista_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="alertas_ausentismo_vistas"
+    )
+    
+    class Meta:
+        verbose_name = "Alerta de Ausentismo"
+        verbose_name_plural = "Alertas de Ausentismo"
+        ordering = ['-creado']
+    
+    def __str__(self):
+        return f"Alerta {self.get_tipo_display()} - {self.inscripto.ciudadano.nombre_completo}"

@@ -1,0 +1,72 @@
+{% extends "includes/base.html" %}
+{% load static %}
+
+{% block title %}Asignar Staff{% endblock %}
+
+{% block main-content %}
+<div class="max-w-2xl mx-auto">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">Asignar Staff a Actividad</h1>
+        <p class="text-gray-600">Selecciona el personal para asignar a esta actividad</p>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <div>
+                <label for="{{ form.personal.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    Personal
+                </label>
+                {{ form.personal }}
+                {% if form.personal.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.personal.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="{{ form.rol_en_actividad.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    Rol en la Actividad
+                </label>
+                {{ form.rol_en_actividad }}
+                {% if form.rol_en_actividad.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.rol_en_actividad.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="flex items-center">
+                {{ form.activo }}
+                <label for="{{ form.activo.id_for_label }}" class="ml-2 text-sm text-gray-700">
+                    Activo
+                </label>
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-6">
+                <a href="{% url 'configuracion:actividad_detalle' view.kwargs.actividad_pk %}" 
+                   class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Cancelar
+                </a>
+                <button type="submit" 
+                        class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                    Asignar Staff
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+select, input[type="text"] {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+}
+select:focus, input[type="text"]:focus {
+    outline: none;
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+</style>
+{% endblock %}

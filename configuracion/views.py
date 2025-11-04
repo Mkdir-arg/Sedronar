@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from core.models import Provincia, Municipio, Localidad, Institucion
 from legajos.models import LegajoInstitucional, PersonalInstitucion, EvaluacionInstitucional, PlanFortalecimiento, IndicadorInstitucional, StaffActividad
 from .forms import ProvinciaForm, MunicipioForm, LocalidadForm, InstitucionForm
+from .views_extra import InscriptoEditarView, ActividadEditarView, StaffEditarView, StaffDesasignarView, AsistenciaView, RegistrarAsistenciaView
 
 # Alias para compatibilidad
 DispositivoRed = Institucion
@@ -260,3 +261,219 @@ class IndicadorInstitucionCreateView(LoginRequiredMixin, CreateView):
     
     def get_success_url(self):
         return reverse_lazy('configuracion:institucion_detalle', kwargs={'pk': self.kwargs['institucion_pk']})
+
+
+class ActividadDetailView(LoginRequiredMixin, DetailView):
+    model = PlanFortalecimiento
+    template_name = 'configuracion/actividad_detail.html'
+    context_object_name = 'actividad'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        actividad = self.get_object()
+        
+        # Obtener staff de la actividad
+        context['staff'] = StaffActividad.objects.filter(actividad=actividad)
+        
+        # Obtener derivaciones a esta actividad
+        from legajos.models import Derivacion, InscriptoActividad
+        context['derivaciones'] = Derivacion.objects.filter(actividad_destino=actividad).order_by('-creado')
+        
+        # Obtener nómina de la actividad (inscritos)
+        context['nomina'] = InscriptoActividad.objects.filter(actividad=actividad).order_by('-fecha_inscripcion')
+        
+        return context
+
+
+class StaffActividadCreateView(LoginRequiredMixin, CreateView):
+    model = StaffActividad
+    fields = ['personal', 'rol_en_actividad', 'activo']
+    template_name = 'configuracion/staff_form.html'
+    
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        actividad = get_object_or_404(PlanFortalecimiento, pk=self.kwargs['actividad_pk'])
+        form.fields['personal'].queryset = PersonalInstitucion.objects.filter(
+            legajo_institucional=actividad.legajo_institucional,
+            activo=True
+        )
+        return form
+    
+    def form_valid(self, form):
+        from legajos.models import HistorialStaff
+        actividad = get_object_or_404(PlanFortalecimiento, pk=self.kwargs['actividad_pk'])
+        form.instance.actividad = actividad
+        response = super().form_valid(form)
+        
+        HistorialStaff.objects.create(
+            staff=self.object,
+            accion='ASIGNACION',
+            usuario=self.request.user,
+            descripcion=f'{self.object.personal.nombre} {self.object.personal.apellido} asignado como {self.object.rol_en_actividad}'
+        )
+        
+        return response
+    
+    def get_success_url(self):
+        return reverse_lazy('configuracion:actividad_detalle', kwargs={'pk': self.kwargs['actividad_pk']})
+
+
+class DerivacionAceptarView(LoginRequiredMixin, UpdateView):
+    model = None
+    
+    def post(self, request, *args, **kwargs):
+        from legajos.models import Derivacion, HistorialDerivacion, InscriptoActividad
+        from django.utils import timezone
+        from django.contrib import messages
+        
+        derivacion = get_object_or_404(Derivacion, pk=kwargs['pk'])
+        actividad = derivacion.actividad_destino
+        
+        # Validar cupo disponible
+        inscritos_activos = InscriptoActividad.objects.filter(
+            actividad=actividad,
+            estado__in=['INSCRITO', 'ACTIVO']
+        ).count()
+        
+        if inscritos_activos >= actividad.cupo_ciudadanos:
+            messages.error(request, f'No se puede aceptar la derivación. Cupo completo ({actividad.cupo_ciudadanos} lugares)')
+            return redirect('configuracion:actividad_detalle', pk=actividad.pk)
+        
+        estado_anterior = derivacion.estado
+        derivacion.estado = 'ACEPTADA'
+        derivacion.fecha_aceptacion = timezone.now().date()
+        derivacion.save()
+        
+        # Inscribir automáticamente al ciudadano en la actividad
+        InscriptoActividad.objects.get_or_create(
+            actividad=actividad,
+            ciudadano=derivacion.legajo.ciudadano,
+            defaults={'estado': 'ACTIVO'}
+        )
+        
+        HistorialDerivacion.objects.create(
+            derivacion=derivacion,
+            accion='ACEPTACION',
+            usuario=request.user,
+            descripcion=f'Derivación aceptada por {request.user.username}',
+            estado_anterior=estado_anterior
+        )
+        
+        messages.success(request, f'Derivación aceptada. Ciudadano inscrito en la actividad.')
+        return redirect('configuracion:actividad_detalle', pk=actividad.pk)
+
+
+class DerivacionRechazarView(LoginRequiredMixin, UpdateView):
+    model = None
+    
+    def post(self, request, *args, **kwargs):
+        from legajos.models import Derivacion, HistorialDerivacion
+        derivacion = get_object_or_404(Derivacion, pk=kwargs['pk'])
+        estado_anterior = derivacion.estado
+        motivo = request.POST.get('motivo', 'Rechazada')
+        derivacion.estado = 'RECHAZADA'
+        derivacion.respuesta = motivo
+        derivacion.save()
+        
+        HistorialDerivacion.objects.create(
+            derivacion=derivacion,
+            accion='RECHAZO',
+            usuario=request.user,
+            descripcion=f'Derivación rechazada por {request.user.username}: {motivo}',
+            estado_anterior=estado_anterior
+        )
+        
+        return redirect('configuracion:actividad_detalle', pk=derivacion.actividad_destino.pk)
+
+
+class InscriptoEditarView(LoginRequiredMixin, UpdateView):
+    model = None
+    template_name = 'configuracion/inscripto_form.html'
+    
+    def get_object(self):
+        from legajos.models import InscriptoActividad
+        return get_object_or_404(InscriptoActividad, pk=self.kwargs['pk'])
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['inscripto'] = self.get_object()
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        from legajos.models import InscriptoActividad, HistorialInscripto
+        from django.utils import timezone
+        from django.contrib import messages
+        
+        inscripto = self.get_object()
+        nuevo_estado = request.POST.get('estado')
+        observaciones = request.POST.get('observaciones', '')
+        
+        if nuevo_estado and nuevo_estado != inscripto.estado:
+            estado_anterior = inscripto.estado
+            inscripto.estado = nuevo_estado
+            
+            if nuevo_estado in ['FINALIZADO', 'ABANDONADO']:
+                inscripto.fecha_finalizacion = timezone.now().date()
+            
+            inscripto.observaciones = observaciones
+            inscripto.save()
+            
+            # Registrar en historial
+            accion_map = {
+                'FINALIZADO': 'FINALIZACION',
+                'ABANDONADO': 'ABANDONO',
+                'ACTIVO': 'ACTIVACION'
+            }
+            
+            HistorialInscripto.objects.create(
+                inscripto=inscripto,
+                accion=accion_map.get(nuevo_estado, 'INSCRIPCION'),
+                usuario=request.user,
+                descripcion=f'Estado cambiado a {inscripto.get_estado_display()}. {observaciones}',
+                estado_anterior=estado_anterior
+            )
+            
+            messages.success(request, f'Estado del inscripto actualizado a {inscripto.get_estado_display()}')
+        
+        return redirect('configuracion:actividad_detalle', pk=inscripto.actividad.pk)
+
+
+class ActividadEditarView(LoginRequiredMixin, UpdateView):
+    model = PlanFortalecimiento
+    fields = ['nombre', 'descripcion', 'cupo_ciudadanos', 'fecha_inicio', 'fecha_fin', 'estado']
+    template_name = 'configuracion/actividad_editar_form.html'
+    
+    def form_valid(self, form):
+        from legajos.models import HistorialActividad
+        from django.contrib import messages
+        
+        # Obtener datos anteriores
+        actividad_anterior = PlanFortalecimiento.objects.get(pk=self.object.pk)
+        cambios = []
+        
+        if actividad_anterior.nombre != form.cleaned_data['nombre']:
+            cambios.append(f"Nombre: '{actividad_anterior.nombre}' → '{form.cleaned_data['nombre']}'")
+        if actividad_anterior.cupo_ciudadanos != form.cleaned_data['cupo_ciudadanos']:
+            cambios.append(f"Cupo: {actividad_anterior.cupo_ciudadanos} → {form.cleaned_data['cupo_ciudadanos']}")
+        if actividad_anterior.estado != form.cleaned_data['estado']:
+            cambios.append(f"Estado: {actividad_anterior.get_estado_display()} → {form.instance.get_estado_display()}")
+        
+        response = super().form_valid(form)
+        
+        if cambios:
+            accion = 'SUSPENSION' if form.cleaned_data['estado'] == 'SUSPENDIDO' else \
+                    'FINALIZACION' if form.cleaned_data['estado'] == 'FINALIZADO' else 'MODIFICACION'
+            
+            HistorialActividad.objects.create(
+                actividad=self.object,
+                accion=accion,
+                usuario=self.request.user,
+                descripcion=f"Actividad modificada: {'; '.join(cambios)}"
+            )
+            
+            messages.success(self.request, 'Actividad actualizada correctamente')
+        
+        return response
+    
+    def get_success_url(self):
+        return reverse_lazy('configuracion:actividad_detalle', kwargs={'pk': self.object.pk})
