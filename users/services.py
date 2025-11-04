@@ -36,6 +36,7 @@ class UsuariosService:
         # Profile tiene FK a User y a Provincia; seleccionar esas relaciones evita consultas N+1
         return (
             User.objects.select_related("profile")
+            .prefetch_related("groups", "user_permissions")
             .annotate(rol=F("profile__rol"))
             .order_by("-id")
         )

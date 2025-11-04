@@ -6,6 +6,12 @@ from .views import (
     load_localidad,
     load_municipios,
 )
+from .performance_dashboard import (
+    performance_dashboard,
+    performance_api,
+    query_analysis_api,
+    optimization_suggestions_api,
+)
 
 urlpatterns = [
     path("inicio/", login_required(inicio_view), name="inicio"),
@@ -19,4 +25,9 @@ urlpatterns = [
         login_required(load_localidad),
         name="ajax_load_localidades",
     ),
+    # Performance Dashboard URLs
+    path("performance-dashboard/", performance_dashboard, name="performance_dashboard"),
+    path("performance-api/", performance_api, name="performance_api"),
+    path("query-analysis-api/", query_analysis_api, name="query_analysis_api"),
+    path("optimization-suggestions-api/", optimization_suggestions_api, name="optimization_suggestions_api"),
 ]

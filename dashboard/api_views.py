@@ -105,10 +105,10 @@ def actividad_reciente(request):
     legajos_nuevos = LegajoAtencion.objects.select_related('ciudadano', 'responsable').order_by('-fecha_apertura')[:3]
     
     # Seguimientos recientes
-    seguimientos = SeguimientoContacto.objects.select_related('legajo__ciudadano', 'creado_por').order_by('-creado')[:3]
+    seguimientos = SeguimientoContacto.objects.select_related('legajo__ciudadano', 'profesional__usuario').order_by('-creado')[:3]
     
     # Alertas recientes
-    alertas = AlertaCiudadano.objects.select_related('ciudadano').filter(activa=True).order_by('-fecha_creacion')[:2]
+    alertas = AlertaCiudadano.objects.select_related('ciudadano').filter(activa=True).order_by('-creado')[:2]
     
     actividades = []
     
@@ -125,8 +125,8 @@ def actividad_reciente(request):
     # Agregar seguimientos
     for seguimiento in seguimientos:
         actividades.append({
-            'descripcion': f'Seguimiento: {seguimiento.tipo_contacto}',
-            'usuario': seguimiento.creado_por.get_full_name() if seguimiento.creado_por else 'Sistema',
+            'descripcion': f'Seguimiento: {seguimiento.get_tipo_display()}',
+            'usuario': seguimiento.profesional.usuario.get_full_name() if seguimiento.profesional else 'Sistema',
             'tiempo': _tiempo_relativo(seguimiento.creado),
             'tipo': 'update',
             'icono': 'fas fa-check'

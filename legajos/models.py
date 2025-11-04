@@ -42,6 +42,9 @@ class Ciudadano(TimeStamped):
     def __str__(self):
         return f"{self.apellido}, {self.nombre} ({self.dni})"
     
+    # Managers
+    objects = models.Manager()  # Manager por defecto
+    
     @property
     def nombre_completo(self):
         """Retorna el nombre completo del ciudadano"""
@@ -182,6 +185,9 @@ class LegajoAtencion(LegajoBase):
         """Días transcurridos desde la admisión"""
         from datetime import datetime
         return (datetime.now().date() - self.fecha_admision).days
+    
+    # Managers
+    objects = models.Manager()  # Manager por defecto
     
     @property
     def tiempo_primer_contacto(self):

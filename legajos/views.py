@@ -51,7 +51,7 @@ class CiudadanoDetailView(LoginRequiredMixin, DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['legajos'] = self.object.legajos.all().order_by('-fecha_apertura')
+        context['legajos'] = self.object.legajos.select_related('dispositivo', 'responsable').order_by('-fecha_apertura')
         return context
 
 
@@ -671,7 +671,7 @@ class ReportesView(LoginRequiredMixin, TemplateView):
         ).order_by('-total')
         
         # Estadísticas por dispositivo
-        stats['por_dispositivo'] = LegajoAtencion.objects.values(
+        stats['por_dispositivo'] = LegajoAtencion.objects.select_related('dispositivo').values(
             'dispositivo__nombre', 'dispositivo__tipo'
         ).annotate(total=Count('id')).order_by('-total')[:10]
         
@@ -1055,7 +1055,7 @@ class LegajoInstitucionalListView(LoginRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        return LegajoInstitucional.objects.select_related('institucion').order_by('-fecha_apertura')
+        return LegajoInstitucional.objects.select_related('institucion', 'responsable_sedronar').order_by('-fecha_apertura')
 
 
 class LegajoInstitucionalDetailView(LoginRequiredMixin, DetailView):
@@ -1104,12 +1104,12 @@ class InstitucionListView(LoginRequiredMixin, ListView):
         if self.request.user.is_superuser:
             return Institucion.objects.filter(
                 estado_registro='APROBADO'
-            ).order_by('nombre')
+            ).prefetch_related('encargados').order_by('nombre')
         else:
             return Institucion.objects.filter(
                 encargados=self.request.user,
                 estado_registro='APROBADO'
-            ).order_by('nombre')
+            ).prefetch_related('encargados').order_by('nombre')
 
 
 class InstitucionCreateView(LoginRequiredMixin, CreateView):
@@ -1133,9 +1133,9 @@ class InstitucionUpdateView(LoginRequiredMixin, UpdateView):
     
     def get_queryset(self):
         if self.request.user.is_superuser:
-            return Institucion.objects.all()
+            return Institucion.objects.prefetch_related('encargados')
         else:
-            return Institucion.objects.filter(encargados=self.request.user)
+            return Institucion.objects.filter(encargados=self.request.user).prefetch_related('encargados')
 
 
 class InstitucionDeleteView(LoginRequiredMixin, DeleteView):
@@ -1145,9 +1145,9 @@ class InstitucionDeleteView(LoginRequiredMixin, DeleteView):
     
     def get_queryset(self):
         if self.request.user.is_superuser:
-            return Institucion.objects.all()
+            return Institucion.objects.prefetch_related('encargados')
         else:
-            return Institucion.objects.filter(encargados=self.request.user)
+            return Institucion.objects.filter(encargados=self.request.user).prefetch_related('encargados')
     
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()

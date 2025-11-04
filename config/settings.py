@@ -71,7 +71,7 @@ INSTALLED_APPS = [
     "tramites",
     "healthcheck",  # la usás en urls
     # "simple_history",       # si la reactivás, agregala también acá
-    # "drf_spectacular",      # si vas a usar docs de API
+    "drf_spectacular",
 ]
 
 # --- Middleware ---
@@ -88,6 +88,7 @@ MIDDLEWARE = [
     "config.middlewares.threadlocals.ThreadLocalMiddleware",
     # "simple_history.middleware.HistoryRequestMiddleware",
     "config.middlewares.auditoria.AuditoriaMiddleware",
+    "config.middlewares.query_counter.QueryCountMiddleware",
 ]
 
 # --- URLs / WSGI / ASGI ---
@@ -184,7 +185,7 @@ CIUDADANO_CACHE_TIMEOUT = 300
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
-    # "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 # --- Integraciones ---
@@ -254,3 +255,12 @@ else:
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
+# DRF Spectacular Configuration
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'SEDRONAR API',
+    'DESCRIPTION': 'Sistema de Gestión SEDRONAR - Documentación de APIs',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SCHEMA_PATH_PREFIX': '/api/',
+}

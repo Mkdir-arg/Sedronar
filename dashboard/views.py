@@ -13,26 +13,34 @@ class DashboardView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Datos básicos del sistema
-        context["total_usuarios"] = User.objects.filter(is_active=True).count()
-        context["total_ciudadanos"] = Ciudadano.objects.count()
+        # Datos básicos del sistema (optimizados con una sola consulta)
+        from django.db.models import Count, Q
         
-        # Estadísticas de legajos
-        context["total_legajos"] = LegajoAtencion.objects.count()
-        context["legajos_activos"] = LegajoAtencion.objects.filter(estado__in=['ABIERTO', 'EN_SEGUIMIENTO']).count()
+        # Consulta optimizada para usuarios
+        hace_24h = timezone.now() - timedelta(hours=24)
+        user_stats = User.objects.aggregate(
+            total_activos=Count('id', filter=Q(is_active=True)),
+            activos_24h=Count('id', filter=Q(last_login__gte=hace_24h))
+        )
+        context["total_usuarios"] = user_stats['total_activos']
+        context["usuarios_activos"] = user_stats['activos_24h']
         
-        # Actividad de hoy
+        # Consulta optimizada para legajos
         hoy = timezone.now().date()
+        inicio_mes = hoy.replace(day=1)
+        legajo_stats = LegajoAtencion.objects.aggregate(
+            total=Count('id'),
+            activos=Count('id', filter=Q(estado__in=['ABIERTO', 'EN_SEGUIMIENTO'])),
+            mes=Count('id', filter=Q(fecha_apertura__gte=inicio_mes))
+        )
+        context["total_legajos"] = legajo_stats['total']
+        context["legajos_activos"] = legajo_stats['activos']
+        context["registros_mes"] = legajo_stats['mes']
+        
+        # Consultas optimizadas para actividad
+        context["total_ciudadanos"] = Ciudadano.objects.count()
         context["seguimientos_hoy"] = SeguimientoContacto.objects.filter(creado__date=hoy).count()
         context["alertas_activas"] = AlertaCiudadano.objects.filter(activa=True).count()
-        
-        # Actividad del mes
-        inicio_mes = hoy.replace(day=1)
-        context["registros_mes"] = LegajoAtencion.objects.filter(fecha_apertura__gte=inicio_mes).count()
-        
-        # Usuarios activos (últimas 24 horas)
-        hace_24h = timezone.now() - timedelta(hours=24)
-        context["usuarios_activos"] = User.objects.filter(last_login__gte=hace_24h).count()
         
         # Actividad de hoy para mostrar en el dashboard
         context["actividad_hoy"] = context["seguimientos_hoy"]

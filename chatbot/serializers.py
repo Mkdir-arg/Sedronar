@@ -26,7 +26,7 @@ class ConversationSerializer(serializers.ModelSerializer):
     """Serializer para Conversation"""
     user = UserSerializer(read_only=True)
     messages = MessageSerializer(many=True, read_only=True)
-    message_count = serializers.SerializerMethodField()
+    message_count = serializers.IntegerField(read_only=True)  # Viene del annotate
     
     class Meta:
         model = Conversation
@@ -35,9 +35,6 @@ class ConversationSerializer(serializers.ModelSerializer):
             'is_active', 'messages', 'message_count'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
-    
-    def get_message_count(self, obj):
-        return obj.messages.count()
 
 
 class ChatbotKnowledgeSerializer(serializers.ModelSerializer):

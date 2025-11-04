@@ -231,13 +231,17 @@ def lista_conversaciones(request):
     busqueda = request.GET.get('busqueda', '')
     tipo_filtro = request.GET.get('tipo', '')
     
-    # Base queryset
+    # Base queryset optimizado
     if request.user.groups.filter(name='OperadorCharla').exists() and not request.user.is_superuser:
-        conversaciones = Conversacion.objects.select_related('operador_asignado').prefetch_related('mensajes').filter(
+        conversaciones = Conversacion.objects.select_related('operador_asignado').annotate(
+            mensajes_no_leidos=Count('mensajes', filter=Q(mensajes__remitente='ciudadano', mensajes__leido=False))
+        ).filter(
             models.Q(operador_asignado=None) | models.Q(operador_asignado=request.user)
         )
     else:
-        conversaciones = Conversacion.objects.select_related('operador_asignado').prefetch_related('mensajes')
+        conversaciones = Conversacion.objects.select_related('operador_asignado').annotate(
+            mensajes_no_leidos=Count('mensajes', filter=Q(mensajes__remitente='ciudadano', mensajes__leido=False))
+        )
     
     # Aplicar filtros
     if estado_filtro:
@@ -274,23 +278,15 @@ def lista_conversaciones(request):
         fecha_inicio__year=año_actual
     ).count()
     
-    tiempo_promedio = 0
-    conversaciones_con_respuesta = Conversacion.objects.filter(
+    # Tiempo promedio optimizado usando campo precalculado
+    from django.db.models import Avg
+    tiempo_promedio = Conversacion.objects.filter(
         operador_asignado__isnull=False,
-        mensajes__remitente='operador'
-    ).distinct()
-    
-    if conversaciones_con_respuesta.exists():
-        tiempos = []
-        for conv in conversaciones_con_respuesta:
-            primer_msg_ciudadano = conv.mensajes.filter(remitente='ciudadano').first()
-            primer_msg_operador = conv.mensajes.filter(remitente='operador').first()
-            if primer_msg_ciudadano and primer_msg_operador:
-                diff = primer_msg_operador.fecha_envio - primer_msg_ciudadano.fecha_envio
-                tiempos.append(diff.total_seconds() / 60)
-        
-        if tiempos:
-            tiempo_promedio = sum(tiempos) / len(tiempos)
+        tiempo_respuesta_segundos__isnull=False
+    ).aggregate(
+        promedio=Avg('tiempo_respuesta_segundos')
+    )['promedio'] or 0
+    tiempo_promedio = round(tiempo_promedio / 60, 1)
     
     # Carga de trabajo por operador
     operadores_con_carga = User.objects.filter(
@@ -306,8 +302,7 @@ def lista_conversaciones(request):
     
     es_operador_charla = request.user.groups.filter(name='OperadorCharla').exists()
     
-    for conversacion in conversaciones:
-        conversacion.mensajes_no_leidos = conversacion.mensajes.filter(remitente='ciudadano', leido=False).count()
+    # mensajes_no_leidos ya calculado en annotate - eliminar bucle
     
     return render(request, 'conversaciones/lista.html', {
         'conversaciones': conversaciones,

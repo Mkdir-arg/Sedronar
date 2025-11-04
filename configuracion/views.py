@@ -105,13 +105,13 @@ class InstitucionListView(LoginRequiredMixin, ListView):
             # Super admin ve todas las instituciones aprobadas
             return Institucion.objects.filter(
                 estado_registro='APROBADO'
-            ).order_by('nombre')
+            ).select_related('provincia', 'municipio', 'localidad').prefetch_related('encargados').order_by('nombre')
         else:
             # Usuario normal ve solo instituciones aprobadas donde es encargado
             return Institucion.objects.filter(
                 encargados=self.request.user,
                 estado_registro='APROBADO'
-            ).order_by('nombre')
+            ).select_related('provincia', 'municipio', 'localidad').prefetch_related('encargados').order_by('nombre')
 
 
 # Alias para compatibilidad
@@ -144,9 +144,9 @@ class InstitucionUpdateView(LoginRequiredMixin, UpdateView):
     
     def get_queryset(self):
         if self.request.user.is_superuser:
-            return Institucion.objects.all()
+            return Institucion.objects.select_related('provincia', 'municipio', 'localidad').prefetch_related('encargados')
         else:
-            return Institucion.objects.filter(encargados=self.request.user)
+            return Institucion.objects.filter(encargados=self.request.user).select_related('provincia', 'municipio', 'localidad').prefetch_related('encargados')
 
 
 # Alias para compatibilidad
@@ -160,9 +160,9 @@ class InstitucionDeleteView(LoginRequiredMixin, DeleteView):
     
     def get_queryset(self):
         if self.request.user.is_superuser:
-            return Institucion.objects.all()
+            return Institucion.objects.select_related('provincia', 'municipio', 'localidad').prefetch_related('encargados')
         else:
-            return Institucion.objects.filter(encargados=self.request.user)
+            return Institucion.objects.filter(encargados=self.request.user).select_related('provincia', 'municipio', 'localidad').prefetch_related('encargados')
 
 
 class InstitucionDetailView(LoginRequiredMixin, DetailView):
@@ -181,10 +181,10 @@ class InstitucionDetailView(LoginRequiredMixin, DetailView):
         )
         
         context['legajo'] = legajo
-        context['personal'] = PersonalInstitucion.objects.filter(legajo_institucional=legajo)
-        context['evaluaciones'] = EvaluacionInstitucional.objects.filter(legajo_institucional=legajo).order_by('-fecha_evaluacion')
-        context['planes'] = PlanFortalecimiento.objects.filter(legajo_institucional=legajo).order_by('-fecha_inicio')
-        context['indicadores'] = IndicadorInstitucional.objects.filter(legajo_institucional=legajo).order_by('-periodo')
+        context['personal'] = PersonalInstitucion.objects.filter(legajo_institucional=legajo).select_related('legajo_institucional')
+        context['evaluaciones'] = EvaluacionInstitucional.objects.filter(legajo_institucional=legajo).select_related('evaluador').order_by('-fecha_evaluacion')
+        context['planes'] = PlanFortalecimiento.objects.filter(legajo_institucional=legajo).prefetch_related('staff__personal').order_by('-fecha_inicio')
+        context['indicadores'] = IndicadorInstitucional.objects.filter(legajo_institucional=legajo).select_related('legajo_institucional').order_by('-periodo')
         
         return context
 
@@ -273,14 +273,14 @@ class ActividadDetailView(LoginRequiredMixin, DetailView):
         actividad = self.get_object()
         
         # Obtener staff de la actividad
-        context['staff'] = StaffActividad.objects.filter(actividad=actividad)
+        context['staff'] = StaffActividad.objects.filter(actividad=actividad).select_related('personal', 'actividad')
         
         # Obtener derivaciones a esta actividad
         from legajos.models import Derivacion, InscriptoActividad
-        context['derivaciones'] = Derivacion.objects.filter(actividad_destino=actividad).order_by('-creado')
+        context['derivaciones'] = Derivacion.objects.filter(actividad_destino=actividad).select_related('legajo__ciudadano', 'origen', 'destino').order_by('-creado')
         
         # Obtener nómina de la actividad (inscritos)
-        context['nomina'] = InscriptoActividad.objects.filter(actividad=actividad).order_by('-fecha_inscripcion')
+        context['nomina'] = InscriptoActividad.objects.filter(actividad=actividad).select_related('ciudadano', 'actividad').order_by('-fecha_inscripcion')
         
         return context
 
@@ -296,7 +296,7 @@ class StaffActividadCreateView(LoginRequiredMixin, CreateView):
         form.fields['personal'].queryset = PersonalInstitucion.objects.filter(
             legajo_institucional=actividad.legajo_institucional,
             activo=True
-        )
+        ).select_related('legajo_institucional')
         return form
     
     def form_valid(self, form):

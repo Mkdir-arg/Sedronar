@@ -52,7 +52,7 @@ def dashboard_auditoria(request):
     usuarios_activos = LogAccion.objects.filter(
         timestamp__date__gte=hace_7_dias,
         usuario__isnull=False
-    ).values(
+    ).select_related('usuario').values(
         'usuario__username', 'usuario__first_name', 'usuario__last_name'
     ).annotate(
         total_acciones=Count('id')
@@ -102,8 +102,8 @@ def logs_acciones(request):
     page = request.GET.get('page')
     logs_page = paginator.get_page(page)
     
-    # Datos para filtros
-    usuarios = User.objects.filter(logaccion__isnull=False).distinct()
+    # Datos para filtros (optimizados)
+    usuarios = User.objects.filter(logaccion__isnull=False).distinct().only('id', 'username', 'first_name', 'last_name')
     acciones = LogAccion.TipoAccion.choices
     modelos = LogAccion.objects.values_list('modelo', flat=True).distinct()
     
@@ -152,7 +152,7 @@ def logs_descargas(request):
     
     context = {
         'logs': logs_page,
-        'usuarios': User.objects.filter(logdescargaarchivo__isnull=False).distinct(),
+        'usuarios': User.objects.filter(logdescargaarchivo__isnull=False).distinct().only('id', 'username', 'first_name', 'last_name'),
         'filtros': {
             'usuario': usuario_id,
             'archivo': archivo,
@@ -191,7 +191,7 @@ def sesiones_usuario(request):
     
     context = {
         'sesiones': sesiones_page,
-        'usuarios': User.objects.filter(sesionusuario__isnull=False).distinct(),
+        'usuarios': User.objects.filter(sesionusuario__isnull=False).distinct().only('id', 'username', 'first_name', 'last_name'),
         'filtros': {
             'usuario': usuario_id,
             'activa': activa,

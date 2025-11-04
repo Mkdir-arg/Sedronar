@@ -29,8 +29,8 @@ class ChatbotAIService:
         - No proporciones información personal de ciudadanos
         """
         
-        # Agregar conocimiento personalizado
-        knowledge = ChatbotKnowledge.objects.filter(is_active=True)
+        # Agregar conocimiento personalizado (optimizado)
+        knowledge = ChatbotKnowledge.objects.filter(is_active=True).only('title', 'content')
         if knowledge.exists():
             context += "\n\nCONOCIMIENTO ADICIONAL:\n"
             for item in knowledge:
@@ -39,11 +39,15 @@ class ChatbotAIService:
         return context
     
     def get_system_stats(self):
-        """Obtiene estadísticas básicas del sistema"""
+        """Obtiene estadísticas básicas del sistema (optimizado)"""
         try:
-            total_ciudadanos = Ciudadano.objects.count()
-            total_usuarios = User.objects.count()
-            return f"Estadísticas actuales: {total_ciudadanos} ciudadanos registrados, {total_usuarios} usuarios del sistema."
+            from django.db.models import Count
+            # Usar una sola consulta para obtener ambos conteos
+            stats = {
+                'ciudadanos': Ciudadano.objects.count(),
+                'usuarios': User.objects.count()
+            }
+            return f"Estadísticas actuales: {stats['ciudadanos']} ciudadanos registrados, {stats['usuarios']} usuarios del sistema."
         except Exception as e:
             return f"Error obteniendo estadísticas: {str(e)}"
     
@@ -59,7 +63,13 @@ class ChatbotAIService:
             
             # Agregar historial de conversación (últimos 5 mensajes)
             if conversation_history:
-                for msg in conversation_history[-5:]:
+                # Optimizar acceso a mensajes con only() si es QuerySet
+                if hasattr(conversation_history, 'only'):
+                    history_msgs = conversation_history.only('role', 'content')[-5:]
+                else:
+                    history_msgs = conversation_history[-5:]
+                    
+                for msg in history_msgs:
                     messages.append({
                         "role": msg.role,
                         "content": msg.content

@@ -32,7 +32,7 @@ class AsignadorAutomatico:
                 activo=True,
                 operador_id__in=usuarios_logueados,
                 conversaciones_actuales__lt=models.F('max_conversaciones')
-            ).order_by('conversaciones_actuales', 'ultima_asignacion').first()
+            ).select_related('operador').order_by('conversaciones_actuales', 'ultima_asignacion').first()
             
             if cola_disponible:
                 return cola_disponible.operador
@@ -41,7 +41,7 @@ class AsignadorAutomatico:
             cola_menos_cargada = ColaAsignacion.objects.filter(
                 activo=True,
                 operador_id__in=usuarios_logueados
-            ).order_by('conversaciones_actuales').first()
+            ).select_related('operador').order_by('conversaciones_actuales').first()
             
             return cola_menos_cargada.operador if cola_menos_cargada else None
             
@@ -99,7 +99,7 @@ class AsignadorAutomatico:
     @staticmethod
     def actualizar_todas_las_colas():
         """Actualiza los contadores de todas las colas"""
-        for cola in ColaAsignacion.objects.all():
+        for cola in ColaAsignacion.objects.select_related('operador'):
             cola.actualizar_contador()
 
 
@@ -117,39 +117,40 @@ class MetricasService:
         semana_pasada = hoy - timedelta(days=7)
         mes_pasado = hoy - timedelta(days=30)
         
+        # Optimizar con una sola consulta aggregate
+        from django.db.models import Q
+        stats = Conversacion.objects.aggregate(
+            total_conversaciones=Count('id'),
+            conversaciones_hoy=Count('id', filter=Q(fecha_inicio__date=hoy)),
+            conversaciones_semana=Count('id', filter=Q(fecha_inicio__date__gte=semana_pasada)),
+            conversaciones_mes=Count('id', filter=Q(fecha_inicio__date__gte=mes_pasado)),
+            pendientes=Count('id', filter=Q(estado='pendiente')),
+            activas=Count('id', filter=Q(estado='activa')),
+            cerradas_hoy=Count('id', filter=Q(estado='cerrada', fecha_cierre__date=hoy)),
+            tiempo_respuesta_promedio=Avg('tiempo_respuesta_segundos'),
+            tiempo_espera_promedio=Avg('tiempo_espera_segundos'),
+            satisfaccion_promedio=Avg('satisfaccion')
+        )
+        
         metricas = {
-            # Conversaciones totales
-            'total_conversaciones': Conversacion.objects.count(),
-            'conversaciones_hoy': Conversacion.objects.filter(fecha_inicio__date=hoy).count(),
-            'conversaciones_semana': Conversacion.objects.filter(fecha_inicio__date__gte=semana_pasada).count(),
-            'conversaciones_mes': Conversacion.objects.filter(fecha_inicio__date__gte=mes_pasado).count(),
             
-            # Estados
-            'pendientes': Conversacion.objects.filter(estado='pendiente').count(),
-            'activas': Conversacion.objects.filter(estado='activa').count(),
-            'cerradas_hoy': Conversacion.objects.filter(estado='cerrada', fecha_cierre__date=hoy).count(),
+            # Tiempos y satisfacción ya incluidos en aggregate
+            'tiempo_respuesta_promedio': stats['tiempo_respuesta_promedio'] or 0,
+            'tiempo_espera_promedio': stats['tiempo_espera_promedio'] or 0,
+            'satisfaccion_promedio': stats['satisfaccion_promedio'] or 0,
             
-            # Tiempos de respuesta
-            'tiempo_respuesta_promedio': Conversacion.objects.filter(
-                tiempo_respuesta_segundos__isnull=False
-            ).aggregate(promedio=Avg('tiempo_respuesta_segundos'))['promedio'] or 0,
-            
-            'tiempo_espera_promedio': Conversacion.objects.filter(
-                tiempo_espera_segundos__gt=0
-            ).aggregate(promedio=Avg('tiempo_espera_segundos'))['promedio'] or 0,
-            
-            # Satisfacción
-            'satisfaccion_promedio': Conversacion.objects.filter(
-                satisfaccion__isnull=False
-            ).aggregate(promedio=Avg('satisfaccion'))['promedio'] or 0,
-            
-            # Operadores
-            'operadores_activos': ColaAsignacion.objects.filter(activo=True).count(),
-            'operadores_disponibles': ColaAsignacion.objects.filter(
+            **stats  # Incluir todas las estadísticas del aggregate
+        }
+        
+        # Operadores (consulta separada optimizada)
+        operadores_stats = ColaAsignacion.objects.aggregate(
+            operadores_activos=Count('id', filter=Q(activo=True)),
+            operadores_disponibles=Count('id', filter=Q(
                 activo=True,
                 conversaciones_actuales__lt=models.F('max_conversaciones')
-            ).count(),
-        }
+            ))
+        )
+        metricas.update(operadores_stats)
         
         # Convertir segundos a minutos
         metricas['tiempo_respuesta_promedio_min'] = round(metricas['tiempo_respuesta_promedio'] / 60, 1)
@@ -171,7 +172,7 @@ class MetricasService:
         """Actualiza las métricas de todos los operadores"""
         operadores = User.objects.filter(
             groups__name__in=['Conversaciones', 'OperadorCharla']
-        )
+        ).prefetch_related('groups')
         
         for operador in operadores:
             MetricasService.actualizar_metricas_operador(operador)

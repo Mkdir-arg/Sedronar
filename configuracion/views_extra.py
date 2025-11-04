@@ -180,7 +180,7 @@ class AsistenciaView(LoginRequiredMixin, DetailView):
         context['inscritos'] = InscriptoActividad.objects.filter(
             actividad=actividad,
             estado__in=['INSCRITO', 'ACTIVO']
-        ).order_by('ciudadano__apellido')
+        ).select_related('ciudadano', 'actividad').order_by('ciudadano__apellido')
         
         # Obtener fecha actual o la seleccionada
         fecha_str = self.request.GET.get('fecha')
@@ -195,7 +195,7 @@ class AsistenciaView(LoginRequiredMixin, DetailView):
         asistencias = RegistroAsistencia.objects.filter(
             inscripto__actividad=actividad,
             fecha=fecha
-        )
+        ).select_related('inscripto__ciudadano', 'registrado_por')
         context['asistencias'] = {a.inscripto_id: a for a in asistencias}
         
         return context

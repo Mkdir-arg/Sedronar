@@ -23,13 +23,16 @@ admin.site.register(Turno)
 
 @admin.register(Localidad)
 class LocalidadAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('municipio__provincia')
+    
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "municipio":
             provincia_id = request.GET.get("provincia")
             if provincia_id:
-                kwargs["queryset"] = Municipio.objects.filter(provincia_id=provincia_id)
+                kwargs["queryset"] = Municipio.objects.filter(provincia_id=provincia_id).select_related('provincia')
             else:
-                kwargs["queryset"] = Municipio.objects.all()
+                kwargs["queryset"] = Municipio.objects.select_related('provincia')
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
@@ -47,6 +50,9 @@ class InstitucionAdmin(admin.ModelAdmin):
     search_fields = ("nombre", "municipio__nombre", "provincia__nombre", "nro_registro")
     ordering = ("provincia", "municipio", "nombre")
     inlines = [DocumentoRequeridoInline]
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('provincia', 'municipio', 'localidad').prefetch_related('encargados', 'documentos')
     
     fieldsets = (
         ("Información Básica", {
@@ -90,6 +96,9 @@ class DocumentoRequeridoAdmin(admin.ModelAdmin):
     list_filter = ('tipo', 'estado', 'obligatorio')
     search_fields = ('institucion__nombre',)
     ordering = ('institucion', 'tipo')
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('institucion')
 
 
 # Alias para compatibilidad hacia atrás
@@ -104,6 +113,9 @@ class LogAccionAdmin(admin.ModelAdmin):
     search_fields = ('usuario__username', 'modelo', 'objeto_repr')
     readonly_fields = ('usuario', 'accion', 'modelo', 'objeto_id', 'objeto_repr', 'detalles', 'ip_address', 'user_agent', 'timestamp')
     ordering = ('-timestamp',)
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('usuario')
     
     def has_add_permission(self, request):
         return False
@@ -120,6 +132,9 @@ class LogDescargaArchivoAdmin(admin.ModelAdmin):
     readonly_fields = ('usuario', 'archivo_nombre', 'archivo_path', 'modelo_origen', 'objeto_id', 'ip_address', 'user_agent', 'timestamp')
     ordering = ('-timestamp',)
     
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('usuario')
+    
     def has_add_permission(self, request):
         return False
     
@@ -135,6 +150,9 @@ class SesionUsuarioAdmin(admin.ModelAdmin):
     readonly_fields = ('usuario', 'session_key', 'ip_address', 'user_agent', 'inicio_sesion', 'ultima_actividad', 'fin_sesion')
     ordering = ('-inicio_sesion',)
     
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('usuario')
+    
     def has_add_permission(self, request):
         return False
 
@@ -146,6 +164,9 @@ class AlertaAuditoriaAdmin(admin.ModelAdmin):
     search_fields = ('usuario_afectado__username', 'descripcion')
     readonly_fields = ('tipo', 'severidad', 'usuario_afectado', 'descripcion', 'detalles', 'timestamp')
     ordering = ('-timestamp',)
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('usuario_afectado', 'revisada_por')
     
     def has_add_permission(self, request):
         return False

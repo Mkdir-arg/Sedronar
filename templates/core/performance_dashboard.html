@@ -1,0 +1,256 @@
+{% extends "includes/base.html" %}
+
+{% block title %}Performance Dashboard{% endblock %}
+
+{% block main-content %}
+<!-- Header -->
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Performance Monitoring Dashboard</h1>
+    <p class="text-gray-600 mt-2">Monitoreo en tiempo real del rendimiento del sistema y optimización de consultas</p>
+</div>
+
+<!-- Performance Metrics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Performance Score</p>
+                <p class="text-3xl font-bold text-blue-900" id="performance-score">--</p>
+                <p class="text-xs text-gray-500">De 100</p>
+            </div>
+            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-tachometer-alt text-blue-600 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Total Queries</p>
+                <p class="text-3xl font-bold text-cyan-600" id="total-queries">--</p>
+                <p class="text-xs text-gray-500">Sesión actual</p>
+            </div>
+            <div class="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-database text-cyan-600 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">N+1 Detectado</p>
+                <p class="text-3xl font-bold text-yellow-600" id="n1-status">--</p>
+                <p class="text-xs text-gray-500">Queries similares</p>
+            </div>
+            <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Queries Lentas</p>
+                <p class="text-3xl font-bold text-red-600" id="slow-queries">--</p>
+                <p class="text-xs text-gray-500">> 0.1 segundos</p>
+            </div>
+            <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-clock text-red-600 text-xl"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recommendations Panel -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">Recomendaciones de Optimización</h3>
+    </div>
+    <div class="p-6">
+        <div id="recommendations-list">
+            <p class="text-gray-500">Cargando recomendaciones...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Query Analysis -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Patrones de Consultas Recientes</h3>
+        </div>
+        <div class="p-6">
+            <div id="query-patterns">
+                <p class="text-gray-500">Analizando patrones de consultas...</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Sugerencias de Optimización</h3>
+        </div>
+        <div class="p-6">
+            <div id="optimization-suggestions">
+                <p class="text-gray-500">Cargando sugerencias...</p>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+// Auto-refresh performance data
+function updateDashboard() {
+    fetch('/performance-api/')
+        .then(response => response.json())
+        .then(data => {
+            // Store data globally for other functions
+            window.lastPerformanceData = data;
+            
+            document.getElementById('performance-score').textContent = data.performance_score;
+            document.getElementById('total-queries').textContent = data.total_queries;
+            document.getElementById('n1-status').textContent = data.n1_detected ? 'SÍ' : 'NO';
+            document.getElementById('slow-queries').textContent = data.slow_queries_count;
+            
+            // Update timestamp
+            const now = new Date().toLocaleTimeString();
+            console.log(`Dashboard updated at ${now}:`, data);
+            
+            updateRecommendations(data.recommendations);
+        })
+        .catch(error => console.error('Error:', error));
+    
+    fetch('/query-analysis-api/')
+        .then(response => response.json())
+        .then(data => {
+            updateQueryPatterns(data);
+        })
+        .catch(error => console.error('Error:', error));
+    
+    fetch('/optimization-suggestions-api/')
+        .then(response => response.json())
+        .then(data => {
+            updateOptimizationSuggestions(data.suggestions);
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function updateRecommendations(recommendations) {
+    const container = document.getElementById('recommendations-list');
+    
+    // Check if we have performance issues from the main data
+    const hasIssues = window.lastPerformanceData && (window.lastPerformanceData.n1_detected || window.lastPerformanceData.performance_score < 80);
+    
+    if (recommendations.length === 0 && !hasIssues) {
+        container.innerHTML = '<div class="flex items-center text-green-600"><i class="fas fa-check-circle mr-2"></i>No se detectaron problemas de rendimiento</div>';
+        return;
+    }
+    
+    if (hasIssues && recommendations.length === 0) {
+        container.innerHTML = `
+            <div class="border-l-4 border-red-400 bg-red-50 p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-red-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-red-700"><strong>Problemas detectados:</strong></p>
+                        ${window.lastPerformanceData.n1_detected ? '<p class="text-xs text-red-600">• Patrones N+1 detectados</p>' : ''}
+                        ${window.lastPerformanceData.performance_score < 80 ? '<p class="text-xs text-red-600">• Rendimiento por debajo del óptimo</p>' : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    recommendations.forEach(rec => {
+        const badgeClass = rec.type === 'select_related' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800';
+        html += `
+            <div class="border-l-4 border-yellow-400 bg-yellow-50 p-4 mb-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeClass}">${rec.type}</span>
+                        <p class="text-sm text-yellow-700 mt-1"><strong>${rec.suggestion}</strong></p>
+                        <p class="text-xs text-yellow-600 mt-1">Query: ${rec.query}</p>
+                        <p class="text-xs text-yellow-600">Ocurrencias: ${rec.count}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function updateQueryPatterns(data) {
+    const container = document.getElementById('query-patterns');
+    let html = `<div class="text-sm text-gray-600 mb-3"><strong>Conteo de Queries:</strong> ${data.query_count}</div>`;
+    
+    if (data.patterns.n1_detected) {
+        html += `
+            <div class="border-l-4 border-red-400 bg-red-50 p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-circle text-red-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-red-700">Patrón N+1 Detectado: ${data.patterns.similar_queries} consultas similares</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        html += `
+            <div class="border-l-4 border-green-400 bg-green-50 p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-check-circle text-green-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-green-700">No se detectaron patrones N+1</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+}
+
+function updateOptimizationSuggestions(suggestions) {
+    const container = document.getElementById('optimization-suggestions');
+    let html = '';
+    
+    suggestions.forEach(category => {
+        html += `<h4 class="text-lg font-semibold text-gray-900 mb-3">${category.category}</h4>`;
+        category.items.forEach(item => {
+            const impactColor = item.impact === 'High' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800';
+            html += `
+                <div class="mb-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center justify-between mb-2">
+                        <strong class="text-gray-900">${item.title}</strong>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${impactColor}">${item.impact}</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">${item.description}</p>
+                    <code class="block bg-gray-800 text-green-400 p-2 rounded text-xs">${item.example}</code>
+                </div>
+            `;
+        });
+    });
+    
+    container.innerHTML = html;
+}
+
+// Update dashboard every 30 seconds
+setInterval(updateDashboard, 30000);
+updateDashboard(); // Initial load
+</script>
+{% endblock %}

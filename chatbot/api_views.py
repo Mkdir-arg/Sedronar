@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
+from django.db.models import Count
 from .models import Conversation, Message, ChatbotKnowledge, ChatbotFeedback
 from .serializers import (
     ConversationSerializer, MessageSerializer, ChatbotKnowledgeSerializer,
@@ -32,7 +33,9 @@ class ConversationViewSet(viewsets.ModelViewSet):
     ordering = ['-updated_at']
 
     def get_queryset(self):
-        return Conversation.objects.filter(user=self.request.user).prefetch_related('messages')
+        return Conversation.objects.filter(user=self.request.user).select_related('user').prefetch_related('messages').annotate(
+            message_count=Count('messages')
+        )
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

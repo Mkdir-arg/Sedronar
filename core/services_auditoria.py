@@ -16,7 +16,7 @@ class ServicioAlertas:
         usuarios_multiples_sesiones = SesionUsuario.objects.filter(
             inicio_sesion__gte=hace_1_hora,
             activa=True
-        ).values('usuario').annotate(
+        ).select_related('usuario').values('usuario').annotate(
             sesiones_count=Count('id')
         ).filter(sesiones_count__gt=2)
         
@@ -48,7 +48,7 @@ class ServicioAlertas:
         usuarios_actividad_alta = LogAccion.objects.filter(
             timestamp__gte=hace_10_minutos,
             usuario__isnull=False
-        ).values('usuario').annotate(
+        ).select_related('usuario').values('usuario').annotate(
             acciones_count=Count('id')
         ).filter(acciones_count__gt=50)  # Más de 50 acciones en 10 minutos
         
@@ -81,7 +81,7 @@ class ServicioAlertas:
         usuarios_descargas_masivas = LogDescargaArchivo.objects.filter(
             timestamp__gte=hace_1_hora,
             usuario__isnull=False
-        ).values('usuario').annotate(
+        ).select_related('usuario').values('usuario').annotate(
             descargas_count=Count('id')
         ).filter(descargas_count__gt=10)  # Más de 10 descargas en 1 hora
         
@@ -119,7 +119,7 @@ class ServicioAlertas:
                 accion=LogAccion.TipoAccion.LOGIN,
                 timestamp__gte=hace_30_minutos,
                 usuario__isnull=False
-            )
+            ).select_related('usuario')
             
             for login in logins_fuera_horario:
                 # Verificar si ya existe alerta reciente
@@ -166,28 +166,38 @@ class ServicioReportes:
         if not fecha_hasta:
             fecha_hasta = timezone.now().date()
         
-        acciones = LogAccion.objects.filter(
+        # Optimizar con consultas agregadas
+        acciones_stats = LogAccion.objects.filter(
             usuario=usuario,
             timestamp__date__range=[fecha_desde, fecha_hasta]
+        ).aggregate(
+            total_acciones=Count('id'),
+            acciones_por_tipo=Count('accion')
         )
         
-        descargas = LogDescargaArchivo.objects.filter(
+        descargas_count = LogDescargaArchivo.objects.filter(
             usuario=usuario,
             timestamp__date__range=[fecha_desde, fecha_hasta]
-        )
+        ).count()
         
         sesiones = SesionUsuario.objects.filter(
             usuario=usuario,
             inicio_sesion__date__range=[fecha_desde, fecha_hasta]
-        )
+        ).select_related('usuario')
+        
+        # Obtener acciones por tipo
+        acciones_por_tipo = LogAccion.objects.filter(
+            usuario=usuario,
+            timestamp__date__range=[fecha_desde, fecha_hasta]
+        ).values('accion').annotate(count=Count('id'))
         
         return {
             'usuario': usuario,
             'periodo': {'desde': fecha_desde, 'hasta': fecha_hasta},
-            'total_acciones': acciones.count(),
-            'total_descargas': descargas.count(),
+            'total_acciones': acciones_stats['total_acciones'],
+            'total_descargas': descargas_count,
             'total_sesiones': sesiones.count(),
-            'acciones_por_tipo': acciones.values('accion').annotate(count=Count('id')),
+            'acciones_por_tipo': acciones_por_tipo,
             'sesiones_promedio_duracion': cls._calcular_duracion_promedio_sesiones(sesiones),
         }
     
