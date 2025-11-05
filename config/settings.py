@@ -59,6 +59,10 @@ INSTALLED_APPS = [
     "django_extensions",
     "rest_framework",
     "channels",
+    "django_redis",
+    "health_check",
+    "health_check.db",
+    "health_check.cache",
     # Apps propias
     "users",
     "core",
@@ -69,14 +73,15 @@ INSTALLED_APPS = [
     "conversaciones",
     "portal",
     "tramites",
-    "healthcheck",  # la usás en urls
-    # "simple_history",       # si la reactivás, agregala también acá
+    "healthcheck",
     "drf_spectacular",
 ]
 
 # --- Middleware ---
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "django.middleware.gzip.GZipMiddleware",
+    "config.middlewares.performance.PerformanceMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -86,7 +91,6 @@ MIDDLEWARE = [
     "django.contrib.admindocs.middleware.XViewMiddleware",
     "config.middlewares.xss_protection.XSSProtectionMiddleware",
     "config.middlewares.threadlocals.ThreadLocalMiddleware",
-    # "simple_history.middleware.HistoryRequestMiddleware",
     "config.middlewares.auditoria.AuditoriaMiddleware",
     "config.middlewares.query_counter.QueryCountMiddleware",
 ]
@@ -119,10 +123,21 @@ TEMPLATES = [
 # --- Static & Media ---
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
-STATIC_ROOT = BASE_DIR / "staticfiles"   # coherente con mapeo en panel Web
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# Static files optimization
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+]
+
+if ENVIRONMENT == "prd":
+    STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
+else:
+    STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 
 # --- Auth / Redirects ---
 LOGIN_URL = "login"
@@ -155,10 +170,12 @@ DATABASES = {
         "HOST": os.environ.get("DATABASE_HOST"),
         "PORT": os.environ.get("DATABASE_PORT"),
         "OPTIONS": {
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES', innodb_strict_mode=1",
             "charset": "utf8mb4",
+            "isolation_level": "read committed",
         },
-        "CONN_MAX_AGE": 60,
+        "CONN_MAX_AGE": 300,
+        "CONN_HEALTH_CHECKS": True,
     }
 }
 
@@ -168,13 +185,39 @@ if "pytest" in sys.argv or os.environ.get("PYTEST_RUNNING") == "1":
 # --- Cache ---
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "unique-snowflake",
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://sedronar-redis:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
+            "CONNECTION_POOL_KWARGS": {"max_connections": 50},
+        },
+        "KEY_PREFIX": "sedronar",
+        "TIMEOUT": 300,
+    },
+    "sessions": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://sedronar-redis:6379/2",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+        "KEY_PREFIX": "session",
     }
 }
 
+# --- Sessions ---
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "sessions"
+SESSION_COOKIE_AGE = 86400  # 24 horas
+
 # --- Channels ---
 CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+
+# --- Health Check ---
+HEALTH_CHECK = {
+    'DISK_USAGE_MAX': 90,  # percent
+    'MEMORY_MIN': 100,     # in MB
+}
 
 # --- TTLs ---
 DEFAULT_CACHE_TIMEOUT = 300

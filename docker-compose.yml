@@ -19,6 +19,21 @@ services:
       timeout: 10s
       retries: 5
 
+  sedronar-redis:
+    image: redis:7-alpine
+    container_name: sedronar-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - sedronar_redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: always
+
   sedronar:
     build:
       context: .
@@ -34,7 +49,16 @@ services:
     depends_on:
       sedronar-mysql:
         condition: service_healthy
+      sedronar-redis:
+        condition: service_healthy
     restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 volumes:
   sedronar_mysql_data:
+  sedronar_redis_data:

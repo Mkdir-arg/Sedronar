@@ -7,6 +7,8 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.core.exceptions import ValidationError
+from django.core.cache import cache
+from core.cache_decorators import cache_view, cache_queryset, invalidate_cache_pattern
 import csv
 from datetime import datetime
 from .models import Ciudadano, LegajoAtencion, EvaluacionInicial, PlanIntervencion, SeguimientoContacto, Profesional, Derivacion, EventoCritico, AlertaEventoCritico, LegajoInstitucional
@@ -27,21 +29,28 @@ class CiudadanoListView(LoginRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        queryset = Ciudadano.objects.filter(
-            activo=True
-        ).exclude(
-            Q(dni='00000000') |
-            Q(apellido__icontains='Institución') |
-            Q(nombre__icontains='Institución')
-        )
-        search = self.request.GET.get('search')
-        if search:
-            queryset = queryset.filter(
-                Q(dni__icontains=search) |
-                Q(nombre__icontains=search) |
-                Q(apellido__icontains=search)
+        search = self.request.GET.get('search', '')
+        cache_key = f'ciudadanos_list_{search}_{self.request.user.id}'
+        
+        queryset = cache.get(cache_key)
+        if queryset is None:
+            queryset = Ciudadano.objects.filter(
+                activo=True
+            ).exclude(
+                Q(dni='00000000') |
+                Q(apellido__icontains='Institución') |
+                Q(nombre__icontains='Institución')
             )
-        return queryset.order_by('apellido', 'nombre')
+            if search:
+                queryset = queryset.filter(
+                    Q(dni__icontains=search) |
+                    Q(nombre__icontains=search) |
+                    Q(apellido__icontains=search)
+                )
+            queryset = queryset.order_by('apellido', 'nombre')
+            cache.set(cache_key, queryset, 300)
+        
+        return queryset
 
 
 class CiudadanoDetailView(LoginRequiredMixin, DetailView):
@@ -198,15 +207,23 @@ class LegajoListView(LoginRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        queryset = LegajoAtencion.objects.select_related('ciudadano', 'dispositivo').exclude(
-            Q(ciudadano__dni='00000000') |
-            Q(ciudadano__apellido__icontains='Institución') |
-            Q(ciudadano__nombre__icontains='Institución')
-        )
-        estado = self.request.GET.get('estado')
-        if estado:
-            queryset = queryset.filter(estado=estado)
-        return queryset.order_by('-fecha_apertura')
+        # Cache key basada en filtros
+        estado = self.request.GET.get('estado', '')
+        cache_key = f'legajos_list_{estado}_{self.request.user.id}'
+        
+        queryset = cache.get(cache_key)
+        if queryset is None:
+            queryset = LegajoAtencion.objects.select_related('ciudadano', 'dispositivo').exclude(
+                Q(ciudadano__dni='00000000') |
+                Q(ciudadano__apellido__icontains='Institución') |
+                Q(ciudadano__nombre__icontains='Institución')
+            )
+            if estado:
+                queryset = queryset.filter(estado=estado)
+            queryset = queryset.order_by('-fecha_apertura')
+            cache.set(cache_key, queryset, 300)  # 5 minutos
+        
+        return queryset
 
 
 class LegajoDetailView(LoginRequiredMixin, DetailView):

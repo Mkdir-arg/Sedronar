@@ -6,6 +6,8 @@ from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from django.contrib import messages
 from django.db import models
+from django.core.cache import cache
+from core.cache_decorators import cache_view, cache_queryset, invalidate_cache_pattern
 from .models import Conversacion, Mensaje
 import json
 
@@ -218,6 +220,7 @@ def tiene_permiso_conversaciones(user):
 
 @login_required
 @user_passes_test(tiene_permiso_conversaciones)
+@cache_view(timeout=60)  # Cache por 1 minuto
 def lista_conversaciones(request):
     from datetime import datetime
     from django.db.models import Count, Q

@@ -6,5 +6,8 @@ class ConversacionesConfig(AppConfig):
     name = 'conversaciones'
     
     def ready(self):
+        import conversaciones.signals
+    
+    def ready(self):
         import conversaciones.signals_alertas
     verbose_name = 'Conversaciones'
