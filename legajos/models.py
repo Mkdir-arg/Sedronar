@@ -714,13 +714,57 @@ class PersonalInstitucion(TimeStamped):
         on_delete=models.CASCADE,
         related_name="personal"
     )
+    usuario = models.OneToOneField(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="personal_institucion"
+    )
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100)
-    dni = models.CharField(max_length=20)
+    dni = models.CharField(max_length=20, unique=True)
     tipo = models.CharField(max_length=20, choices=TipoPersonal.choices)
     titulo_profesional = models.CharField(max_length=200, blank=True)
     matricula = models.CharField(max_length=50, blank=True)
     activo = models.BooleanField(default=True)
+    
+    def crear_usuario(self):
+        """Crea un usuario del sistema para este personal"""
+        if not self.usuario:
+            from django.contrib.auth.models import Group
+            
+            username = f"{self.nombre.lower()}.{self.apellido.lower()}"
+            # Si ya existe, agregar DNI
+            if User.objects.filter(username=username).exists():
+                username = f"{username}.{self.dni}"
+            
+            usuario = User.objects.create_user(
+                username=username,
+                email=f"{username}@{self.legajo_institucional.institucion.nombre.lower().replace(' ', '')}.com",
+                first_name=self.nombre,
+                last_name=self.apellido,
+                password=self.dni  # Password temporal = DNI
+            )
+            
+            # Asignar grupo según tipo
+            grupo_map = {
+                'DIRECTOR': 'Directores',
+                'COORDINADOR': 'Coordinadores', 
+                'PROFESIONAL': 'Profesionales',
+                'OPERADOR': 'Operadores',
+                'ADMINISTRATIVO': 'Administrativos'
+            }
+            
+            grupo_nombre = grupo_map.get(self.tipo, 'Staff')
+            grupo, created = Group.objects.get_or_create(name=grupo_nombre)
+            usuario.groups.add(grupo)
+            
+            self.usuario = usuario
+            self.save()
+            
+            return usuario
+        return self.usuario
     
     class Meta:
         verbose_name = "Personal de Institución"

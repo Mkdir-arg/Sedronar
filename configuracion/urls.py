@@ -44,6 +44,8 @@ urlpatterns = [
     path('instituciones/<int:institucion_pk>/planes/crear/', login_required(views.PlanFortalecimientoCreateView.as_view()), name='plan_crear'),
     path('instituciones/<int:institucion_pk>/indicadores/crear/', login_required(views.IndicadorInstitucionCreateView.as_view()), name='indicador_crear'),
     
+
+    
     # Dispositivos (compatibilidad)
     path('dispositivos/', login_required(views.InstitucionListView.as_view()), name='dispositivos'),
     path('dispositivos/crear/', login_required(views.InstitucionCreateView.as_view()), name='dispositivo_crear'),

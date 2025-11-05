@@ -1,0 +1,16 @@
+# Dependencias base
+-r requirements.txt
+
+# Workers asíncronos para alta concurrencia
+gevent==25.9.1
+greenlet==3.2.4
+
+# WebSocket server
+daphne==4.0.0
+
+# Monitoreo y performance
+psutil==5.9.6
+django-silk==5.0.4
+
+# Logging estructurado
+structlog==23.2.0

@@ -52,6 +52,13 @@ services:
       sedronar-redis:
         condition: service_healthy
     restart: always
+    command: sh -c "pip install -r requirements_production.txt && gunicorn --config gunicorn.conf.py config.wsgi:application"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
       interval: 30s

@@ -171,16 +171,10 @@ class AsistenciaView(LoginRequiredMixin, DetailView):
     
     def get_context_data(self, **kwargs):
         from legajos.models import InscriptoActividad, RegistroAsistencia
-        from datetime import datetime, timedelta
+        from datetime import datetime
         
         context = super().get_context_data(**kwargs)
         actividad = self.get_object()
-        
-        # Obtener inscritos activos
-        context['inscritos'] = InscriptoActividad.objects.filter(
-            actividad=actividad,
-            estado__in=['INSCRITO', 'ACTIVO']
-        ).select_related('ciudadano', 'actividad').order_by('ciudadano__apellido')
         
         # Obtener fecha actual o la seleccionada
         fecha_str = self.request.GET.get('fecha')
@@ -191,12 +185,23 @@ class AsistenciaView(LoginRequiredMixin, DetailView):
         
         context['fecha_actual'] = fecha
         
-        # Obtener asistencias del día
-        asistencias = RegistroAsistencia.objects.filter(
-            inscripto__actividad=actividad,
-            fecha=fecha
-        ).select_related('inscripto__ciudadano', 'registrado_por')
-        context['asistencias'] = {a.inscripto_id: a for a in asistencias}
+        # Obtener inscritos activos con su asistencia del día
+        inscritos = InscriptoActividad.objects.filter(
+            actividad=actividad,
+            estado__in=['INSCRITO', 'ACTIVO']
+        ).select_related('ciudadano', 'actividad').order_by('ciudadano__apellido')
+        
+        # Agregar asistencia actual a cada inscripto
+        for inscripto in inscritos:
+            try:
+                inscripto.asistencia_actual = RegistroAsistencia.objects.get(
+                    inscripto=inscripto,
+                    fecha=fecha
+                )
+            except RegistroAsistencia.DoesNotExist:
+                inscripto.asistencia_actual = None
+        
+        context['inscritos'] = inscritos
         
         return context
 

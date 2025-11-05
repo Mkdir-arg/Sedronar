@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "health_check",
     "health_check.db",
     "health_check.cache",
+    "silk",  # Performance profiling
     # Apps propias
     "users",
     "core",
@@ -79,8 +80,11 @@ INSTALLED_APPS = [
 
 # --- Middleware ---
 MIDDLEWARE = [
+    # "silk.middleware.SilkyMiddleware",  # Performance profiling - temporalmente deshabilitado
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.gzip.GZipMiddleware",
+    "core.middleware_concurrency.ConcurrencyLimitMiddleware",  # Control de concurrencia
+    "core.middleware_concurrency.RequestMetricsMiddleware",    # Métricas en tiempo real
     "config.middlewares.performance.PerformanceMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -170,12 +174,16 @@ DATABASES = {
         "HOST": os.environ.get("DATABASE_HOST"),
         "PORT": os.environ.get("DATABASE_PORT"),
         "OPTIONS": {
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES', innodb_strict_mode=1",
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
             "charset": "utf8mb4",
             "isolation_level": "read committed",
+            "autocommit": True,
+            "connect_timeout": 10,
+            "read_timeout": 10,
+            "write_timeout": 10,
         },
-        "CONN_MAX_AGE": 300,
-        "CONN_HEALTH_CHECKS": True,
+        "CONN_MAX_AGE": 0,  # Deshabilitado para gevent - cada greenlet nueva conexión
+        "CONN_HEALTH_CHECKS": False,  # Deshabilitado para evitar problemas con gevent
     }
 }
 
@@ -190,7 +198,7 @@ CACHES = {
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
-            "CONNECTION_POOL_KWARGS": {"max_connections": 50},
+            "CONNECTION_POOL_KWARGS": {"max_connections": 200},  # Aumentado para alta concurrencia
         },
         "KEY_PREFIX": "sedronar",
         "TIMEOUT": 300,
@@ -200,6 +208,7 @@ CACHES = {
         "LOCATION": "redis://sedronar-redis:6379/2",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": {"max_connections": 100},
         },
         "KEY_PREFIX": "session",
     }
@@ -211,7 +220,16 @@ SESSION_CACHE_ALIAS = "sessions"
 SESSION_COOKIE_AGE = 86400  # 24 horas
 
 # --- Channels ---
-CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("sedronar-redis", 6379)],
+            "capacity": 1500,
+            "expiry": 60,
+        },
+    },
+}
 
 # --- Health Check ---
 HEALTH_CHECK = {
@@ -280,6 +298,28 @@ AUTH_PASSWORD_VALIDATORS = [
 # --- Debug tools ---
 if DEBUG:
     INTERNAL_IPS = ["127.0.0.1", "::1"]
+
+# --- Compresión Gzip ---
+USE_GZIP = True
+GZIP_CONTENT_TYPES = (
+    'text/css',
+    'text/javascript',
+    'application/javascript',
+    'application/x-javascript',
+    'text/xml',
+    'text/plain',
+    'text/html',
+    'application/json',
+)
+
+# --- Silk Configuration ---
+SILKY_PYTHON_PROFILER = True
+SILKY_PYTHON_PROFILER_BINARY = True
+SILKY_AUTHENTICATION = True
+SILKY_AUTHORISATION = True
+SILKY_MAX_REQUEST_BODY_SIZE = 1024  # 1KB
+SILKY_MAX_RESPONSE_BODY_SIZE = 1024  # 1KB
+SILKY_INTERCEPT_PERCENT = 100 if DEBUG else 10  # 100% en dev, 10% en prod
 
 # --- Seguridad por entorno ---
 if ENVIRONMENT == "prd":

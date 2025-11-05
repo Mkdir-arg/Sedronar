@@ -56,7 +56,6 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         {% for inscripto in inscritos %}
-                        {% with asistencia=asistencias|default_if_none:None %}
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="font-medium text-gray-900">{{ inscripto.ciudadano.nombre_completo }}</div>
@@ -66,41 +65,38 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 <input type="radio" name="asistencia_{{ inscripto.pk }}" value="PRESENTE"
-                                       {% if asistencias|default_if_none:None and inscripto.pk in asistencias and asistencias|lookup:inscripto.pk.estado == 'PRESENTE' %}checked{% endif %}
+                                       {% if inscripto.asistencia_actual.estado == 'PRESENTE' %}checked{% endif %}
                                        class="h-4 w-4 text-green-600">
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 <input type="radio" name="asistencia_{{ inscripto.pk }}" value="AUSENTE"
-                                       {% if asistencias|default_if_none:None and inscripto.pk in asistencias and asistencias|lookup:inscripto.pk.estado == 'AUSENTE' %}checked{% endif %}
+                                       {% if inscripto.asistencia_actual.estado == 'AUSENTE' %}checked{% endif %}
                                        class="h-4 w-4 text-red-600">
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 <input type="radio" name="asistencia_{{ inscripto.pk }}" value="JUSTIFICADO"
-                                       {% if asistencias|default_if_none:None and inscripto.pk in asistencias and asistencias|lookup:inscripto.pk.estado == 'JUSTIFICADO' %}checked{% endif %}
+                                       {% if inscripto.asistencia_actual.estado == 'JUSTIFICADO' %}checked{% endif %}
                                        class="h-4 w-4 text-yellow-600">
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 <input type="radio" name="asistencia_{{ inscripto.pk }}" value="TARDANZA"
-                                       {% if asistencias|default_if_none:None and inscripto.pk in asistencias and asistencias|lookup:inscripto.pk.estado == 'TARDANZA' %}checked{% endif %}
+                                       {% if inscripto.asistencia_actual.estado == 'TARDANZA' %}checked{% endif %}
                                        class="h-4 w-4 text-orange-600">
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                {% if inscripto.pk in asistencias %}
-                                    {% with registro=asistencias|lookup:inscripto.pk %}
+                                {% if inscripto.asistencia_actual %}
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                        {% if registro.estado == 'PRESENTE' %}bg-green-100 text-green-800
-                                        {% elif registro.estado == 'AUSENTE' %}bg-red-100 text-red-800
-                                        {% elif registro.estado == 'JUSTIFICADO' %}bg-yellow-100 text-yellow-800
+                                        {% if inscripto.asistencia_actual.estado == 'PRESENTE' %}bg-green-100 text-green-800
+                                        {% elif inscripto.asistencia_actual.estado == 'AUSENTE' %}bg-red-100 text-red-800
+                                        {% elif inscripto.asistencia_actual.estado == 'JUSTIFICADO' %}bg-yellow-100 text-yellow-800
                                         {% else %}bg-orange-100 text-orange-800{% endif %}">
-                                        {{ registro.get_estado_display }}
+                                        {{ inscripto.asistencia_actual.get_estado_display }}
                                     </span>
-                                    {% endwith %}
                                 {% else %}
                                     <span class="text-gray-400 text-sm">Sin registrar</span>
                                 {% endif %}
                             </td>
                         </tr>
-                        {% endwith %}
                         {% endfor %}
                     </tbody>
                 </table>

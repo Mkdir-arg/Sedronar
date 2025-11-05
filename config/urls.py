@@ -39,6 +39,9 @@ urlpatterns = [
     
     # Health Check
     path("health/", include('health_check.urls')),
+    
+    # Performance Profiling (solo en desarrollo/staging)
+    path("silk/", include('silk.urls', namespace='silk')),
 ]
 
 # URLs de desarrollo se pueden agregar aquí si es necesario

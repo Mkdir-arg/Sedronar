@@ -287,35 +287,94 @@ class ActividadDetailView(LoginRequiredMixin, DetailView):
 
 class StaffActividadCreateView(LoginRequiredMixin, CreateView):
     model = StaffActividad
-    fields = ['personal', 'rol_en_actividad', 'activo']
     template_name = 'configuracion/staff_form.html'
     
-    def get_form(self, form_class=None):
-        form = super().get_form(form_class)
-        actividad = get_object_or_404(PlanFortalecimiento, pk=self.kwargs['actividad_pk'])
-        form.fields['personal'].queryset = PersonalInstitucion.objects.filter(
-            legajo_institucional=actividad.legajo_institucional,
-            activo=True
-        ).select_related('legajo_institucional')
-        return form
+    def get_form_class(self):
+        from .forms import StaffActividadForm
+        return StaffActividadForm
     
-    def form_valid(self, form):
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        actividad = get_object_or_404(PlanFortalecimiento, pk=self.kwargs['actividad_pk'])
+        kwargs['legajo_institucional'] = actividad.legajo_institucional
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from .forms import PersonalInstitucionForm
+        context['personal_form'] = PersonalInstitucionForm()
+        context['actividad'] = get_object_or_404(PlanFortalecimiento, pk=self.kwargs['actividad_pk'])
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        from .forms import StaffActividadForm, PersonalInstitucionForm
         from legajos.models import HistorialStaff
+        from django.contrib import messages
+        import logging
+        
+        logger = logging.getLogger(__name__)
         actividad = get_object_or_404(PlanFortalecimiento, pk=self.kwargs['actividad_pk'])
-        form.instance.actividad = actividad
-        response = super().form_valid(form)
         
-        HistorialStaff.objects.create(
-            staff=self.object,
-            accion='ASIGNACION',
-            usuario=self.request.user,
-            descripcion=f'{self.object.personal.nombre} {self.object.personal.apellido} asignado como {self.object.rol_en_actividad}'
-        )
+        staff_form = StaffActividadForm(request.POST, legajo_institucional=actividad.legajo_institucional)
+        personal_form = PersonalInstitucionForm(request.POST)
         
-        return response
-    
-    def get_success_url(self):
-        return reverse_lazy('configuracion:actividad_detalle', kwargs={'pk': self.kwargs['actividad_pk']})
+        logger.info(f"POST data: {request.POST}")
+        logger.info(f"Staff form valid: {staff_form.is_valid()}")
+        if not staff_form.is_valid():
+            logger.error(f"Staff form errors: {staff_form.errors}")
+        
+        if staff_form.is_valid():
+            tipo_asignacion = staff_form.cleaned_data.get('tipo_asignacion')
+            logger.info(f"Tipo asignacion: {tipo_asignacion}")
+            
+            if tipo_asignacion == 'nuevo':
+                logger.info(f"Personal form valid: {personal_form.is_valid()}")
+                if not personal_form.is_valid():
+                    logger.error(f"Personal form errors: {personal_form.errors}")
+                
+                if personal_form.is_valid():
+                    personal = personal_form.save(commit=False)
+                    personal.legajo_institucional = actividad.legajo_institucional
+                    personal.activo = True
+                    personal.save()
+                    
+                    # Crear usuario del sistema
+                    usuario_creado = personal.crear_usuario()
+                    
+                    staff = staff_form.save(commit=False)
+                    staff.actividad = actividad
+                    staff.personal = personal
+                    staff.save()
+                    
+                    HistorialStaff.objects.create(
+                        staff=staff,
+                        accion='ASIGNACION',
+                        usuario=request.user,
+                        descripcion=f'{personal.nombre} {personal.apellido} creado y asignado como {staff.rol_en_actividad}'
+                    )
+                    
+                    messages.success(request, f'Personal {personal.nombre} {personal.apellido} creado y asignado. Usuario: {usuario_creado.username} (password: {personal.dni})')
+                    return redirect('configuracion:actividad_detalle', pk=actividad.pk)
+            else:
+                if staff_form.cleaned_data.get('personal'):
+                    staff = staff_form.save(commit=False)
+                    staff.actividad = actividad
+                    staff.save()
+                    
+                    HistorialStaff.objects.create(
+                        staff=staff,
+                        accion='ASIGNACION',
+                        usuario=request.user,
+                        descripcion=f'{staff.personal.nombre} {staff.personal.apellido} asignado como {staff.rol_en_actividad}'
+                    )
+                    
+                    messages.success(request, f'Personal {staff.personal.nombre} {staff.personal.apellido} asignado correctamente')
+                    return redirect('configuracion:actividad_detalle', pk=actividad.pk)
+        
+        context = self.get_context_data()
+        context['form'] = staff_form
+        context['personal_form'] = personal_form
+        return self.render_to_response(context)
 
 
 class DerivacionAceptarView(LoginRequiredMixin, UpdateView):
@@ -477,3 +536,5 @@ class ActividadEditarView(LoginRequiredMixin, UpdateView):
     
     def get_success_url(self):
         return reverse_lazy('configuracion:actividad_detalle', kwargs={'pk': self.object.pk})
+
+
