@@ -23,7 +23,6 @@ from .views_historial_contactos import historial_contactos_view, contactos_api, 
 from .views_red_contactos import red_contactos_view, vinculos_api, profesionales_api, dispositivos_api, emergencias_api, buscar_ciudadanos_api, buscar_usuarios_api, crear_vinculo, crear_profesional, crear_contacto_emergencia
 
 
-@method_decorator(cache_view(timeout=300), name='dispatch')
 class CiudadanoListView(LoginRequiredMixin, ListView):
     model = Ciudadano
     template_name = 'legajos/ciudadano_list.html'
@@ -35,7 +34,6 @@ class CiudadanoListView(LoginRequiredMixin, ListView):
         queryset = Ciudadano.objects.filter(activo=True)
         
         if search:
-            invalidate_cache_pattern('ciudadanos_list')
             queryset = queryset.filter(
                 Q(dni__icontains=search) |
                 Q(nombre__icontains=search) |
@@ -209,7 +207,6 @@ class CiudadanoUpdateView(LoginRequiredMixin, UpdateView):
         return reverse_lazy('legajos:ciudadano_detalle', kwargs={'pk': self.object.pk})
 
 
-@method_decorator(cache_view(timeout=180), name='dispatch')
 class LegajoListView(LoginRequiredMixin, ListView):
     model = LegajoAtencion
     template_name = 'legajos/legajo_list.html'
@@ -221,7 +218,6 @@ class LegajoListView(LoginRequiredMixin, ListView):
         queryset = LegajoAtencion.objects.select_related('ciudadano', 'dispositivo')
         
         if estado:
-            invalidate_cache_pattern('legajos_list')
             queryset = queryset.filter(estado=estado)
         
         return queryset.order_by('-fecha_apertura')
@@ -664,7 +660,6 @@ class LegajoReabrirView(LoginRequiredMixin, FormView):
             return self.get(request, *args, **kwargs)
 
 
-@method_decorator(cache_view(timeout=600), name='dispatch')
 class ReportesView(LoginRequiredMixin, TemplateView):
     """Vista para mostrar reportes y estadísticas"""
     template_name = 'legajos/reportes.html'
