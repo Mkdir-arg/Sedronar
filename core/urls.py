@@ -11,6 +11,11 @@ from .performance_dashboard import (
     performance_api,
     query_analysis_api,
     optimization_suggestions_api,
+    system_metrics_api,
+    alerts_api,
+    realtime_metrics_api,
+    phase2_metrics_api,
+    run_phase2_tests_api,
 )
 
 urlpatterns = [
@@ -30,4 +35,10 @@ urlpatterns = [
     path("performance-api/", performance_api, name="performance_api"),
     path("query-analysis-api/", query_analysis_api, name="query_analysis_api"),
     path("optimization-suggestions-api/", optimization_suggestions_api, name="optimization_suggestions_api"),
+    # Monitoring APIs
+    path("system-metrics-api/", system_metrics_api, name="system_metrics_api"),
+    path("alerts-api/", alerts_api, name="alerts_api"),
+    path("realtime-metrics-api/", realtime_metrics_api, name="realtime_metrics_api"),
+    path("phase2-metrics-api/", phase2_metrics_api, name="phase2_metrics_api"),
+    path("run-phase2-tests-api/", run_phase2_tests_api, name="run_phase2_tests_api"),
 ]

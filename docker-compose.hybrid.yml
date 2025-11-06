@@ -13,6 +13,7 @@ services:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./docker/mysql/local-dump.sql:/docker-entrypoint-initdb.d/local-dump.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s
@@ -84,6 +85,7 @@ services:
         pip install -r requirements_production.txt &&
         export DJANGO_SETTINGS_MODULE=config.settings &&
         python manage.py migrate &&
+        python manage.py load_initial_data &&
         daphne -b 0.0.0.0 -p 8001 config.asgi:application
       "
 

@@ -26,12 +26,25 @@ def cache_queryset(timeout=300, key_prefix='qs'):
 
 def invalidate_cache_pattern(pattern):
     """Invalida cache por patrón"""
+    from django.core.cache import cache
+    
     try:
+        # Intentar con django_redis si está disponible
         from django_redis import get_redis_connection
         conn = get_redis_connection("default")
         keys = conn.keys(f"*{pattern}*")
         if keys:
             conn.delete(*keys)
-    except:
-        from django.core.cache import cache
+    except ImportError:
+        # Si no hay redis, usar cache local
+        if hasattr(cache, '_cache'):
+            # Para LocMemCache, limpiar claves que contengan el patrón
+            keys_to_delete = [k for k in cache._cache.keys() if pattern in k]
+            for key in keys_to_delete:
+                cache.delete(key)
+        else:
+            # Fallback: limpiar todo
+            cache.clear()
+    except Exception:
+        # Cualquier otro error: limpiar todo
         cache.clear()

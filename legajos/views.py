@@ -30,27 +30,18 @@ class CiudadanoListView(LoginRequiredMixin, ListView):
     
     def get_queryset(self):
         search = self.request.GET.get('search', '')
-        cache_key = f'ciudadanos_list_{search}_{self.request.user.id}'
+        queryset = Ciudadano.objects.filter(activo=True)
         
-        queryset = cache.get(cache_key)
-        if queryset is None:
-            queryset = Ciudadano.objects.filter(
-                activo=True
-            ).exclude(
-                Q(dni='00000000') |
-                Q(apellido__icontains='Institución') |
-                Q(nombre__icontains='Institución')
+        if search:
+            queryset = queryset.filter(
+                Q(dni__icontains=search) |
+                Q(nombre__icontains=search) |
+                Q(apellido__icontains=search)
             )
-            if search:
-                queryset = queryset.filter(
-                    Q(dni__icontains=search) |
-                    Q(nombre__icontains=search) |
-                    Q(apellido__icontains=search)
-                )
-            queryset = queryset.order_by('apellido', 'nombre')
-            cache.set(cache_key, queryset, 300)
         
-        return queryset
+        return queryset.order_by('apellido', 'nombre')
+    
+
 
 
 class CiudadanoDetailView(LoginRequiredMixin, DetailView):
@@ -148,8 +139,17 @@ class CiudadanoManualView(LoginRequiredMixin, CreateView):
     
     def form_valid(self, form):
         response = super().form_valid(form)
+        
+        # Invalidar cache de ciudadanos
+        from core.cache_decorators import invalidate_cache_pattern
+        invalidate_cache_pattern('ciudadanos_list')
+        
         messages.success(self.request, f'Ciudadano {self.object.nombre} {self.object.apellido} creado exitosamente (carga manual)')
-        return response
+        
+        # Redirección forzada con timestamp para evitar cache del navegador
+        from django.shortcuts import redirect
+        import time
+        return redirect(f"{self.success_url}?t={int(time.time())}")
 
 
 class CiudadanoConfirmarView(LoginRequiredMixin, CreateView):
@@ -187,8 +187,17 @@ class CiudadanoConfirmarView(LoginRequiredMixin, CreateView):
         # Limpiar datos de sesión
         self.request.session.pop('datos_renaper', None)
         self.request.session.pop('datos_api_renaper', None)
+        
+        # Invalidar cache de ciudadanos
+        from core.cache_decorators import invalidate_cache_pattern
+        invalidate_cache_pattern('ciudadanos_list')
+        
         messages.success(self.request, f'Ciudadano {self.object.nombre} {self.object.apellido} creado exitosamente')
-        return response
+        
+        # Redirección forzada con timestamp para evitar cache del navegador
+        from django.shortcuts import redirect
+        import time
+        return redirect(f"{self.success_url}?t={int(time.time())}")
 
 
 class CiudadanoUpdateView(LoginRequiredMixin, UpdateView):
@@ -207,23 +216,13 @@ class LegajoListView(LoginRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        # Cache key basada en filtros
         estado = self.request.GET.get('estado', '')
-        cache_key = f'legajos_list_{estado}_{self.request.user.id}'
+        queryset = LegajoAtencion.objects.select_related('ciudadano', 'dispositivo')
         
-        queryset = cache.get(cache_key)
-        if queryset is None:
-            queryset = LegajoAtencion.objects.select_related('ciudadano', 'dispositivo').exclude(
-                Q(ciudadano__dni='00000000') |
-                Q(ciudadano__apellido__icontains='Institución') |
-                Q(ciudadano__nombre__icontains='Institución')
-            )
-            if estado:
-                queryset = queryset.filter(estado=estado)
-            queryset = queryset.order_by('-fecha_apertura')
-            cache.set(cache_key, queryset, 300)  # 5 minutos
+        if estado:
+            queryset = queryset.filter(estado=estado)
         
-        return queryset
+        return queryset.order_by('-fecha_apertura')
 
 
 class LegajoDetailView(LoginRequiredMixin, DetailView):

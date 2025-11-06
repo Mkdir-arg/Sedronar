@@ -11,6 +11,7 @@ daphne==4.0.0
 # Monitoreo y performance
 psutil==5.9.6
 django-silk==5.0.4
+pymysql==1.1.0
 
 # Logging estructurado
 structlog==23.2.0

@@ -43,7 +43,7 @@ DEFAULT_SCHEME = "https" if ENVIRONMENT == "prd" else "http"
 # CSRF_TRUSTED_ORIGINS requiere esquema. Para PA siempre https.
 CSRF_TRUSTED_ORIGINS = ["https://mlepera.pythonanywhere.com"]
 if DEBUG:
-    CSRF_TRUSTED_ORIGINS += ["http://localhost", "http://127.0.0.1"]
+    CSRF_TRUSTED_ORIGINS += ["http://localhost", "http://127.0.0.1", "http://localhost:9000", "http://127.0.0.1:9000"]
 
 # --- Apps ---
 INSTALLED_APPS = [
@@ -80,11 +80,12 @@ INSTALLED_APPS = [
 
 # --- Middleware ---
 MIDDLEWARE = [
-    # "silk.middleware.SilkyMiddleware",  # Performance profiling - temporalmente deshabilitado
+    "silk.middleware.SilkyMiddleware",  # Performance profiling
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.gzip.GZipMiddleware",
     "core.middleware_concurrency.ConcurrencyLimitMiddleware",  # Control de concurrencia
     "core.middleware_concurrency.RequestMetricsMiddleware",    # Métricas en tiempo real
+    "core.monitoring.MonitoringMiddleware",  # Sistema de monitoreo avanzado
     "config.middlewares.performance.PerformanceMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -198,7 +199,7 @@ CACHES = {
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
-            "CONNECTION_POOL_KWARGS": {"max_connections": 200},  # Aumentado para alta concurrencia
+            "CONNECTION_POOL_KWARGS": {"max_connections": 200},
         },
         "KEY_PREFIX": "sedronar",
         "TIMEOUT": 300,

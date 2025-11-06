@@ -3,7 +3,6 @@ from django.contrib.auth.models import User
 from django.db import models
 from .models import Ciudadano, LegajoAtencion, Consentimiento, EvaluacionInicial, Objetivo, PlanIntervencion, SeguimientoContacto, Derivacion, EventoCritico
 from core.models import DispositivoRed
-import json
 
 
 class ConsultaRenaperForm(forms.Form):

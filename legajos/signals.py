@@ -6,8 +6,8 @@ from .models import Ciudadano, LegajoAtencion, SeguimientoContacto, Derivacion, 
 @receiver([post_save, post_delete], sender=Ciudadano)
 def invalidate_ciudadano_cache(sender, **kwargs):
     """Invalida cache cuando se modifica un ciudadano"""
-    invalidate_cache_pattern('ciudadano')
-    invalidate_cache_pattern('legajos_list')
+    from django.core.cache import cache
+    cache.clear()  # Limpiar TODO el cache siempre
 
 @receiver([post_save, post_delete], sender=LegajoAtencion)
 def invalidate_legajo_cache(sender, **kwargs):
