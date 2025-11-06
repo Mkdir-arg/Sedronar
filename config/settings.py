@@ -38,6 +38,11 @@ if DEBUG:
         if h not in hosts:
             hosts.append(h)
 
+# Agregar nombres de servicios Docker para nginx
+for h in ("sedronar-http", "sedronar-ws"):
+    if h not in hosts:
+        hosts.append(h)
+
 ALLOWED_HOSTS = list(dict.fromkeys(hosts))  # sin duplicados
 
 DEFAULT_SCHEME = "https" if ENVIRONMENT == "prd" else "http"

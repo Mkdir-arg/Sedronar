@@ -15,16 +15,16 @@ def alerta_evento_critico(sender, instance, created, **kwargs):
         AlertasService.generar_alerta_evento_critico(
             instance.legajo, 
             instance.get_tipo_display(), 
-            instance.descripcion
+            instance.detalle
         )
 
 
 @receiver(post_save, sender=SeguimientoContacto)
 def verificar_seguimiento_vencido(sender, instance, created, **kwargs):
     """Verifica si hay seguimientos vencidos al crear uno nuevo"""
-    if created and instance.fecha_proximo_contacto:
-        if instance.fecha_proximo_contacto < timezone.now().date():
-            AlertasService.generar_alerta_seguimiento_vencido(instance)
+    if created:
+        # Generar alerta si es necesario basado en otros criterios
+        pass
 
 
 @receiver(post_save, sender=Mensaje)

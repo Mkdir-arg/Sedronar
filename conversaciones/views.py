@@ -121,6 +121,7 @@ def iniciar_conversacion(request):
                         'conversaciones_list',
                         {
                             'type': 'nueva_conversacion',
+                            'conversacion_id': conversacion.id,
                             'mensaje': f'Nueva conversación #{conversacion.id} creada'
                         }
                     )
@@ -180,7 +181,8 @@ def enviar_mensaje_ciudadano(request, conversacion_id):
                 async_to_sync(channel_layer.group_send)(
                     'conversaciones_list',
                     {
-                        'type': 'actualizar_lista',
+                        'type': 'nuevo_mensaje',
+                        'conversacion_id': conversacion_id,
                         'mensaje': f'Nuevo mensaje en conversación #{conversacion_id}'
                     }
                 )
@@ -433,7 +435,8 @@ def enviar_mensaje_operador(request, conversacion_id):
                 async_to_sync(channel_layer.group_send)(
                     'conversaciones_list',
                     {
-                        'type': 'actualizar_lista',
+                        'type': 'nuevo_mensaje',
+                        'conversacion_id': conversacion_id,
                         'mensaje': f'Respuesta del operador en conversación #{conversacion_id}'
                     }
                 )

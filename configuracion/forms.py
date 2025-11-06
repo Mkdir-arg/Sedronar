@@ -1,6 +1,6 @@
 from django import forms
 from core.models import Provincia, Municipio, Localidad, Institucion
-from legajos.models import PersonalInstitucion, StaffActividad
+from legajos.models import PersonalInstitucion, StaffActividad, PlanFortalecimiento
 
 # Alias para compatibilidad
 DispositivoRed = Institucion
@@ -219,3 +219,19 @@ class StaffActividadForm(forms.ModelForm):
             raise forms.ValidationError('Debe seleccionar un personal existente.')
         
         return cleaned_data
+
+
+class PlanFortalecimientoForm(forms.ModelForm):
+    class Meta:
+        model = PlanFortalecimiento
+        fields = ['nombre', 'tipo', 'subtipo', 'descripcion', 'cupo_ciudadanos', 'fecha_inicio', 'fecha_fin', 'estado']
+        widgets = {
+            'fecha_inicio': forms.DateInput(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500',
+                'type': 'date'
+            }),
+            'fecha_fin': forms.DateInput(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500',
+                'type': 'date'
+            }),
+        }

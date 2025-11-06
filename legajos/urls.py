@@ -42,6 +42,11 @@ urlpatterns = [
     path('<uuid:legajo_id>/eventos/', views.EventoListView.as_view(), name='eventos'),
     path('<uuid:legajo_id>/evento/', views.EventoCriticoCreateView.as_view(), name='evento_nuevo'),
     path('evento/<int:pk>/editar/', views.EventoUpdateView.as_view(), name='evento_editar'),
+    
+    # Inscripción a Actividades
+    path('<uuid:legajo_id>/inscribir-actividad/', views.InscribirActividadView.as_view(), name='inscribir_actividad'),
+    path('<uuid:legajo_id>/actividades-inscrito/', views.ActividadesInscritoListView.as_view(), name='actividades_inscrito'),
+    
     path('<uuid:pk>/', views.LegajoDetailView.as_view(), name='detalle'),
     path('<uuid:pk>/cerrar/', views.LegajoCerrarView.as_view(), name='cerrar'),
     path('<uuid:pk>/reabrir/', views.LegajoReabrirView.as_view(), name='reabrir'),

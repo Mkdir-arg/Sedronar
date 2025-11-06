@@ -18,14 +18,8 @@
     </div>
 
     <div class="bg-white rounded-xl shadow-lg p-6">
-        <form method="post" class="space-y-6" onsubmit="return validarFormulario()">
+        <form method="post" class="space-y-6">
             {% csrf_token %}
-            
-            <!-- Campos ocultos de Django -->
-            <div style="display: none;">
-                {{ form.fecha_inicio }}
-                {{ form.fecha_fin }}
-            </div>
             
             <div>
                 <label for="{{ form.nombre.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
@@ -71,31 +65,17 @@
                 </div>
                 
                 <div>
-                    <label for="fecha_inicio" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-calendar-alt text-blue-600 mr-1"></i>Fecha de Inicio
+                    <label for="{{ form.fecha_inicio.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Fecha de Inicio
                     </label>
-                    <div class="relative max-w-sm">
-                        <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
-                            <svg class="w-4 h-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M20 4a2 2 0 0 0-2-2h-2V1a1 1 0 0 0-2 0v1h-3V1a1 1 0 0 0-2 0v1H6V1a1 1 0 0 0-2 0v1H2a2 2 0 0 0-2 2v2h20V4ZM0 18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8H0v10Zm5-8h10a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2Z"/>
-                            </svg>
-                        </div>
-                        <input datepicker id="fecha_inicio" name="fecha_inicio" type="text" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-12 pr-3 py-2.5" placeholder="Seleccionar fecha">
-                    </div>
+                    {{ form.fecha_inicio }}
                 </div>
                 
                 <div>
-                    <label for="fecha_fin" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-calendar-check text-red-600 mr-1"></i>Fecha de Finalización
+                    <label for="{{ form.fecha_fin.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Fecha de Finalización
                     </label>
-                    <div class="relative max-w-sm">
-                        <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
-                            <svg class="w-4 h-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M20 4a2 2 0 0 0-2-2h-2V1a1 1 0 0 0-2 0v1h-3V1a1 1 0 0 0-2 0v1H6V1a1 1 0 0 0-2 0v1H2a2 2 0 0 0-2 2v2h20V4ZM0 18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8H0v10Zm5-8h10a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2Z"/>
-                            </svg>
-                        </div>
-                        <input datepicker id="fecha_fin" name="fecha_fin" type="text" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-12 pr-3 py-2.5" placeholder="Seleccionar fecha (opcional)">
-                    </div>
+                    {{ form.fecha_fin }}
                     <p class="text-xs text-gray-500 mt-1">Opcional - dejar vacío si no tiene fecha límite</p>
                 </div>
             </div>
@@ -176,96 +156,5 @@
     }
 </style>
 
-<script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.1/dist/flowbite.min.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.1/dist/flowbite.min.css" rel="stylesheet" />
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Inicializar datepickers
-        const fechaInicio = document.getElementById('fecha_inicio');
-        const fechaFin = document.getElementById('fecha_fin');
-        
-        // Configurar fecha mínima como hoy
-        const hoy = new Date();
-        const fechaHoy = hoy.toISOString().split('T')[0];
-        
-        // Validación entre fechas
-        function convertirFecha(fechaUS) {
-            if (!fechaUS) return '';
-            const partes = fechaUS.split('/');
-            if (partes.length === 3) {
-                return `${partes[2]}-${partes[0].padStart(2, '0')}-${partes[1].padStart(2, '0')}`;
-            }
-            return fechaUS;
-        }
-        
-        fechaInicio.addEventListener('change', function() {
-            // Convertir formato y sincronizar con campo oculto de Django
-            const fechaConvertida = convertirFecha(this.value);
-            const campoOculto = document.getElementById('{{ form.fecha_inicio.id_for_label }}');
-            campoOculto.value = fechaConvertida;
-            
-            // Agregar required si tiene valor
-            if (fechaConvertida) {
-                campoOculto.setAttribute('required', 'required');
-            } else {
-                campoOculto.removeAttribute('required');
-            }
-            
-            if (fechaFin.value && fechaFin.value < this.value) {
-                fechaFin.value = '';
-                document.getElementById('{{ form.fecha_fin.id_for_label }}').value = '';
-            }
-        });
-        
-        fechaFin.addEventListener('change', function() {
-            // Convertir formato y sincronizar con campo oculto de Django
-            const fechaConvertida = convertirFecha(this.value);
-            const campoOculto = document.getElementById('{{ form.fecha_fin.id_for_label }}');
-            campoOculto.value = fechaConvertida;
-            
-            // No agregar required para fecha fin (es opcional)
-            
-            if (this.value && fechaInicio.value && this.value < fechaInicio.value) {
-                alert('La fecha de finalización no puede ser anterior a la fecha de inicio');
-                this.value = '';
-                document.getElementById('{{ form.fecha_fin.id_for_label }}').value = '';
-            }
-        });
-        
-        // Sincronizar valores iniciales si existen
-        const djangoFechaInicio = document.getElementById('{{ form.fecha_inicio.id_for_label }}');
-        const djangoFechaFin = document.getElementById('{{ form.fecha_fin.id_for_label }}');
-        
-        // Remover required de campos ocultos
-        djangoFechaInicio.removeAttribute('required');
-        djangoFechaFin.removeAttribute('required');
-        
-        if (djangoFechaInicio.value) {
-            fechaInicio.value = djangoFechaInicio.value;
-        }
-        if (djangoFechaFin.value) {
-            fechaFin.value = djangoFechaFin.value;
-        }
-    });
-    
-    function validarFormulario() {
-        const fechaInicio = document.getElementById('fecha_inicio');
-        const djangoFechaInicio = document.getElementById('{{ form.fecha_inicio.id_for_label }}');
-        
-        // Asegurar que la fecha de inicio esté sincronizada
-        if (fechaInicio.value) {
-            const fechaConvertida = convertirFecha(fechaInicio.value);
-            djangoFechaInicio.value = fechaConvertida;
-        }
-        
-        // Validar que fecha de inicio esté presente
-        if (!djangoFechaInicio.value) {
-            alert('La fecha de inicio es requerida');
-            return false;
-        }
-        
-        return true;
-    }
-</script>
 {% endblock %}

@@ -42,10 +42,12 @@
                     </p>
                 </div>
                 <div class="flex space-x-3">
+                    {% if legajo.estado != 'CERRADO' %}
                     <a href="{% url 'legajos:plan' legajo.pk %}" 
                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
                         <i class="fas fa-plus mr-2"></i>Nuevo Plan
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -167,10 +169,12 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-2">
+                                    {% if legajo.estado != 'CERRADO' %}
                                     <a href="{% url 'legajos:plan_editar' plan.pk %}" 
                                        class="text-blue-600 hover:text-blue-900" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -193,10 +197,12 @@
                 </div>
                 <h3 class="text-lg font-medium text-gray-900 mb-2">No hay planes de intervención</h3>
                 <p class="text-gray-500 mb-6">Este legajo aún no tiene planes de intervención registrados.</p>
+                {% if legajo.estado != 'CERRADO' %}
                 <a href="{% url 'legajos:plan' legajo.pk %}" 
                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
                     <i class="fas fa-plus mr-2"></i>Crear Primer Plan
                 </a>
+                {% endif %}
             </div>
         {% endif %}
     </div>

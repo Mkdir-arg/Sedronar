@@ -5,7 +5,7 @@ from django.shortcuts import redirect, get_object_or_404
 from django.http import JsonResponse
 from core.models import Provincia, Municipio, Localidad, Institucion
 from legajos.models import LegajoInstitucional, PersonalInstitucion, EvaluacionInstitucional, PlanFortalecimiento, IndicadorInstitucional, StaffActividad
-from .forms import ProvinciaForm, MunicipioForm, LocalidadForm, InstitucionForm
+from .forms import ProvinciaForm, MunicipioForm, LocalidadForm, InstitucionForm, PlanFortalecimientoForm
 from .views_extra import InscriptoEditarView, ActividadEditarView, StaffEditarView, StaffDesasignarView, AsistenciaView, RegistrarAsistenciaView
 
 # Alias para compatibilidad
@@ -275,7 +275,7 @@ class EvaluacionInstitucionCreateView(LoginRequiredMixin, CreateView):
 
 class PlanFortalecimientoCreateView(LoginRequiredMixin, CreateView):
     model = PlanFortalecimiento
-    fields = ['nombre', 'tipo', 'subtipo', 'descripcion', 'cupo_ciudadanos', 'fecha_inicio', 'fecha_fin', 'estado']
+    form_class = PlanFortalecimientoForm
     template_name = 'configuracion/plan_form.html'
     
     def form_valid(self, form):

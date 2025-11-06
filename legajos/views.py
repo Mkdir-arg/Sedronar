@@ -12,9 +12,9 @@ from django.utils.decorators import method_decorator
 from core.cache_decorators import cache_view, cache_queryset, invalidate_cache_pattern
 import csv
 from datetime import datetime
-from .models import Ciudadano, LegajoAtencion, EvaluacionInicial, PlanIntervencion, SeguimientoContacto, Profesional, Derivacion, EventoCritico, AlertaEventoCritico, LegajoInstitucional
+from .models import Ciudadano, LegajoAtencion, EvaluacionInicial, PlanIntervencion, SeguimientoContacto, Profesional, Derivacion, EventoCritico, AlertaEventoCritico, LegajoInstitucional, InscriptoActividad, PlanFortalecimiento
 from core.models import DispositivoRed
-from .forms import ConsultaRenaperForm, CiudadanoForm, BuscarCiudadanoForm, AdmisionLegajoForm, ConsentimientoForm, EvaluacionInicialForm, PlanIntervencionForm, SeguimientoForm, DerivacionForm, EventoCriticoForm, LegajoCerrarForm
+from .forms import ConsultaRenaperForm, CiudadanoForm, BuscarCiudadanoForm, AdmisionLegajoForm, ConsentimientoForm, EvaluacionInicialForm, PlanIntervencionForm, SeguimientoForm, DerivacionForm, EventoCriticoForm, LegajoCerrarForm, InscribirActividadForm
 from .services.consulta_renaper import consultar_datos_renaper
 
 # Importar views de contactos
@@ -1229,3 +1229,57 @@ def actividades_por_institucion(request, institucion_id):
         })
     
     return JsonResponse({'actividades': actividades_list})
+
+
+class InscribirActividadView(LoginRequiredMixin, CreateView):
+    """Vista para inscribir ciudadano a actividad del centro"""
+    model = InscriptoActividad
+    form_class = InscribirActividadForm
+    template_name = 'legajos/inscribir_actividad_form.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.legajo = get_object_or_404(LegajoAtencion, id=kwargs['legajo_id'])
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['legajo'] = self.legajo
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.legajo
+        return context
+    
+    def form_valid(self, form):
+        form.instance.ciudadano = self.legajo.ciudadano
+        response = super().form_valid(form)
+        messages.success(self.request, f'Ciudadano inscrito exitosamente a {form.instance.actividad.nombre}')
+        return response
+    
+    def get_success_url(self):
+        return reverse_lazy('legajos:actividades_inscrito', kwargs={'legajo_id': self.legajo.id})
+
+
+class ActividadesInscritoListView(LoginRequiredMixin, ListView):
+    """Vista para listar actividades del ciudadano"""
+    model = InscriptoActividad
+    template_name = 'legajos/actividades_inscrito_list.html'
+    context_object_name = 'inscripciones'
+    paginate_by = 20
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.legajo = get_object_or_404(LegajoAtencion, id=kwargs['legajo_id'])
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_queryset(self):
+        return InscriptoActividad.objects.filter(
+            ciudadano=self.legajo.ciudadano
+        ).select_related(
+            'actividad__legajo_institucional__institucion'
+        ).order_by('-fecha_inscripcion')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.legajo
+        return context
