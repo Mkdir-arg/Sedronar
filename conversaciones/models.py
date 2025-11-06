@@ -23,19 +23,19 @@ class Conversacion(models.Model):
         ('urgente', 'Urgente'),
     ]
     
-    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
-    estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='pendiente')
-    prioridad = models.CharField(max_length=10, choices=PRIORIDAD_CHOICES, default='normal')
-    dni_ciudadano = models.CharField(max_length=8, blank=True, null=True)
+    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, db_index=True)
+    estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='pendiente', db_index=True)
+    prioridad = models.CharField(max_length=10, choices=PRIORIDAD_CHOICES, default='normal', db_index=True)
+    dni_ciudadano = models.CharField(max_length=8, blank=True, null=True, db_index=True)
     sexo_ciudadano = models.CharField(max_length=1, blank=True, null=True)
-    fecha_inicio = models.DateTimeField(default=timezone.now)
-    fecha_asignacion = models.DateTimeField(blank=True, null=True)
+    fecha_inicio = models.DateTimeField(default=timezone.now, db_index=True)
+    fecha_asignacion = models.DateTimeField(blank=True, null=True, db_index=True)
     fecha_primera_respuesta = models.DateTimeField(blank=True, null=True)
-    fecha_cierre = models.DateTimeField(blank=True, null=True)
-    operador_asignado = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
+    fecha_cierre = models.DateTimeField(blank=True, null=True, db_index=True)
+    operador_asignado = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, db_index=True)
     tiempo_espera_segundos = models.IntegerField(default=0)
-    tiempo_respuesta_segundos = models.IntegerField(blank=True, null=True)
-    satisfaccion = models.IntegerField(blank=True, null=True, choices=[(i, i) for i in range(1, 6)])
+    tiempo_respuesta_segundos = models.IntegerField(blank=True, null=True, db_index=True)
+    satisfaccion = models.IntegerField(blank=True, null=True, choices=[(i, i) for i in range(1, 6)], db_index=True)
     
     class Meta:
         ordering = ['-fecha_inicio']
@@ -43,6 +43,10 @@ class Conversacion(models.Model):
             models.Index(fields=['estado', 'prioridad']),
             models.Index(fields=['operador_asignado', 'estado']),
             models.Index(fields=['fecha_inicio']),
+            models.Index(fields=['tipo', 'estado']),
+            models.Index(fields=['dni_ciudadano']),
+            models.Index(fields=['satisfaccion']),
+            models.Index(fields=['fecha_cierre']),
         ]
         
     def __str__(self):
@@ -106,13 +110,18 @@ class Mensaje(models.Model):
     ]
     
     conversacion = models.ForeignKey(Conversacion, on_delete=models.CASCADE, related_name='mensajes')
-    remitente = models.CharField(max_length=10, choices=REMITENTE_CHOICES)
+    remitente = models.CharField(max_length=10, choices=REMITENTE_CHOICES, db_index=True)
     contenido = models.TextField()
-    fecha_envio = models.DateTimeField(default=timezone.now)
-    leido = models.BooleanField(default=False)
+    fecha_envio = models.DateTimeField(default=timezone.now, db_index=True)
+    leido = models.BooleanField(default=False, db_index=True)
     
     class Meta:
         ordering = ['fecha_envio']
+        indexes = [
+            models.Index(fields=['conversacion', 'fecha_envio']),
+            models.Index(fields=['remitente', 'leido']),
+            models.Index(fields=['conversacion', 'leido']),
+        ]
         
     def __str__(self):
         return f"{self.remitente}: {self.contenido[:50]}..."
@@ -127,6 +136,10 @@ class HistorialAsignacion(models.Model):
     
     class Meta:
         ordering = ['-fecha_asignacion']
+        indexes = [
+            models.Index(fields=['conversacion', '-fecha_asignacion']),
+            models.Index(fields=['operador_nuevo', '-fecha_asignacion']),
+        ]
         
     def __str__(self):
         return f"Conversación #{self.conversacion.id} - {self.operador_anterior} → {self.operador_nuevo}"
@@ -135,14 +148,18 @@ class HistorialAsignacion(models.Model):
 class ColaAsignacion(models.Model):
     """Sistema de cola para asignación automática de conversaciones"""
     operador = models.OneToOneField(User, on_delete=models.CASCADE, related_name='cola_asignacion')
-    activo = models.BooleanField(default=True)
+    activo = models.BooleanField(default=True, db_index=True)
     max_conversaciones = models.IntegerField(default=5)
-    conversaciones_actuales = models.IntegerField(default=0)
-    ultima_asignacion = models.DateTimeField(blank=True, null=True)
+    conversaciones_actuales = models.IntegerField(default=0, db_index=True)
+    ultima_asignacion = models.DateTimeField(blank=True, null=True, db_index=True)
     peso_asignacion = models.IntegerField(default=1)  # Para balanceo de carga
     
     class Meta:
         ordering = ['conversaciones_actuales', 'ultima_asignacion']
+        indexes = [
+            models.Index(fields=['activo', 'conversaciones_actuales']),
+            models.Index(fields=['operador', 'activo']),
+        ]
         
     def __str__(self):
         return f"{self.operador.get_full_name()} - {self.conversaciones_actuales}/{self.max_conversaciones}"
@@ -170,6 +187,10 @@ class MetricasOperador(models.Model):
     
     class Meta:
         verbose_name_plural = "Métricas de Operadores"
+        indexes = [
+            models.Index(fields=['operador']),
+            models.Index(fields=['fecha_actualizacion']),
+        ]
         
     def __str__(self):
         return f"Métricas - {self.operador.get_full_name()}"
@@ -209,6 +230,10 @@ class NuevaConversacionAlerta(models.Model):
     
     class Meta:
         unique_together = ['conversacion', 'operador']
+        indexes = [
+            models.Index(fields=['operador', 'vista']),
+            models.Index(fields=['conversacion', 'vista']),
+        ]
         
     def __str__(self):
         return f'Nueva conversación #{self.conversacion.id} para {self.operador.username}'
@@ -232,6 +257,11 @@ class HistorialAlertaConversacion(models.Model):
     
     class Meta:
         ordering = ['-creado']
+        indexes = [
+            models.Index(fields=['operador', 'vista', '-creado']),
+            models.Index(fields=['conversacion', 'tipo']),
+            models.Index(fields=['tipo', 'vista']),
+        ]
         
     def __str__(self):
         return f'{self.tipo} - Conv #{self.conversacion.id} - {self.operador.username}'

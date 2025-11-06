@@ -37,10 +37,8 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      sedronar-mysql:
-        condition: service_healthy
-      sedronar-redis:
-        condition: service_healthy
+      sedronar-ws:
+        condition: service_started
     volumes:
       - .:/sisoc
       - ./media:/sisoc/media
@@ -53,7 +51,8 @@ services:
     command: >
       sh -c "
         pip install -r requirements.txt &&
-        pip install -r requirements_production.txt &&
+        sleep 10 &&
+        python manage.py collectstatic --noinput &&
         gunicorn --config gunicorn.conf.py config.wsgi:application
       "
     healthcheck:
@@ -61,7 +60,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # Daphne para WebSockets
+  # Daphne para WebSockets (ejecuta migraciones y carga datos)
   sedronar-ws:
     build: .
     ports:
@@ -82,9 +81,7 @@ services:
     command: >
       sh -c "
         pip install -r requirements.txt &&
-        pip install -r requirements_production.txt &&
-        export DJANGO_SETTINGS_MODULE=config.settings &&
-        python manage.py migrate &&
+        python manage.py migrate --noinput &&
         python manage.py load_initial_data &&
         daphne -b 0.0.0.0 -p 8001 config.asgi:application
       "

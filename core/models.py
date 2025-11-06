@@ -207,22 +207,23 @@ class Institucion(TimeStamped):
     """Instituciones registradas en la red SEDRONAR"""
     
     # Información básica
-    tipo = models.CharField(max_length=15, choices=TipoInstitucion.choices)
-    nombre = models.CharField(max_length=180)
-    provincia = models.ForeignKey(Provincia, on_delete=models.PROTECT)
-    municipio = models.ForeignKey(Municipio, on_delete=models.PROTECT)
+    tipo = models.CharField(max_length=15, choices=TipoInstitucion.choices, db_index=True)
+    nombre = models.CharField(max_length=180, db_index=True)
+    provincia = models.ForeignKey(Provincia, on_delete=models.PROTECT, db_index=True)
+    municipio = models.ForeignKey(Municipio, on_delete=models.PROTECT, db_index=True)
     localidad = models.ForeignKey(Localidad, on_delete=models.PROTECT, null=True, blank=True)
     direccion = models.CharField(max_length=240, blank=True)
     telefono = models.CharField(max_length=40, blank=True)
-    email = models.EmailField(blank=True)
-    activo = models.BooleanField(default=True)
+    email = models.EmailField(blank=True, db_index=True)
+    activo = models.BooleanField(default=True, db_index=True)
     descripcion = models.TextField(blank=True)
     
     # Estado del registro
     estado_registro = models.CharField(
         max_length=15, 
         choices=EstadoRegistro.choices, 
-        default=EstadoRegistro.BORRADOR
+        default=EstadoRegistro.BORRADOR,
+        db_index=True
     )
     fecha_solicitud = models.DateField(null=True, blank=True)
     fecha_aprobacion = models.DateField(null=True, blank=True)
@@ -276,6 +277,8 @@ class Institucion(TimeStamped):
             models.Index(fields=["nombre"]),
             models.Index(fields=["estado_registro"]),
             models.Index(fields=["nro_registro"]),
+            models.Index(fields=["activo", "tipo", "provincia"]),
+            models.Index(fields=["estado_registro", "tipo"]),
         ]
         unique_together = ("nombre", "municipio", "tipo")
     
@@ -366,6 +369,7 @@ class DocumentoRequerido(TimeStamped):
         indexes = [
             models.Index(fields=["institucion", "estado"]),
             models.Index(fields=["tipo", "obligatorio"]),
+            models.Index(fields=["estado", "obligatorio"]),
         ]
     
     def __str__(self):

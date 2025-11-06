@@ -16,6 +16,8 @@ ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")  # dev|qa|prd
 
 # --- Secret Key ---
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("DJANGO_SECRET_KEY debe estar configurada en .env")
 
 # --- i18n/Timezone ---
 LANGUAGE_CODE = "es-ar"
@@ -80,10 +82,10 @@ INSTALLED_APPS = [
 
 # --- Middleware ---
 MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",  # Seguridad primero
+    "core.middleware_concurrency.ConcurrencyLimitMiddleware",  # Limitar antes de medir
     "silk.middleware.SilkyMiddleware",  # Performance profiling
-    "django.middleware.security.SecurityMiddleware",
     "django.middleware.gzip.GZipMiddleware",
-    "core.middleware_concurrency.ConcurrencyLimitMiddleware",  # Control de concurrencia
     "core.middleware_concurrency.RequestMetricsMiddleware",    # Métricas en tiempo real
     "core.monitoring.MonitoringMiddleware",  # Sistema de monitoreo avanzado
     "config.middlewares.performance.PerformanceMiddleware",
@@ -183,8 +185,8 @@ DATABASES = {
             "read_timeout": 10,
             "write_timeout": 10,
         },
-        "CONN_MAX_AGE": 0,  # Deshabilitado para gevent - cada greenlet nueva conexión
-        "CONN_HEALTH_CHECKS": False,  # Deshabilitado para evitar problemas con gevent
+        "CONN_MAX_AGE": 60,  # Reusar conexiones por 60 segundos
+        "CONN_HEALTH_CHECKS": True,  # Verificar salud de conexión antes de reusar
     }
 }
 

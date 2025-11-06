@@ -48,3 +48,8 @@ def contar_ciudadanos():
         cached_value = Ciudadano.objects.count()
         cache.set(cache_key, cached_value, timeout=CACHE_TIMEOUT)
     return cached_value
+
+def invalidate_dashboard_cache():
+    """Invalida el caché del dashboard."""
+    cache.delete("contar_usuarios")
+    cache.delete("contar_ciudadanos")

@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /sisoc
 
 # Copiar archivos de requirements
-COPY requirements.txt requirements_production.txt ./
+COPY requirements.txt ./
 
 # Instalar dependencias Python
 RUN pip install --no-cache-dir -r requirements.txt

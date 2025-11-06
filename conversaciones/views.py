@@ -20,14 +20,14 @@ def chat_ciudadano(request):
 @csrf_exempt
 def consultar_renaper(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        dni = data.get('dni', '').strip()
-        sexo = data.get('sexo', '').strip()
-        
-        if not dni or not sexo:
-            return JsonResponse({'success': False, 'error': 'DNI y sexo son requeridos'})
-        
         try:
+            data = json.loads(request.body)
+            dni = data.get('dni', '').strip()
+            sexo = data.get('sexo', '').strip()
+            
+            if not dni or not sexo:
+                return JsonResponse({'success': False, 'error': 'DNI y sexo son requeridos'})
+            
             from legajos.services.consulta_renaper import consultar_datos_renaper
             resultado = consultar_datos_renaper(dni, sexo)
             
@@ -43,7 +43,6 @@ def consultar_renaper(request):
                     }
                 })
             else:
-                # Si RENAPER falla o persona fallecida
                 if resultado.get('fallecido'):
                     return JsonResponse({
                         'success': False, 
@@ -54,13 +53,14 @@ def consultar_renaper(request):
                         'success': False,
                         'error': resultado.get('error', 'Error al consultar RENAPER')
                     })
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'JSON inválido'})
         except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'error': f'Error interno al consultar datos: {str(e)}'
-            })
+            import logging
+            logging.error(f"Error en consulta RENAPER: {e}", exc_info=True)
+            return JsonResponse({'success': False, 'error': 'Error interno del servidor'})
     
-    return JsonResponse({'success': False})
+    return JsonResponse({'success': False, 'error': 'Método no permitido'})
 
 
 @csrf_exempt
@@ -148,7 +148,8 @@ def enviar_mensaje_ciudadano(request, conversacion_id):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            contenido = data.get('mensaje', '').strip()
+            from django.utils.html import escape
+            contenido = escape(data.get('mensaje', '').strip())
             
             if not contenido:
                 return JsonResponse({'success': False, 'error': 'Mensaje vacío'})
@@ -160,11 +161,14 @@ def enviar_mensaje_ciudadano(request, conversacion_id):
                 remitente='ciudadano',
                 contenido=contenido
             )
-            
-            print(f"DEBUG: Mensaje creado - ID: {mensaje.id}, Conversación: {conversacion_id}, Contenido: {contenido}")
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'JSON inválido'})
+        except Conversacion.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Conversación no encontrada'})
         except Exception as e:
-            print(f"DEBUG: Error al crear mensaje: {str(e)}")
-            return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'})
+            import logging
+            logging.error(f"Error creando mensaje: {e}", exc_info=True)
+            return JsonResponse({'success': False, 'error': 'Error interno del servidor'})
         
         # Notificar nuevo mensaje via WebSocket
         try:
@@ -541,34 +545,40 @@ def configurar_cola(request):
 @user_passes_test(tiene_permiso_conversaciones)
 def asignacion_automatica(request):
     """Vista para forzar asignación automática de conversaciones sin asignar (solo a operadores logueados)"""
-    from .services import AsignadorAutomatico
-    
-    # Buscar conversaciones activas sin operador asignado
-    conversaciones_sin_asignar = Conversacion.objects.filter(
-        estado='activa',
-        operador_asignado=None
-    )
-    
-    asignadas = 0
-    sin_operadores = 0
-    
-    for conversacion in conversaciones_sin_asignar:
-        if AsignadorAutomatico.asignar_conversacion_automatica(conversacion):
-            asignadas += 1
-        else:
-            sin_operadores += 1
-    
-    # Actualizar todas las colas
-    AsignadorAutomatico.actualizar_todas_las_colas()
-    
-    if asignadas > 0:
-        messages.success(request, f'{asignadas} conversaciones asignadas automáticamente a operadores logueados')
-    
-    if sin_operadores > 0:
-        messages.warning(request, f'{sin_operadores} conversaciones no pudieron asignarse (no hay operadores logueados disponibles)')
-    
-    if asignadas == 0 and sin_operadores == 0:
-        messages.info(request, 'No hay conversaciones sin asignar')
+    try:
+        from .services import AsignadorAutomatico
+        
+        conversaciones_sin_asignar = Conversacion.objects.filter(
+            estado='activa',
+            operador_asignado=None
+        ).only('id', 'estado')
+        
+        asignadas = 0
+        sin_operadores = 0
+        
+        for conversacion in conversaciones_sin_asignar:
+            try:
+                if AsignadorAutomatico.asignar_conversacion_automatica(conversacion):
+                    asignadas += 1
+                else:
+                    sin_operadores += 1
+            except Exception as e:
+                import logging
+                logging.warning(f"Error asignando conversación {conversacion.id}: {e}")
+                sin_operadores += 1
+        
+        AsignadorAutomatico.actualizar_todas_las_colas()
+        
+        if asignadas > 0:
+            messages.success(request, f'{asignadas} conversaciones asignadas automáticamente')
+        if sin_operadores > 0:
+            messages.warning(request, f'{sin_operadores} conversaciones no pudieron asignarse')
+        if asignadas == 0 and sin_operadores == 0:
+            messages.info(request, 'No hay conversaciones sin asignar')
+    except Exception as e:
+        import logging
+        logging.error(f"Error en asignación automática: {e}", exc_info=True)
+        messages.error(request, 'Error en la asignación automática')
     
     return redirect('conversaciones:lista')
 

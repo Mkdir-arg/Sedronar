@@ -109,29 +109,41 @@ class SystemMonitor:
             from legajos.models import Ciudadano
             from conversaciones.models import Conversacion, Mensaje
             from users.models import User
+            from django.db.models import Count, Q
             
-            # Contadores básicos
+            hoy_inicio = timezone.now().replace(hour=0, minute=0, second=0)
+            hace_24h = timezone.now() - timedelta(days=1)
+            
+            # Optimizado: Queries agregadas
+            user_stats = User.objects.aggregate(
+                total=Count('id'),
+                active_today=Count('id', filter=Q(last_login__gte=hace_24h))
+            )
+            
+            ciudadano_stats = Ciudadano.objects.aggregate(
+                total=Count('id'),
+                created_today=Count('id', filter=Q(creado__gte=hoy_inicio))
+            )
+            
+            conversacion_stats = Conversacion.objects.aggregate(
+                total=Count('id'),
+                active=Count('id', filter=Q(estado='ACTIVA'))
+            )
+            
+            messages_today = Mensaje.objects.filter(fecha_envio__gte=hoy_inicio).count()
+            
             metrics = {
                 'timestamp': timezone.now().isoformat(),
                 'users': {
-                    'total': User.objects.count(),
-                    'active_today': User.objects.filter(
-                        last_login__gte=timezone.now() - timedelta(days=1)
-                    ).count(),
+                    'total': user_stats['total'],
+                    'active_today': user_stats['active_today'],
                     'online_now': self._get_online_users()
                 },
-                'ciudadanos': {
-                    'total': Ciudadano.objects.count(),
-                    'created_today': Ciudadano.objects.filter(
-                        creado__gte=timezone.now().replace(hour=0, minute=0, second=0)
-                    ).count()
-                },
+                'ciudadanos': ciudadano_stats,
                 'conversaciones': {
-                    'total': Conversacion.objects.count(),
-                    'active': Conversacion.objects.filter(estado='ACTIVA').count(),
-                    'messages_today': Mensaje.objects.filter(
-                        fecha_envio__gte=timezone.now().replace(hour=0, minute=0, second=0)
-                    ).count()
+                    'total': conversacion_stats['total'],
+                    'active': conversacion_stats['active'],
+                    'messages_today': messages_today
                 },
                 'performance': {
                     'avg_response_time': self._get_avg_response_time(),
@@ -143,8 +155,14 @@ class SystemMonitor:
             cache.set('application_metrics', metrics, 60)
             return metrics
             
+        except ImportError as e:
+            import logging
+            logging.error(f"Error importando modelos: {e}")
+            return {'error': 'models_unavailable', 'timestamp': timezone.now().isoformat()}
         except Exception as e:
-            return {'error': str(e), 'timestamp': timezone.now().isoformat()}
+            import logging
+            logging.error(f"Error recolectando métricas de aplicación: {e}", exc_info=True)
+            return {'error': 'collection_failed', 'timestamp': timezone.now().isoformat()}
     
     def get_comprehensive_metrics(self):
         """Obtiene todas las métricas en un solo objeto"""
@@ -192,7 +210,6 @@ class SystemMonitor:
     def _get_cache_stats(self):
         """Obtiene estadísticas del cache"""
         try:
-            # Intentar obtener stats de Redis
             from django_redis import get_redis_connection
             redis_conn = get_redis_connection("default")
             info = redis_conn.info()
@@ -203,8 +220,12 @@ class SystemMonitor:
                 'memory_used': info.get('used_memory', 0),
                 'connected_clients': info.get('connected_clients', 0)
             }
-        except:
-            return {'hits': 0, 'misses': 0, 'memory_used': 0, 'connected_clients': 0}
+        except ImportError:
+            return {'hits': 0, 'misses': 0, 'memory_used': 0, 'connected_clients': 0, 'error': 'redis_unavailable'}
+        except Exception as e:
+            import logging
+            logging.warning(f"Error obteniendo stats de Redis: {e}")
+            return {'hits': 0, 'misses': 0, 'memory_used': 0, 'connected_clients': 0, 'error': str(e)}
     
     def _get_active_sessions(self):
         """Cuenta sesiones activas aproximadas"""
@@ -246,7 +267,9 @@ class SystemMonitor:
             return User.objects.filter(
                 last_login__gte=timezone.now() - timedelta(minutes=5)
             ).count()
-        except:
+        except Exception as e:
+            import logging
+            logging.debug(f"Error contando usuarios online: {e}")
             return 0
     
     def _get_avg_response_time(self):

@@ -19,14 +19,14 @@ class Ciudadano(TimeStamped):
         NO_BINARIO = "X", "No binario"
     
     dni = models.CharField(max_length=20, unique=True, db_index=True)
-    nombre = models.CharField(max_length=120)
+    nombre = models.CharField(max_length=120, db_index=True)
     apellido = models.CharField(max_length=120, db_index=True)
-    fecha_nacimiento = models.DateField(null=True, blank=True)
-    genero = models.CharField(max_length=1, choices=Genero.choices, blank=True)
-    telefono = models.CharField(max_length=40, blank=True)
-    email = models.EmailField(blank=True)
+    fecha_nacimiento = models.DateField(null=True, blank=True, db_index=True)
+    genero = models.CharField(max_length=1, choices=Genero.choices, blank=True, db_index=True)
+    telefono = models.CharField(max_length=40, blank=True, db_index=True)
+    email = models.EmailField(blank=True, db_index=True)
     domicilio = models.CharField(max_length=240, blank=True)
-    activo = models.BooleanField(default=True)
+    activo = models.BooleanField(default=True, db_index=True)
     
     # Historial de cambios
     # history = HistoricalRecords()  # Comentado temporalmente
@@ -37,6 +37,8 @@ class Ciudadano(TimeStamped):
         indexes = [
             models.Index(fields=["dni"]),
             models.Index(fields=["apellido", "nombre"]),
+            models.Index(fields=["activo", "apellido"]),
+            models.Index(fields=["email"]),
         ]
     
     def __str__(self):
@@ -104,14 +106,16 @@ class LegajoAtencion(LegajoBase):
     via_ingreso = models.CharField(
         max_length=20, 
         choices=ViaIngreso.choices, 
-        default=ViaIngreso.ESPONTANEA
+        default=ViaIngreso.ESPONTANEA,
+        db_index=True
     )
-    fecha_admision = models.DateField(auto_now_add=True)
-    plan_vigente = models.BooleanField(default=False)
+    fecha_admision = models.DateField(auto_now_add=True, db_index=True)
+    plan_vigente = models.BooleanField(default=False, db_index=True)
     nivel_riesgo = models.CharField(
         max_length=20, 
         choices=NivelRiesgo.choices, 
-        default=NivelRiesgo.BAJO
+        default=NivelRiesgo.BAJO,
+        db_index=True
     )
     
     # Historial de cambios
@@ -124,6 +128,9 @@ class LegajoAtencion(LegajoBase):
             models.Index(fields=["ciudadano", "dispositivo"]),
             models.Index(fields=["estado"]),
             models.Index(fields=["nivel_riesgo", "fecha_admision"]),
+            models.Index(fields=["plan_vigente", "estado"]),
+            models.Index(fields=["via_ingreso", "fecha_admision"]),
+            models.Index(fields=["dispositivo", "estado"]),
         ]
     
     def __str__(self):
@@ -253,12 +260,14 @@ class EvaluacionInicial(TimeStamped):
     riesgo_suicida = models.BooleanField(
         default=False,
         verbose_name="Riesgo Suicida",
-        help_text="Indica si presenta riesgo suicida"
+        help_text="Indica si presenta riesgo suicida",
+        db_index=True
     )
     violencia = models.BooleanField(
         default=False,
         verbose_name="Situación de Violencia",
-        help_text="Indica si presenta situación de violencia"
+        help_text="Indica si presenta situación de violencia",
+        db_index=True
     )
     
     class Meta:
@@ -327,7 +336,7 @@ class PlanIntervencion(TimeStamped):
         Profesional, 
         on_delete=models.PROTECT
     )
-    vigente = models.BooleanField(default=True)
+    vigente = models.BooleanField(default=True, db_index=True)
     actividades = models.JSONField(
         blank=True, 
         null=True,
@@ -339,6 +348,7 @@ class PlanIntervencion(TimeStamped):
         verbose_name_plural = "Planes de Intervención"
         indexes = [
             models.Index(fields=["legajo", "vigente"]),
+            models.Index(fields=["profesional", "vigente"]),
         ]
     
     def __str__(self):
@@ -389,13 +399,15 @@ class SeguimientoContacto(TimeStamped):
     )
     tipo = models.CharField(
         max_length=40, 
-        choices=TipoContacto.choices
+        choices=TipoContacto.choices,
+        db_index=True
     )
     descripcion = models.TextField()
     adherencia = models.CharField(
         max_length=20, 
         choices=Adherencia.choices,
-        blank=True
+        blank=True,
+        db_index=True
     )
     adjuntos = models.FileField(
         upload_to="seguimientos/", 
@@ -410,6 +422,8 @@ class SeguimientoContacto(TimeStamped):
         indexes = [
             models.Index(fields=["legajo", "-creado"]),
             models.Index(fields=["tipo"]),
+            models.Index(fields=["adherencia", "legajo"]),
+            models.Index(fields=["profesional", "-creado"]),
         ]
     
     def __str__(self):
@@ -458,15 +472,17 @@ class Derivacion(TimeStamped):
     urgencia = models.CharField(
         max_length=20, 
         choices=Urgencia.choices, 
-        default=Urgencia.MEDIA
+        default=Urgencia.MEDIA,
+        db_index=True
     )
     estado = models.CharField(
         max_length=20,
         choices=Estado.choices,
-        default=Estado.PENDIENTE
+        default=Estado.PENDIENTE,
+        db_index=True
     )
     respuesta = models.CharField(max_length=120, blank=True)
-    fecha_aceptacion = models.DateField(null=True, blank=True)
+    fecha_aceptacion = models.DateField(null=True, blank=True, db_index=True)
     
     class Meta:
         verbose_name = "Derivación"
@@ -475,6 +491,9 @@ class Derivacion(TimeStamped):
         indexes = [
             models.Index(fields=["legajo", "estado"]),
             models.Index(fields=["urgencia"]),
+            models.Index(fields=["estado", "urgencia"]),
+            models.Index(fields=["destino", "estado"]),
+            models.Index(fields=["origen", "estado"]),
         ]
     
     def __str__(self):
@@ -503,7 +522,8 @@ class EventoCritico(TimeStamped):
     )
     tipo = models.CharField(
         max_length=40, 
-        choices=TipoEvento.choices
+        choices=TipoEvento.choices,
+        db_index=True
     )
     detalle = models.TextField()
     notificado_a = models.JSONField(
@@ -608,11 +628,11 @@ class AlertaCiudadano(TimeStamped):
         null=True,
         blank=True
     )
-    tipo = models.CharField(max_length=30, choices=TipoAlerta.choices)
-    prioridad = models.CharField(max_length=10, choices=Prioridad.choices)
+    tipo = models.CharField(max_length=30, choices=TipoAlerta.choices, db_index=True)
+    prioridad = models.CharField(max_length=10, choices=Prioridad.choices, db_index=True)
     mensaje = models.CharField(max_length=200)
-    activa = models.BooleanField(default=True)
-    fecha_cierre = models.DateTimeField(null=True, blank=True)
+    activa = models.BooleanField(default=True, db_index=True)
+    fecha_cierre = models.DateTimeField(null=True, blank=True, db_index=True)
     cerrada_por = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -629,6 +649,8 @@ class AlertaCiudadano(TimeStamped):
             models.Index(fields=["ciudadano", "activa"]),
             models.Index(fields=["tipo", "prioridad"]),
             models.Index(fields=["legajo", "activa"]),
+            models.Index(fields=["activa", "prioridad", "-creado"]),
+            models.Index(fields=["cerrada_por", "fecha_cierre"]),
         ]
     
     def __str__(self):
