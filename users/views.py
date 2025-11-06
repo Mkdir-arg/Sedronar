@@ -45,12 +45,12 @@ class UserCreateView(AdminRequiredMixin, CreateView):
     
     def form_valid(self, form):
         import logging
+        import time
         logger = logging.getLogger(__name__)
         
         try:
             response = super().form_valid(form)
             
-            # Verificar que el usuario se guardó correctamente
             user = self.object
             groups = form.cleaned_data.get('groups', [])
             
@@ -58,14 +58,12 @@ class UserCreateView(AdminRequiredMixin, CreateView):
             logger.info(f"Grupos asignados: {[g.name for g in groups]}")
             logger.info(f"Grupos en BD: {[g.name for g in user.groups.all()]}")
             
-            # Verificar que los grupos se asignaron
             if groups and user.groups.count() == 0:
                 logger.error(f"Error: Los grupos no se asignaron al usuario {user.username}")
-                # Intentar reasignar
                 user.groups.set(groups)
                 logger.info(f"Grupos reasignados: {[g.name for g in user.groups.all()]}")
             
-            return response
+            return redirect(f"{self.success_url}?t={int(time.time())}")
             
         except Exception as e:
             logger.error(f"Error al crear usuario: {str(e)}")
@@ -86,12 +84,12 @@ class UserUpdateView(AdminRequiredMixin, UpdateView):
     
     def form_valid(self, form):
         import logging
+        import time
         logger = logging.getLogger(__name__)
         
         try:
             response = super().form_valid(form)
             
-            # Verificar que el usuario se actualizó correctamente
             user = self.object
             groups = form.cleaned_data.get('groups', [])
             
@@ -99,14 +97,12 @@ class UserUpdateView(AdminRequiredMixin, UpdateView):
             logger.info(f"Grupos asignados: {[g.name for g in groups]}")
             logger.info(f"Grupos en BD: {[g.name for g in user.groups.all()]}")
             
-            # Verificar que los grupos se asignaron
             if groups and user.groups.count() == 0:
                 logger.error(f"Error: Los grupos no se asignaron al usuario {user.username}")
-                # Intentar reasignar
                 user.groups.set(groups)
                 logger.info(f"Grupos reasignados: {[g.name for g in user.groups.all()]}")
             
-            return response
+            return redirect(f"{self.success_url}?t={int(time.time())}")
             
         except Exception as e:
             logger.error(f"Error al actualizar usuario: {str(e)}")

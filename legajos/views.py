@@ -1117,15 +1117,23 @@ class InstitucionListView(LoginRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
+        search = self.request.GET.get('search', '')
+        
         if self.request.user.is_superuser:
-            return Institucion.objects.filter(
-                estado_registro='APROBADO'
-            ).prefetch_related('encargados').order_by('nombre')
+            queryset = Institucion.objects.filter(activo=True).prefetch_related('encargados')
         else:
-            return Institucion.objects.filter(
+            queryset = Institucion.objects.filter(
                 encargados=self.request.user,
-                estado_registro='APROBADO'
-            ).prefetch_related('encargados').order_by('nombre')
+                activo=True
+            ).prefetch_related('encargados')
+        
+        if search:
+            queryset = queryset.filter(
+                Q(nombre__icontains=search) |
+                Q(cuit__icontains=search)
+            )
+        
+        return queryset.order_by('nombre')
 
 
 class InstitucionCreateView(LoginRequiredMixin, CreateView):
@@ -1139,6 +1147,14 @@ class InstitucionCreateView(LoginRequiredMixin, CreateView):
             messages.error(request, 'No tiene permisos para crear instituciones.')
             return redirect('legajos:instituciones')
         return super().dispatch(request, *args, **kwargs)
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f'Institución {self.object.nombre} creada exitosamente')
+        
+        # Redirección forzada con timestamp para evitar cache del navegador
+        import time
+        return redirect(f"{self.success_url}?t={int(time.time())}")
 
 
 class InstitucionUpdateView(LoginRequiredMixin, UpdateView):
@@ -1152,6 +1168,14 @@ class InstitucionUpdateView(LoginRequiredMixin, UpdateView):
             return Institucion.objects.prefetch_related('encargados')
         else:
             return Institucion.objects.filter(encargados=self.request.user).prefetch_related('encargados')
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f'Institución {self.object.nombre} actualizada exitosamente')
+        
+        # Redirección forzada con timestamp para evitar cache del navegador
+        import time
+        return redirect(f"{self.success_url}?t={int(time.time())}")
 
 
 class InstitucionDeleteView(LoginRequiredMixin, DeleteView):

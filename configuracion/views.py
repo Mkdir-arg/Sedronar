@@ -25,6 +25,11 @@ class ProvinciaCreateView(LoginRequiredMixin, CreateView):
     form_class = ProvinciaForm
     template_name = 'configuracion/provincia_form.html'
     success_url = reverse_lazy('configuracion:provincias')
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        import time
+        return redirect(f"{self.success_url}?t={int(time.time())}")
 
 
 class ProvinciaUpdateView(LoginRequiredMixin, UpdateView):
@@ -32,6 +37,11 @@ class ProvinciaUpdateView(LoginRequiredMixin, UpdateView):
     form_class = ProvinciaForm
     template_name = 'configuracion/provincia_form.html'
     success_url = reverse_lazy('configuracion:provincias')
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        import time
+        return redirect(f"{self.success_url}?t={int(time.time())}")
 
 
 class ProvinciaDeleteView(LoginRequiredMixin, DeleteView):
@@ -52,6 +62,11 @@ class MunicipioCreateView(LoginRequiredMixin, CreateView):
     form_class = MunicipioForm
     template_name = 'configuracion/municipio_form.html'
     success_url = reverse_lazy('configuracion:municipios')
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        import time
+        return redirect(f"{self.success_url}?t={int(time.time())}")
 
 
 class MunicipioUpdateView(LoginRequiredMixin, UpdateView):
@@ -59,6 +74,11 @@ class MunicipioUpdateView(LoginRequiredMixin, UpdateView):
     form_class = MunicipioForm
     template_name = 'configuracion/municipio_form.html'
     success_url = reverse_lazy('configuracion:municipios')
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        import time
+        return redirect(f"{self.success_url}?t={int(time.time())}")
 
 
 class MunicipioDeleteView(LoginRequiredMixin, DeleteView):
@@ -79,6 +99,11 @@ class LocalidadCreateView(LoginRequiredMixin, CreateView):
     form_class = LocalidadForm
     template_name = 'configuracion/localidad_form.html'
     success_url = reverse_lazy('configuracion:localidades')
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        import time
+        return redirect(f"{self.success_url}?t={int(time.time())}")
 
 
 class LocalidadUpdateView(LoginRequiredMixin, UpdateView):
@@ -86,6 +111,11 @@ class LocalidadUpdateView(LoginRequiredMixin, UpdateView):
     form_class = LocalidadForm
     template_name = 'configuracion/localidad_form.html'
     success_url = reverse_lazy('configuracion:localidades')
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        import time
+        return redirect(f"{self.success_url}?t={int(time.time())}")
 
 
 class LocalidadDeleteView(LoginRequiredMixin, DeleteView):
@@ -101,17 +131,26 @@ class InstitucionListView(LoginRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
+        from django.db.models import Q
+        search = self.request.GET.get('search', '')
+        
         if self.request.user.is_superuser:
-            # Super admin ve todas las instituciones aprobadas
-            return Institucion.objects.filter(
+            queryset = Institucion.objects.filter(
                 estado_registro='APROBADO'
-            ).select_related('provincia', 'municipio', 'localidad').prefetch_related('encargados').order_by('nombre')
+            ).select_related('provincia', 'municipio', 'localidad').prefetch_related('encargados')
         else:
-            # Usuario normal ve solo instituciones aprobadas donde es encargado
-            return Institucion.objects.filter(
+            queryset = Institucion.objects.filter(
                 encargados=self.request.user,
                 estado_registro='APROBADO'
-            ).select_related('provincia', 'municipio', 'localidad').prefetch_related('encargados').order_by('nombre')
+            ).select_related('provincia', 'municipio', 'localidad').prefetch_related('encargados')
+        
+        if search:
+            queryset = queryset.filter(
+                Q(nombre__icontains=search) |
+                Q(cuit__icontains=search)
+            )
+        
+        return queryset.order_by('nombre')
 
 
 # Alias para compatibilidad
@@ -130,6 +169,13 @@ class InstitucionCreateView(LoginRequiredMixin, CreateView):
             messages.error(request, 'No tiene permisos para crear instituciones.')
             return redirect('configuracion:instituciones')
         return super().dispatch(request, *args, **kwargs)
+    
+    def form_valid(self, form):
+        from django.contrib import messages
+        response = super().form_valid(form)
+        messages.success(self.request, f'Institución {self.object.nombre} creada exitosamente')
+        import time
+        return redirect(f"{self.success_url}?t={int(time.time())}")
 
 
 # Alias para compatibilidad

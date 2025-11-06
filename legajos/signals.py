@@ -2,6 +2,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from core.cache_decorators import invalidate_cache_pattern
 from .models import Ciudadano, LegajoAtencion, SeguimientoContacto, Derivacion, EventoCritico
+from core.models import Institucion
 
 @receiver([post_save, post_delete], sender=Ciudadano)
 def invalidate_ciudadano_cache(sender, **kwargs):
@@ -33,3 +34,9 @@ def invalidate_evento_cache(sender, **kwargs):
     """Invalida cache cuando se modifica un evento crítico"""
     invalidate_cache_pattern('evento')
     invalidate_cache_pattern('reportes')
+
+@receiver([post_save, post_delete], sender=Institucion)
+def invalidate_institucion_cache(sender, **kwargs):
+    """Invalida cache cuando se modifica una institución"""
+    from django.core.cache import cache
+    cache.clear()  # Limpiar TODO el cache siempre
