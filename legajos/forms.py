@@ -126,16 +126,8 @@ class AdmisionLegajoForm(forms.ModelForm):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
-        # Filtrar usuarios con permisos para ser responsables
-        # Buscar en múltiples grupos posibles
-        responsables_queryset = User.objects.filter(
-            models.Q(groups__name='Responsable') |
-            models.Q(groups__name='Ciudadanos') |
-            models.Q(groups__name='Administrador') |
-            models.Q(is_superuser=True)
-        ).filter(is_active=True).distinct()
-        
-        self.fields['responsable'].queryset = responsables_queryset
+        # Mostrar todos los usuarios activos como posibles responsables
+        self.fields['responsable'].queryset = User.objects.filter(is_active=True).order_by('username')
         self.fields['responsable'].empty_label = "Seleccionar responsable (opcional)"
         self.fields['responsable'].required = False
         
