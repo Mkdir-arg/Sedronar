@@ -66,6 +66,32 @@
         } catch (_) {}
     }
 
+    async function actualizarFilaConversacion(conversacionId) {
+        try {
+            const r = await fetch(`/conversaciones/api/conversacion/${conversacionId}/`);
+            if (!r.ok) return;
+            const data = await r.json();
+            if (data && data.conversacion) {
+                const conv = data.conversacion;
+                const fila = document.querySelector(`tr[data-conversacion-id="${conversacionId}"]`);
+                if (fila) {
+                    // Actualizar contador de mensajes
+                    const mensajesCell = fila.querySelector('td:nth-child(7)');
+                    if (mensajesCell) {
+                        mensajesCell.innerHTML = `
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">${conv.mensajes || 0}</span>
+                            ${conv.no_leidos && conv.no_leidos > 0 ? `<span class="contador-mensajes ml-1 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 animate-pulse">${conv.no_leidos} sin leer</span>` : ''}
+                        `;
+                        setTimeout(() => {
+                            const badge = mensajesCell.querySelector('.animate-pulse');
+                            if (badge) badge.classList.remove('animate-pulse');
+                        }, 1000);
+                    }
+                }
+            }
+        } catch (_) {}
+    }
+
     function conectarWS() {
         if (window.conversacionesListaWS && window.conversacionesListaWS.readyState === 1) return;
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -92,16 +118,13 @@
                         cargarYAgregarConversacion(convId);
                     }
                 } else if (data.type === 'nuevo_mensaje') {
-                    const fila = document.querySelector(`tr[data-conversacion-id="${data.conversacion_id}"]`);
-                    if (fila) {
-                        const badge = fila.querySelector('.contador-mensajes');
-                        if (badge) {
-                            const v = parseInt(badge.textContent) || 0;
-                            badge.textContent = v + 1;
-                            badge.classList.add('animate-pulse');
-                            setTimeout(() => badge.classList.remove('animate-pulse'), 800);
-                        }
+                    // Recargar la fila completa para actualizar contadores
+                    if (data.conversacion_id) {
+                        actualizarFilaConversacion(data.conversacion_id);
                     }
+                } else if (data.type === 'actualizar_lista') {
+                    // Recargar página cuando se asigna/reasigna
+                    setTimeout(() => window.location.reload(), 500);
                 }
             } catch (_) {}
         };

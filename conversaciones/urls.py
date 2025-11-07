@@ -28,4 +28,5 @@ urlpatterns = [
     path('asignacion-automatica/', views.asignacion_automatica, name='asignacion_automatica'),
     path('api/metricas/', views.api_metricas_tiempo_real, name='api_metricas'),
     path('api/estadisticas/', views.api_estadisticas_tiempo_real, name='api_estadisticas'),
+    path('api/conversacion/<int:conversacion_id>/', views.api_conversacion_detalle, name='api_conversacion_detalle'),
 ]
