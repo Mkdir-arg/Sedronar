@@ -171,13 +171,28 @@ def enviar_mensaje_ciudadano(request, conversacion_id):
             logging.error(f"Error creando mensaje: {e}", exc_info=True)
             return JsonResponse({'success': False, 'error': 'Error interno del servidor'})
         
-        # Notificar nuevo mensaje via WebSocket
+        # Notificar nuevo mensaje via WebSocket al operador
         try:
             from channels.layers import get_channel_layer
             from asgiref.sync import async_to_sync
             
             channel_layer = get_channel_layer()
             if channel_layer:
+                # Enviar al grupo de la conversación específica
+                async_to_sync(channel_layer.group_send)(
+                    f'conversacion_{conversacion_id}',
+                    {
+                        'type': 'chat_message',
+                        'mensaje': {
+                            'id': mensaje.id,
+                            'contenido': mensaje.contenido,
+                            'remitente': 'ciudadano',
+                            'fecha': mensaje.fecha_envio.strftime('%H:%M'),
+                            'usuario': 'Ciudadano'
+                        }
+                    }
+                )
+                # También notificar a la lista
                 async_to_sync(channel_layer.group_send)(
                     'conversaciones_list',
                     {
@@ -226,7 +241,6 @@ def tiene_permiso_conversaciones(user):
 
 @login_required
 @user_passes_test(tiene_permiso_conversaciones)
-@cache_view(timeout=60)  # Cache por 1 minuto
 def lista_conversaciones(request):
     from datetime import datetime
     from django.db.models import Count, Q
@@ -371,6 +385,9 @@ def asignar_conversacion(request, conversacion_id):
         from .services import AsignadorAutomatico
         AsignadorAutomatico.actualizar_todas_las_colas()
         
+        # Invalidar cache de la lista
+        invalidate_cache_pattern('conversaciones:lista_conversaciones')
+        
         # Notificar via WebSocket
         try:
             from channels.layers import get_channel_layer
@@ -464,6 +481,9 @@ def cerrar_conversacion(request, conversacion_id):
     conversacion.fecha_cierre = timezone.now()
     conversacion.save()
     
+    # Invalidar cache
+    invalidate_cache_pattern('conversaciones:lista_conversaciones')
+    
     messages.success(request, 'Conversación cerrada exitosamente.')
     return redirect('conversaciones:lista')
 
@@ -484,6 +504,9 @@ def reasignar_conversacion(request, conversacion_id):
             # Actualizar colas
             from .services import AsignadorAutomatico
             AsignadorAutomatico.actualizar_todas_las_colas()
+            
+            # Invalidar cache
+            invalidate_cache_pattern('conversaciones:lista_conversaciones')
             
             messages.success(request, f'Conversación reasignada a {operador.get_full_name()} exitosamente.')
     

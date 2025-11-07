@@ -194,7 +194,11 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ conversacion.operador_asignado.get_full_name|default:"Sin asignar" }}
+                            {% if conversacion.operador_asignado %}
+                                {{ conversacion.operador_asignado.get_full_name|default:conversacion.operador_asignado.username }}
+                            {% else %}
+                                Sin asignar
+                            {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {{ conversacion.fecha_inicio|date:"d/m/Y H:i" }}
@@ -217,15 +221,17 @@
                                 </a>
                                 
                                 {% if conversacion.estado == 'activa' %}
-                                    {% if not conversacion.operador_asignado %}
-                                        <button onclick="asignarConversacion({{ conversacion.id }})" 
-                                               class="text-green-600 hover:text-green-900">
-                                            <i class="fas fa-user-plus"></i> Asignar
-                                        </button>
-                                    {% elif not es_operador_charla %}
+                                    {% if conversacion.operador_asignado %}
+                                        {% if not es_operador_charla %}
                                         <button onclick="reasignarConversacion({{ conversacion.id }})" 
                                                class="text-orange-600 hover:text-orange-900">
                                             <i class="fas fa-exchange-alt"></i> Reasignar
+                                        </button>
+                                        {% endif %}
+                                    {% else %}
+                                        <button onclick="asignarConversacion({{ conversacion.id }})" 
+                                               class="text-green-600 hover:text-green-900">
+                                            <i class="fas fa-user-plus"></i> Asignar
                                         </button>
                                     {% endif %}
                                     
@@ -280,7 +286,7 @@
                         {% endif %}
                         
                         <div class="text-sm text-gray-600 mb-1">
-                            Operador: {{ conversacion.operador_asignado.get_full_name|default:"Sin asignar" }}
+                            Operador: {% if conversacion.operador_asignado %}{{ conversacion.operador_asignado.get_full_name|default:conversacion.operador_asignado.username }}{% else %}Sin asignar{% endif %}
                         </div>
                         
                         <div class="text-xs text-gray-500">
@@ -307,15 +313,17 @@
                             </a>
                             
                             {% if conversacion.estado == 'activa' %}
-                                {% if not conversacion.operador_asignado %}
-                                    <button onclick="asignarConversacion({{ conversacion.id }})" 
-                                           class="text-green-600 hover:text-green-900 p-1">
-                                        <i class="fas fa-user-plus"></i>
-                                    </button>
-                                {% elif not es_operador_charla %}
+                                {% if conversacion.operador_asignado %}
+                                    {% if not es_operador_charla %}
                                     <button onclick="reasignarConversacion({{ conversacion.id }})" 
                                            class="text-orange-600 hover:text-orange-900 p-1">
                                         <i class="fas fa-exchange-alt"></i>
+                                    </button>
+                                    {% endif %}
+                                {% else %}
+                                    <button onclick="asignarConversacion({{ conversacion.id }})" 
+                                           class="text-green-600 hover:text-green-900 p-1">
+                                        <i class="fas fa-user-plus"></i>
                                     </button>
                                 {% endif %}
                                 

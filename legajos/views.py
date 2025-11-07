@@ -515,6 +515,10 @@ class SeguimientoListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['legajo'] = self.legajo
         context['tipos'] = SeguimientoContacto.TipoContacto.choices
+        context['total_seguimientos'] = self.legajo.seguimientos.count()
+        context['entrevistas_count'] = self.legajo.seguimientos.filter(tipo='ENTREVISTA').count()
+        context['visitas_count'] = self.legajo.seguimientos.filter(tipo='VISITA').count()
+        context['llamadas_count'] = self.legajo.seguimientos.filter(tipo='LLAMADA').count()
         return context
 
 
