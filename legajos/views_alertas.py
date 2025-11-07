@@ -14,15 +14,15 @@ def alertas_dashboard(request):
     
     alertas_criticas = alertas_usuario.filter(
         prioridad='CRITICA'
-    ).select_related('ciudadano', 'legajo').order_by('-creado')[:10]
+    ).select_related('ciudadano', 'legajo__dispositivo', 'cerrada_por').order_by('-creado')[:10]
     
     alertas_altas = alertas_usuario.filter(
         prioridad='ALTA'
-    ).select_related('ciudadano', 'legajo').order_by('-creado')[:10]
+    ).select_related('ciudadano', 'legajo__dispositivo', 'cerrada_por').order_by('-creado')[:10]
     
     alertas_medias = alertas_usuario.filter(
         prioridad='MEDIA'
-    ).select_related('ciudadano', 'legajo').order_by('-creado')[:10]
+    ).select_related('ciudadano', 'legajo__dispositivo', 'cerrada_por').order_by('-creado')[:10]
     
     # Alertas de conversaciones si el usuario tiene permisos
     alertas_conversaciones = []
@@ -30,7 +30,7 @@ def alertas_dashboard(request):
         from conversaciones.models import HistorialAlertaConversacion
         alertas_conversaciones = HistorialAlertaConversacion.objects.filter(
             operador=request.user
-        ).select_related('conversacion').order_by('-creado')[:20]
+        ).select_related('conversacion__usuario', 'operador').order_by('-creado')[:20]
     
     # Estadísticas filtradas por usuario
     stats = FiltrosUsuarioService.obtener_estadisticas_usuario(request.user)
@@ -77,7 +77,7 @@ def alertas_preview_ajax(request):
     try:
         # Filtrar alertas por usuario
         alertas_usuario = FiltrosUsuarioService.obtener_alertas_usuario(request.user)
-        alertas = alertas_usuario.select_related('ciudadano', 'legajo').order_by('-creado')[:5]
+        alertas = alertas_usuario.select_related('ciudadano', 'legajo__dispositivo', 'cerrada_por').order_by('-creado')[:5]
         
         alertas_data = []
         for alerta in alertas:

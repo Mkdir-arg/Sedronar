@@ -42,10 +42,12 @@
                     </p>
                 </div>
                 <div class="flex space-x-3">
+                    {% if legajo.estado != 'CERRADO' %}
                     <a href="{% url 'legajos:seguimiento_nuevo' legajo.pk %}" 
                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
                         <i class="fas fa-plus mr-2"></i>Nuevo Seguimiento
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -77,25 +79,19 @@
         <div class="px-6 py-4 bg-gray-50">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="text-center">
-                    <div class="text-2xl font-bold text-blue-600">{{ seguimientos|length }}</div>
+                    <div class="text-2xl font-bold text-blue-600">{{ total_seguimientos }}</div>
                     <div class="text-sm text-gray-600">Total Seguimientos</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-2xl font-bold text-green-600">
-                        {% for seg in seguimientos %}{% if seg.tipo == 'ENTREVISTA' %}{{ forloop.counter0|add:1 }}{% endif %}{% empty %}0{% endfor %}
-                    </div>
+                    <div class="text-2xl font-bold text-green-600">{{ entrevistas_count|default:0 }}</div>
                     <div class="text-sm text-gray-600">Entrevistas</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-2xl font-bold text-purple-600">
-                        {% for seg in seguimientos %}{% if seg.tipo == 'VISITA' %}{{ forloop.counter0|add:1 }}{% endif %}{% empty %}0{% endfor %}
-                    </div>
+                    <div class="text-2xl font-bold text-purple-600">{{ visitas_count|default:0 }}</div>
                     <div class="text-sm text-gray-600">Visitas</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-2xl font-bold text-yellow-600">
-                        {% for seg in seguimientos %}{% if seg.tipo == 'LLAMADA' %}{{ forloop.counter0|add:1 }}{% endif %}{% empty %}0{% endfor %}
-                    </div>
+                    <div class="text-2xl font-bold text-yellow-600">{{ llamadas_count|default:0 }}</div>
                     <div class="text-sm text-gray-600">Llamadas</div>
                 </div>
             </div>
@@ -147,10 +143,12 @@
                                     </span>
                                 </div>
                                 {% endif %}
+                                {% if legajo.estado != 'CERRADO' %}
                                 <a href="{% url 'legajos:seguimiento_editar' seguimiento.pk %}" 
                                    class="text-white hover:text-gray-200 bg-white bg-opacity-20 rounded-lg p-2" title="Editar">
                                     <i class="fas fa-edit"></i>
                                 </a>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -219,7 +217,7 @@
                         Este legajo no tiene seguimientos registrados.
                     {% endif %}
                 </p>
-                {% if not request.GET.tipo %}
+                {% if not request.GET.tipo and legajo.estado != 'CERRADO' %}
                     <a href="{% url 'legajos:seguimiento_nuevo' legajo.pk %}" 
                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
                         <i class="fas fa-plus mr-2"></i>Crear Primer Seguimiento

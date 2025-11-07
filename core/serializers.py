@@ -58,6 +58,8 @@ class InstitucionSerializer(serializers.ModelSerializer):
     estado_registro_display = serializers.CharField(source='get_estado_registro_display', read_only=True)
     tipo_personeria_display = serializers.CharField(source='get_tipo_personeria_display', read_only=True)
     documentos = DocumentoRequeridoSerializer(many=True, read_only=True)
+    legajos_count = serializers.SerializerMethodField()
+    encargados_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Institucion
@@ -68,10 +70,16 @@ class InstitucionSerializer(serializers.ModelSerializer):
             'fecha_aprobacion', 'observaciones', 'tipo_personeria', 
             'tipo_personeria_display', 'nro_personeria', 'fecha_personeria', 'cuit',
             'nro_registro', 'resolucion', 'fecha_alta', 'presta_asistencia',
-            'convenio_obras_sociales', 'nro_sss', 'documentos',
-            'creado', 'modificado'
+            'convenio_obras_sociales', 'nro_sss', 'documentos', 'legajos_count',
+            'encargados_count', 'creado', 'modificado'
         ]
         read_only_fields = ['id', 'fecha_alta', 'creado', 'modificado']
+    
+    def get_legajos_count(self, obj):
+        return getattr(obj, 'legajos_count', obj.legajos.count())
+    
+    def get_encargados_count(self, obj):
+        return getattr(obj, 'encargados_count', obj.encargados.count())
 
 
 # Alias para compatibilidad hacia atrás

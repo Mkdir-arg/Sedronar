@@ -16,7 +16,8 @@ RUN apt-get update && \
       libc-dev \
       bash \
       mariadb-client \
-      locales && \
+      locales \
+      curl && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -32,10 +33,11 @@ COPY . .
 
 # Instalación de dependencias de la aplicación
 RUN pip install --upgrade pip && pip install -r requirements.txt && \
-    pip install pymysql
+    pip install pymysql django-redis==5.4.0 redis==5.0.1 django-health-check==3.17.0
 
-# Hacer ejecutable el entrypoint
+# Hacer ejecutable el entrypoint y startup script
 RUN chmod +x ./docker/django/entrypoint_final.py
+RUN chmod +x ./scripts/startup.sh
 
-# Comando de inicio de la aplicación
-CMD ["python", "./docker/django/entrypoint_final.py"]
+# Comando de inicio con optimizaciones automáticas
+CMD ["./scripts/startup.sh", "python", "./docker/django/entrypoint_final.py"]

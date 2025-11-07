@@ -3,9 +3,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Count, Q
 from django.utils import timezone
+from django.utils.html import escape
 from datetime import datetime, timedelta
 from legajos.models import LegajoAtencion, Ciudadano, SeguimientoContacto, AlertaCiudadano
 from users.models import User
+import logging
+
+logger = logging.getLogger(__name__)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -50,29 +54,30 @@ def metricas_dashboard(request):
 @permission_classes([IsAuthenticated])
 def buscar_ciudadanos(request):
     """Búsqueda rápida de ciudadanos"""
-    query = request.GET.get('q', '').strip()
+    query = escape(request.GET.get('q', '').strip())
     
     if len(query) < 3:
         return Response({'results': []})
     
     try:
-        ciudadanos = Ciudadano.objects.filter(
+        ciudadanos = Ciudadano.objects.only('id', 'nombre', 'apellido', 'dni').filter(
             Q(nombre__icontains=query) |
             Q(apellido__icontains=query) |
             Q(dni__icontains=query)
         )[:8]
         
-        resultados = []
-        for c in ciudadanos:
-            resultados.append({
-                'id': c.id,
-                'nombre': f"{c.apellido}, {c.nombre}",
-                'dni': c.dni
-            })
+        resultados = [{
+            'id': c.id,
+            'nombre': f"{c.apellido}, {c.nombre}",
+            'dni': c.dni
+        } for c in ciudadanos]
         
         return Response({'results': resultados})
+    except Ciudadano.DoesNotExist:
+        return Response({'results': []})
     except Exception as e:
-        return Response({'results': [], 'error': str(e)})
+        logger.error(f"Error en búsqueda de ciudadanos: {e}", exc_info=True)
+        return Response({'results': [], 'error': 'Error en la búsqueda'}, status=500)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -105,10 +110,10 @@ def actividad_reciente(request):
     legajos_nuevos = LegajoAtencion.objects.select_related('ciudadano', 'responsable').order_by('-fecha_apertura')[:3]
     
     # Seguimientos recientes
-    seguimientos = SeguimientoContacto.objects.select_related('legajo__ciudadano', 'creado_por').order_by('-creado')[:3]
+    seguimientos = SeguimientoContacto.objects.select_related('legajo__ciudadano', 'profesional__usuario').order_by('-creado')[:3]
     
     # Alertas recientes
-    alertas = AlertaCiudadano.objects.select_related('ciudadano').filter(activa=True).order_by('-fecha_creacion')[:2]
+    alertas = AlertaCiudadano.objects.select_related('ciudadano').filter(activa=True).order_by('-creado')[:2]
     
     actividades = []
     
@@ -125,8 +130,8 @@ def actividad_reciente(request):
     # Agregar seguimientos
     for seguimiento in seguimientos:
         actividades.append({
-            'descripcion': f'Seguimiento: {seguimiento.tipo_contacto}',
-            'usuario': seguimiento.creado_por.get_full_name() if seguimiento.creado_por else 'Sistema',
+            'descripcion': f'Seguimiento: {seguimiento.get_tipo_display()}',
+            'usuario': seguimiento.profesional.usuario.get_full_name() if seguimiento.profesional else 'Sistema',
             'tiempo': _tiempo_relativo(seguimiento.creado),
             'tipo': 'update',
             'icono': 'fas fa-check'
@@ -153,29 +158,37 @@ def tendencias_datos(request):
     """Obtiene datos para gráfico de tendencias"""
     periodo = request.GET.get('periodo', '30d')
     
-    if periodo == '7d':
-        dias = 7
-    elif periodo == '90d':
-        dias = 90
-    else:
-        dias = 30
+    dias_map = {'7d': 7, '30d': 30, '90d': 90}
+    dias = dias_map.get(periodo, 30)
     
-    fecha_inicio = timezone.now().date() - timedelta(days=dias)
-    
-    # Datos por día
-    datos = []
-    labels = []
-    
-    for i in range(dias):
-        fecha = fecha_inicio + timedelta(days=i)
-        count = LegajoAtencion.objects.filter(fecha_apertura=fecha).count()
-        datos.append(count)
-        labels.append(fecha.strftime('%d/%m'))
-    
-    return Response({
-        'labels': labels,
-        'datos': datos
-    })
+    try:
+        fecha_inicio = timezone.now().date() - timedelta(days=dias)
+        
+        # Optimizado: Una sola query con agregación
+        from django.db.models.functions import TruncDate
+        legajos_por_fecha = LegajoAtencion.objects.filter(
+            fecha_apertura__gte=fecha_inicio
+        ).annotate(
+            fecha=TruncDate('fecha_apertura')
+        ).values('fecha').annotate(
+            count=Count('id')
+        ).order_by('fecha')
+        
+        # Crear diccionario para lookup rápido
+        datos_dict = {item['fecha']: item['count'] for item in legajos_por_fecha}
+        
+        # Generar arrays completos
+        datos = []
+        labels = []
+        for i in range(dias):
+            fecha = fecha_inicio + timedelta(days=i)
+            datos.append(datos_dict.get(fecha, 0))
+            labels.append(fecha.strftime('%d/%m'))
+        
+        return Response({'labels': labels, 'datos': datos})
+    except Exception as e:
+        logger.error(f"Error en tendencias: {e}", exc_info=True)
+        return Response({'labels': [], 'datos': []}, status=500)
 
 def _tiempo_relativo(fecha):
     """Convierte fecha a tiempo relativo"""

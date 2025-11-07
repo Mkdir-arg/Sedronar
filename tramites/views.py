@@ -15,7 +15,7 @@ def es_staff(user):
 def lista_tramites(request):
     tramites = Institucion.objects.filter(
         estado_registro__in=['ENVIADO', 'REVISION']
-    ).order_by('-creado')
+    ).select_related('provincia', 'municipio', 'localidad').prefetch_related('encargados').order_by('-creado')
     
     # Debug: crear trámite de prueba si no hay ninguno
     if not tramites.exists():
@@ -34,7 +34,7 @@ def lista_tramites(request):
             )
             tramites = Institucion.objects.filter(
                 estado_registro__in=['ENVIADO', 'REVISION']
-            ).order_by('-creado')
+            ).select_related('provincia', 'municipio', 'localidad').prefetch_related('encargados').order_by('-creado')
     
     return render(request, 'tramites/lista_tramites.html', {
         'tramites': tramites
@@ -87,10 +87,8 @@ def aprobar_tramite(request, tramite_id):
             notas=f'Legajo institucional creado automáticamente al aprobar registro {nro_registro}'
         )
         
-        # Habilitar usuarios
-        for usuario in tramite.encargados.all():
-            usuario.is_active = True
-            usuario.save()
+        # Habilitar usuarios (optimizado)
+        tramite.encargados.update(is_active=True)
         
         messages.success(request, f'Trámite aprobado. Legajo {legajo.codigo} creado.')
         return redirect('tramites:lista_tramites')

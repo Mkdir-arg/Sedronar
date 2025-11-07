@@ -51,6 +51,7 @@ def metricas_contactos_api(request):
     # Profesionales más activos
     profesionales_activos = list(
         HistorialContacto.objects.filter(fecha_contacto__date__gte=hace_30_dias)
+        .select_related('profesional')
         .values('profesional__first_name', 'profesional__last_name')
         .annotate(total=Count('id'))
         .order_by('-total')[:5]
@@ -120,6 +121,7 @@ def metricas_red_contactos_api(request):
     # Ciudadanos con más vínculos
     ciudadanos_conectados = list(
         VinculoFamiliar.objects.filter(activo=True)
+        .select_related('ciudadano_principal')
         .values('ciudadano_principal__nombre', 'ciudadano_principal__apellido')
         .annotate(total_vinculos=Count('id'))
         .order_by('-total_vinculos')[:10]
@@ -148,7 +150,7 @@ def exportar_reporte_contactos(request):
     ])
     
     contactos = HistorialContacto.objects.select_related(
-        'legajo__ciudadano', 'profesional'
+        'legajo__ciudadano', 'legajo__dispositivo', 'profesional'
     ).order_by('-fecha_contacto')
     
     for contacto in contactos:

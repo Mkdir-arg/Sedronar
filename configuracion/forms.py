@@ -1,5 +1,6 @@
 from django import forms
 from core.models import Provincia, Municipio, Localidad, Institucion
+from legajos.models import PersonalInstitucion, StaffActividad, PlanFortalecimiento
 
 # Alias para compatibilidad
 DispositivoRed = Institucion
@@ -126,3 +127,111 @@ class InstitucionForm(forms.ModelForm):
 
 # Alias para compatibilidad
 DispositivoForm = InstitucionForm
+
+
+class PersonalInstitucionForm(forms.ModelForm):
+    class Meta:
+        model = PersonalInstitucion
+        fields = ['nombre', 'apellido', 'dni', 'tipo', 'titulo_profesional', 'matricula']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500',
+                'placeholder': 'Nombre'
+            }),
+            'apellido': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500',
+                'placeholder': 'Apellido'
+            }),
+            'dni': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500',
+                'placeholder': 'DNI'
+            }),
+            'tipo': forms.Select(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500'
+            }),
+            'titulo_profesional': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500',
+                'placeholder': 'Título profesional (opcional)'
+            }),
+            'matricula': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500',
+                'placeholder': 'Matrícula (opcional)'
+            })
+        }
+
+
+class StaffActividadForm(forms.ModelForm):
+    OPCIONES_PERSONAL = [
+        ('existente', 'Seleccionar personal existente'),
+        ('nuevo', 'Crear nuevo personal')
+    ]
+    
+    tipo_asignacion = forms.ChoiceField(
+        choices=OPCIONES_PERSONAL,
+        widget=forms.RadioSelect(attrs={
+            'class': 'form-radio text-purple-600'
+        }),
+        initial='existente'
+    )
+    
+    buscar_personal = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500',
+            'placeholder': 'Buscar por nombre, apellido o DNI...'
+        })
+    )
+    
+    class Meta:
+        model = StaffActividad
+        fields = ['personal', 'rol_en_actividad', 'activo']
+        widgets = {
+            'personal': forms.Select(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500'
+            }),
+            'rol_en_actividad': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500',
+                'placeholder': 'Ej: Coordinador, Terapeuta, Operador'
+            }),
+            'activo': forms.CheckboxInput(attrs={
+                'class': 'h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded'
+            })
+        }
+    
+    def __init__(self, *args, **kwargs):
+        legajo_institucional = kwargs.pop('legajo_institucional', None)
+        super().__init__(*args, **kwargs)
+        
+        self.fields['personal'].required = False
+        
+        if legajo_institucional:
+            self.fields['personal'].queryset = PersonalInstitucion.objects.filter(
+                legajo_institucional=legajo_institucional,
+                activo=True
+            ).order_by('apellido', 'nombre')
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        tipo_asignacion = cleaned_data.get('tipo_asignacion')
+        personal = cleaned_data.get('personal')
+        
+        if tipo_asignacion == 'existente' and not personal:
+            raise forms.ValidationError('Debe seleccionar un personal existente.')
+        
+        return cleaned_data
+
+
+class PlanFortalecimientoForm(forms.ModelForm):
+    class Meta:
+        model = PlanFortalecimiento
+        fields = ['nombre', 'tipo', 'subtipo', 'descripcion', 'cupo_ciudadanos', 'fecha_inicio', 'fecha_fin', 'estado']
+        widgets = {
+            'fecha_inicio': forms.DateInput(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500',
+                'type': 'date'
+            }),
+            'fecha_fin': forms.DateInput(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500',
+                'type': 'date'
+            }),
+        }

@@ -42,16 +42,18 @@
                     </p>
                 </div>
                 <div class="flex space-x-3">
-                    {% if not evaluacion %}
-                        <a href="{% url 'legajos:evaluacion' legajo.pk %}" 
-                           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                            <i class="fas fa-plus mr-2"></i>Crear Evaluación
-                        </a>
-                    {% else %}
-                        <a href="{% url 'legajos:evaluacion' legajo.pk %}" 
-                           class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                            <i class="fas fa-edit mr-2"></i>Editar Evaluación
-                        </a>
+                    {% if legajo.estado != 'CERRADO' %}
+                        {% if not evaluacion %}
+                            <a href="{% url 'legajos:evaluacion' legajo.pk %}" 
+                               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                                <i class="fas fa-plus mr-2"></i>Crear Evaluación
+                            </a>
+                        {% else %}
+                            <a href="{% url 'legajos:evaluacion' legajo.pk %}" 
+                               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                                <i class="fas fa-edit mr-2"></i>Editar Evaluación
+                            </a>
+                        {% endif %}
                     {% endif %}
                 </div>
             </div>
@@ -145,10 +147,12 @@
                 </div>
                 <h3 class="text-lg font-medium text-gray-900 mb-2">No hay evaluación inicial</h3>
                 <p class="text-gray-500 mb-6">Este legajo aún no tiene una evaluación inicial registrada.</p>
+                {% if legajo.estado != 'CERRADO' %}
                 <a href="{% url 'legajos:evaluacion' legajo.pk %}" 
                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
                     <i class="fas fa-plus mr-2"></i>Crear Evaluación Inicial
                 </a>
+                {% endif %}
             </div>
         {% endif %}
     </div>

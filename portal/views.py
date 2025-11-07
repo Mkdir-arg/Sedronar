@@ -88,7 +88,7 @@ def consultar_tramite(request):
         email = request.POST.get('email')
         try:
             user = User.objects.get(email=email)
-            instituciones = Institucion.objects.filter(encargados=user)
+            instituciones = Institucion.objects.filter(encargados=user).select_related('provincia', 'municipio', 'localidad')
             return render(request, 'portal/consultar_tramite.html', {
                 'instituciones': instituciones,
                 'email': email
@@ -101,11 +101,11 @@ def consultar_tramite(request):
 
 def get_municipios(request):
     provincia_id = request.GET.get('provincia_id')
-    municipios = Municipio.objects.filter(provincia_id=provincia_id).values('id', 'nombre')
+    municipios = Municipio.objects.filter(provincia_id=provincia_id).select_related('provincia').values('id', 'nombre')
     return JsonResponse(list(municipios), safe=False)
 
 
 def get_localidades(request):
     municipio_id = request.GET.get('municipio_id')
-    localidades = Localidad.objects.filter(municipio_id=municipio_id).values('id', 'nombre')
+    localidades = Localidad.objects.filter(municipio_id=municipio_id).select_related('municipio').values('id', 'nombre')
     return JsonResponse(list(localidades), safe=False)

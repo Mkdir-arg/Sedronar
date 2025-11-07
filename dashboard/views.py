@@ -12,29 +12,32 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        from django.db.models import Count, Q
+        from dashboard.utils import contar_usuarios, contar_ciudadanos
         
-        # Datos básicos del sistema
-        context["total_usuarios"] = User.objects.filter(is_active=True).count()
-        context["total_ciudadanos"] = Ciudadano.objects.count()
+        # Datos con caché
+        context["total_usuarios"] = contar_usuarios()
+        context["total_ciudadanos"] = contar_ciudadanos()
         
-        # Estadísticas de legajos
-        context["total_legajos"] = LegajoAtencion.objects.count()
-        context["legajos_activos"] = LegajoAtencion.objects.filter(estado__in=['ABIERTO', 'EN_SEGUIMIENTO']).count()
+        # Datos dinámicos (sin caché)
+        hace_24h = timezone.now() - timedelta(hours=24)
+        context["usuarios_activos"] = User.objects.filter(
+            last_login__gte=hace_24h
+        ).count()
         
-        # Actividad de hoy
         hoy = timezone.now().date()
+        inicio_mes = hoy.replace(day=1)
+        legajo_stats = LegajoAtencion.objects.aggregate(
+            total=Count('id'),
+            activos=Count('id', filter=Q(estado__in=['ABIERTO', 'EN_SEGUIMIENTO'])),
+            mes=Count('id', filter=Q(fecha_apertura__gte=inicio_mes))
+        )
+        context["total_legajos"] = legajo_stats['total']
+        context["legajos_activos"] = legajo_stats['activos']
+        context["registros_mes"] = legajo_stats['mes']
+        
         context["seguimientos_hoy"] = SeguimientoContacto.objects.filter(creado__date=hoy).count()
         context["alertas_activas"] = AlertaCiudadano.objects.filter(activa=True).count()
-        
-        # Actividad del mes
-        inicio_mes = hoy.replace(day=1)
-        context["registros_mes"] = LegajoAtencion.objects.filter(fecha_apertura__gte=inicio_mes).count()
-        
-        # Usuarios activos (últimas 24 horas)
-        hace_24h = timezone.now() - timedelta(hours=24)
-        context["usuarios_activos"] = User.objects.filter(last_login__gte=hace_24h).count()
-        
-        # Actividad de hoy para mostrar en el dashboard
         context["actividad_hoy"] = context["seguimientos_hoy"]
         
         return context

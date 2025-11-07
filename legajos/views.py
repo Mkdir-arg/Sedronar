@@ -7,11 +7,14 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.core.exceptions import ValidationError
+from django.core.cache import cache
+from django.utils.decorators import method_decorator
+from core.cache_decorators import cache_view, cache_queryset, invalidate_cache_pattern
 import csv
 from datetime import datetime
-from .models import Ciudadano, LegajoAtencion, EvaluacionInicial, PlanIntervencion, SeguimientoContacto, Profesional, Derivacion, EventoCritico, AlertaEventoCritico, LegajoInstitucional
+from .models import Ciudadano, LegajoAtencion, EvaluacionInicial, PlanIntervencion, SeguimientoContacto, Profesional, Derivacion, EventoCritico, AlertaEventoCritico, LegajoInstitucional, InscriptoActividad, PlanFortalecimiento
 from core.models import DispositivoRed
-from .forms import ConsultaRenaperForm, CiudadanoForm, BuscarCiudadanoForm, AdmisionLegajoForm, ConsentimientoForm, EvaluacionInicialForm, PlanIntervencionForm, SeguimientoForm, DerivacionForm, EventoCriticoForm, LegajoCerrarForm
+from .forms import ConsultaRenaperForm, CiudadanoForm, BuscarCiudadanoForm, AdmisionLegajoForm, ConsentimientoForm, EvaluacionInicialForm, PlanIntervencionForm, SeguimientoForm, DerivacionForm, EventoCriticoForm, LegajoCerrarForm, InscribirActividadForm
 from .services.consulta_renaper import consultar_datos_renaper
 
 # Importar views de contactos
@@ -27,21 +30,19 @@ class CiudadanoListView(LoginRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        queryset = Ciudadano.objects.filter(
-            activo=True
-        ).exclude(
-            Q(dni='00000000') |
-            Q(apellido__icontains='Institución') |
-            Q(nombre__icontains='Institución')
-        )
-        search = self.request.GET.get('search')
+        search = self.request.GET.get('search', '')
+        queryset = Ciudadano.objects.filter(activo=True)
+        
         if search:
             queryset = queryset.filter(
                 Q(dni__icontains=search) |
                 Q(nombre__icontains=search) |
                 Q(apellido__icontains=search)
             )
+        
         return queryset.order_by('apellido', 'nombre')
+    
+
 
 
 class CiudadanoDetailView(LoginRequiredMixin, DetailView):
@@ -51,7 +52,7 @@ class CiudadanoDetailView(LoginRequiredMixin, DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['legajos'] = self.object.legajos.all().order_by('-fecha_apertura')
+        context['legajos'] = self.object.legajos.select_related('dispositivo', 'responsable').order_by('-fecha_apertura')
         return context
 
 
@@ -139,8 +140,16 @@ class CiudadanoManualView(LoginRequiredMixin, CreateView):
     
     def form_valid(self, form):
         response = super().form_valid(form)
+        
+        invalidate_cache_pattern('ciudadanos_list')
+        from dashboard.utils import invalidate_dashboard_cache
+        invalidate_dashboard_cache()
+        
         messages.success(self.request, f'Ciudadano {self.object.nombre} {self.object.apellido} creado exitosamente (carga manual)')
-        return response
+        
+        from django.shortcuts import redirect
+        import time
+        return redirect(f"{self.success_url}?t={int(time.time())}")
 
 
 class CiudadanoConfirmarView(LoginRequiredMixin, CreateView):
@@ -175,11 +184,18 @@ class CiudadanoConfirmarView(LoginRequiredMixin, CreateView):
     
     def form_valid(self, form):
         response = super().form_valid(form)
-        # Limpiar datos de sesión
         self.request.session.pop('datos_renaper', None)
         self.request.session.pop('datos_api_renaper', None)
+        
+        invalidate_cache_pattern('ciudadanos_list')
+        from dashboard.utils import invalidate_dashboard_cache
+        invalidate_dashboard_cache()
+        
         messages.success(self.request, f'Ciudadano {self.object.nombre} {self.object.apellido} creado exitosamente')
-        return response
+        
+        from django.shortcuts import redirect
+        import time
+        return redirect(f"{self.success_url}?t={int(time.time())}")
 
 
 class CiudadanoUpdateView(LoginRequiredMixin, UpdateView):
@@ -198,14 +214,12 @@ class LegajoListView(LoginRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        queryset = LegajoAtencion.objects.select_related('ciudadano', 'dispositivo').exclude(
-            Q(ciudadano__dni='00000000') |
-            Q(ciudadano__apellido__icontains='Institución') |
-            Q(ciudadano__nombre__icontains='Institución')
-        )
-        estado = self.request.GET.get('estado')
+        estado = self.request.GET.get('estado', '')
+        queryset = LegajoAtencion.objects.select_related('ciudadano', 'dispositivo')
+        
         if estado:
             queryset = queryset.filter(estado=estado)
+        
         return queryset.order_by('-fecha_apertura')
 
 
@@ -234,6 +248,11 @@ class LegajoCreateView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.responsable = self.request.user
         response = super().form_valid(form)
+        
+        invalidate_cache_pattern('legajos_list')
+        from dashboard.utils import invalidate_dashboard_cache
+        invalidate_dashboard_cache()
+        
         messages.success(self.request, f'Legajo {self.object.codigo} creado exitosamente.')
         return response
     
@@ -496,6 +515,10 @@ class SeguimientoListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['legajo'] = self.legajo
         context['tipos'] = SeguimientoContacto.TipoContacto.choices
+        context['total_seguimientos'] = self.legajo.seguimientos.count()
+        context['entrevistas_count'] = self.legajo.seguimientos.filter(tipo='ENTREVISTA').count()
+        context['visitas_count'] = self.legajo.seguimientos.filter(tipo='VISITA').count()
+        context['llamadas_count'] = self.legajo.seguimientos.filter(tipo='LLAMADA').count()
         return context
 
 
@@ -671,7 +694,7 @@ class ReportesView(LoginRequiredMixin, TemplateView):
         ).order_by('-total')
         
         # Estadísticas por dispositivo
-        stats['por_dispositivo'] = LegajoAtencion.objects.values(
+        stats['por_dispositivo'] = LegajoAtencion.objects.select_related('dispositivo').values(
             'dispositivo__nombre', 'dispositivo__tipo'
         ).annotate(total=Count('id')).order_by('-total')[:10]
         
@@ -1055,7 +1078,7 @@ class LegajoInstitucionalListView(LoginRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        return LegajoInstitucional.objects.select_related('institucion').order_by('-fecha_apertura')
+        return LegajoInstitucional.objects.select_related('institucion', 'responsable_sedronar').order_by('-fecha_apertura')
 
 
 class LegajoInstitucionalDetailView(LoginRequiredMixin, DetailView):
@@ -1101,15 +1124,23 @@ class InstitucionListView(LoginRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
+        search = self.request.GET.get('search', '')
+        
         if self.request.user.is_superuser:
-            return Institucion.objects.filter(
-                estado_registro='APROBADO'
-            ).order_by('nombre')
+            queryset = Institucion.objects.filter(activo=True).prefetch_related('encargados')
         else:
-            return Institucion.objects.filter(
+            queryset = Institucion.objects.filter(
                 encargados=self.request.user,
-                estado_registro='APROBADO'
-            ).order_by('nombre')
+                activo=True
+            ).prefetch_related('encargados')
+        
+        if search:
+            queryset = queryset.filter(
+                Q(nombre__icontains=search) |
+                Q(cuit__icontains=search)
+            )
+        
+        return queryset.order_by('nombre')
 
 
 class InstitucionCreateView(LoginRequiredMixin, CreateView):
@@ -1123,6 +1154,14 @@ class InstitucionCreateView(LoginRequiredMixin, CreateView):
             messages.error(request, 'No tiene permisos para crear instituciones.')
             return redirect('legajos:instituciones')
         return super().dispatch(request, *args, **kwargs)
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f'Institución {self.object.nombre} creada exitosamente')
+        
+        # Redirección forzada con timestamp para evitar cache del navegador
+        import time
+        return redirect(f"{self.success_url}?t={int(time.time())}")
 
 
 class InstitucionUpdateView(LoginRequiredMixin, UpdateView):
@@ -1133,9 +1172,17 @@ class InstitucionUpdateView(LoginRequiredMixin, UpdateView):
     
     def get_queryset(self):
         if self.request.user.is_superuser:
-            return Institucion.objects.all()
+            return Institucion.objects.prefetch_related('encargados')
         else:
-            return Institucion.objects.filter(encargados=self.request.user)
+            return Institucion.objects.filter(encargados=self.request.user).prefetch_related('encargados')
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f'Institución {self.object.nombre} actualizada exitosamente')
+        
+        # Redirección forzada con timestamp para evitar cache del navegador
+        import time
+        return redirect(f"{self.success_url}?t={int(time.time())}")
 
 
 class InstitucionDeleteView(LoginRequiredMixin, DeleteView):
@@ -1145,9 +1192,9 @@ class InstitucionDeleteView(LoginRequiredMixin, DeleteView):
     
     def get_queryset(self):
         if self.request.user.is_superuser:
-            return Institucion.objects.all()
+            return Institucion.objects.prefetch_related('encargados')
         else:
-            return Institucion.objects.filter(encargados=self.request.user)
+            return Institucion.objects.filter(encargados=self.request.user).prefetch_related('encargados')
     
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -1186,3 +1233,57 @@ def actividades_por_institucion(request, institucion_id):
         })
     
     return JsonResponse({'actividades': actividades_list})
+
+
+class InscribirActividadView(LoginRequiredMixin, CreateView):
+    """Vista para inscribir ciudadano a actividad del centro"""
+    model = InscriptoActividad
+    form_class = InscribirActividadForm
+    template_name = 'legajos/inscribir_actividad_form.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.legajo = get_object_or_404(LegajoAtencion, id=kwargs['legajo_id'])
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['legajo'] = self.legajo
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.legajo
+        return context
+    
+    def form_valid(self, form):
+        form.instance.ciudadano = self.legajo.ciudadano
+        response = super().form_valid(form)
+        messages.success(self.request, f'Ciudadano inscrito exitosamente a {form.instance.actividad.nombre}')
+        return response
+    
+    def get_success_url(self):
+        return reverse_lazy('legajos:actividades_inscrito', kwargs={'legajo_id': self.legajo.id})
+
+
+class ActividadesInscritoListView(LoginRequiredMixin, ListView):
+    """Vista para listar actividades del ciudadano"""
+    model = InscriptoActividad
+    template_name = 'legajos/actividades_inscrito_list.html'
+    context_object_name = 'inscripciones'
+    paginate_by = 20
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.legajo = get_object_or_404(LegajoAtencion, id=kwargs['legajo_id'])
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_queryset(self):
+        return InscriptoActividad.objects.filter(
+            ciudadano=self.legajo.ciudadano
+        ).select_related(
+            'actividad__legajo_institucional__institucion'
+        ).order_by('-fecha_inscripcion')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['legajo'] = self.legajo
+        return context

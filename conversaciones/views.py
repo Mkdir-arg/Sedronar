@@ -6,6 +6,8 @@ from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from django.contrib import messages
 from django.db import models
+from django.core.cache import cache
+from core.cache_decorators import cache_view, cache_queryset, invalidate_cache_pattern
 from .models import Conversacion, Mensaje
 import json
 
@@ -18,14 +20,14 @@ def chat_ciudadano(request):
 @csrf_exempt
 def consultar_renaper(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        dni = data.get('dni', '').strip()
-        sexo = data.get('sexo', '').strip()
-        
-        if not dni or not sexo:
-            return JsonResponse({'success': False, 'error': 'DNI y sexo son requeridos'})
-        
         try:
+            data = json.loads(request.body)
+            dni = data.get('dni', '').strip()
+            sexo = data.get('sexo', '').strip()
+            
+            if not dni or not sexo:
+                return JsonResponse({'success': False, 'error': 'DNI y sexo son requeridos'})
+            
             from legajos.services.consulta_renaper import consultar_datos_renaper
             resultado = consultar_datos_renaper(dni, sexo)
             
@@ -41,7 +43,6 @@ def consultar_renaper(request):
                     }
                 })
             else:
-                # Si RENAPER falla o persona fallecida
                 if resultado.get('fallecido'):
                     return JsonResponse({
                         'success': False, 
@@ -52,13 +53,14 @@ def consultar_renaper(request):
                         'success': False,
                         'error': resultado.get('error', 'Error al consultar RENAPER')
                     })
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'JSON inválido'})
         except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'error': f'Error interno al consultar datos: {str(e)}'
-            })
+            import logging
+            logging.error(f"Error en consulta RENAPER: {e}", exc_info=True)
+            return JsonResponse({'success': False, 'error': 'Error interno del servidor'})
     
-    return JsonResponse({'success': False})
+    return JsonResponse({'success': False, 'error': 'Método no permitido'})
 
 
 @csrf_exempt
@@ -119,6 +121,7 @@ def iniciar_conversacion(request):
                         'conversaciones_list',
                         {
                             'type': 'nueva_conversacion',
+                            'conversacion_id': conversacion.id,
                             'mensaje': f'Nueva conversación #{conversacion.id} creada'
                         }
                     )
@@ -146,7 +149,8 @@ def enviar_mensaje_ciudadano(request, conversacion_id):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            contenido = data.get('mensaje', '').strip()
+            from django.utils.html import escape
+            contenido = escape(data.get('mensaje', '').strip())
             
             if not contenido:
                 return JsonResponse({'success': False, 'error': 'Mensaje vacío'})
@@ -158,23 +162,42 @@ def enviar_mensaje_ciudadano(request, conversacion_id):
                 remitente='ciudadano',
                 contenido=contenido
             )
-            
-            print(f"DEBUG: Mensaje creado - ID: {mensaje.id}, Conversación: {conversacion_id}, Contenido: {contenido}")
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'JSON inválido'})
+        except Conversacion.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Conversación no encontrada'})
         except Exception as e:
-            print(f"DEBUG: Error al crear mensaje: {str(e)}")
-            return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'})
+            import logging
+            logging.error(f"Error creando mensaje: {e}", exc_info=True)
+            return JsonResponse({'success': False, 'error': 'Error interno del servidor'})
         
-        # Notificar nuevo mensaje via WebSocket
+        # Notificar nuevo mensaje via WebSocket al operador
         try:
             from channels.layers import get_channel_layer
             from asgiref.sync import async_to_sync
             
             channel_layer = get_channel_layer()
             if channel_layer:
+                # Enviar al grupo de la conversación específica
+                async_to_sync(channel_layer.group_send)(
+                    f'conversacion_{conversacion_id}',
+                    {
+                        'type': 'chat_message',
+                        'mensaje': {
+                            'id': mensaje.id,
+                            'contenido': mensaje.contenido,
+                            'remitente': 'ciudadano',
+                            'fecha': mensaje.fecha_envio.strftime('%H:%M'),
+                            'usuario': 'Ciudadano'
+                        }
+                    }
+                )
+                # También notificar a la lista
                 async_to_sync(channel_layer.group_send)(
                     'conversaciones_list',
                     {
-                        'type': 'actualizar_lista',
+                        'type': 'nuevo_mensaje',
+                        'conversacion_id': conversacion_id,
                         'mensaje': f'Nuevo mensaje en conversación #{conversacion_id}'
                     }
                 )
@@ -231,13 +254,17 @@ def lista_conversaciones(request):
     busqueda = request.GET.get('busqueda', '')
     tipo_filtro = request.GET.get('tipo', '')
     
-    # Base queryset
+    # Base queryset optimizado
     if request.user.groups.filter(name='OperadorCharla').exists() and not request.user.is_superuser:
-        conversaciones = Conversacion.objects.select_related('operador_asignado').prefetch_related('mensajes').filter(
+        conversaciones = Conversacion.objects.select_related('operador_asignado').annotate(
+            mensajes_no_leidos=Count('mensajes', filter=Q(mensajes__remitente='ciudadano', mensajes__leido=False))
+        ).filter(
             models.Q(operador_asignado=None) | models.Q(operador_asignado=request.user)
         )
     else:
-        conversaciones = Conversacion.objects.select_related('operador_asignado').prefetch_related('mensajes')
+        conversaciones = Conversacion.objects.select_related('operador_asignado').annotate(
+            mensajes_no_leidos=Count('mensajes', filter=Q(mensajes__remitente='ciudadano', mensajes__leido=False))
+        )
     
     # Aplicar filtros
     if estado_filtro:
@@ -274,23 +301,15 @@ def lista_conversaciones(request):
         fecha_inicio__year=año_actual
     ).count()
     
-    tiempo_promedio = 0
-    conversaciones_con_respuesta = Conversacion.objects.filter(
+    # Tiempo promedio optimizado usando campo precalculado
+    from django.db.models import Avg
+    tiempo_promedio = Conversacion.objects.filter(
         operador_asignado__isnull=False,
-        mensajes__remitente='operador'
-    ).distinct()
-    
-    if conversaciones_con_respuesta.exists():
-        tiempos = []
-        for conv in conversaciones_con_respuesta:
-            primer_msg_ciudadano = conv.mensajes.filter(remitente='ciudadano').first()
-            primer_msg_operador = conv.mensajes.filter(remitente='operador').first()
-            if primer_msg_ciudadano and primer_msg_operador:
-                diff = primer_msg_operador.fecha_envio - primer_msg_ciudadano.fecha_envio
-                tiempos.append(diff.total_seconds() / 60)
-        
-        if tiempos:
-            tiempo_promedio = sum(tiempos) / len(tiempos)
+        tiempo_respuesta_segundos__isnull=False
+    ).aggregate(
+        promedio=Avg('tiempo_respuesta_segundos')
+    )['promedio'] or 0
+    tiempo_promedio = round(tiempo_promedio / 60, 1)
     
     # Carga de trabajo por operador
     operadores_con_carga = User.objects.filter(
@@ -306,8 +325,7 @@ def lista_conversaciones(request):
     
     es_operador_charla = request.user.groups.filter(name='OperadorCharla').exists()
     
-    for conversacion in conversaciones:
-        conversacion.mensajes_no_leidos = conversacion.mensajes.filter(remitente='ciudadano', leido=False).count()
+    # mensajes_no_leidos ya calculado en annotate - eliminar bucle
     
     return render(request, 'conversaciones/lista.html', {
         'conversaciones': conversaciones,
@@ -366,6 +384,9 @@ def asignar_conversacion(request, conversacion_id):
         # Actualizar colas después de la asignación
         from .services import AsignadorAutomatico
         AsignadorAutomatico.actualizar_todas_las_colas()
+        
+        # Invalidar cache de la lista
+        invalidate_cache_pattern('conversaciones:lista_conversaciones')
         
         # Notificar via WebSocket
         try:
@@ -431,7 +452,8 @@ def enviar_mensaje_operador(request, conversacion_id):
                 async_to_sync(channel_layer.group_send)(
                     'conversaciones_list',
                     {
-                        'type': 'actualizar_lista',
+                        'type': 'nuevo_mensaje',
+                        'conversacion_id': conversacion_id,
                         'mensaje': f'Respuesta del operador en conversación #{conversacion_id}'
                     }
                 )
@@ -459,6 +481,9 @@ def cerrar_conversacion(request, conversacion_id):
     conversacion.fecha_cierre = timezone.now()
     conversacion.save()
     
+    # Invalidar cache
+    invalidate_cache_pattern('conversaciones:lista_conversaciones')
+    
     messages.success(request, 'Conversación cerrada exitosamente.')
     return redirect('conversaciones:lista')
 
@@ -479,6 +504,9 @@ def reasignar_conversacion(request, conversacion_id):
             # Actualizar colas
             from .services import AsignadorAutomatico
             AsignadorAutomatico.actualizar_todas_las_colas()
+            
+            # Invalidar cache
+            invalidate_cache_pattern('conversaciones:lista_conversaciones')
             
             messages.success(request, f'Conversación reasignada a {operador.get_full_name()} exitosamente.')
     
@@ -543,34 +571,40 @@ def configurar_cola(request):
 @user_passes_test(tiene_permiso_conversaciones)
 def asignacion_automatica(request):
     """Vista para forzar asignación automática de conversaciones sin asignar (solo a operadores logueados)"""
-    from .services import AsignadorAutomatico
-    
-    # Buscar conversaciones activas sin operador asignado
-    conversaciones_sin_asignar = Conversacion.objects.filter(
-        estado='activa',
-        operador_asignado=None
-    )
-    
-    asignadas = 0
-    sin_operadores = 0
-    
-    for conversacion in conversaciones_sin_asignar:
-        if AsignadorAutomatico.asignar_conversacion_automatica(conversacion):
-            asignadas += 1
-        else:
-            sin_operadores += 1
-    
-    # Actualizar todas las colas
-    AsignadorAutomatico.actualizar_todas_las_colas()
-    
-    if asignadas > 0:
-        messages.success(request, f'{asignadas} conversaciones asignadas automáticamente a operadores logueados')
-    
-    if sin_operadores > 0:
-        messages.warning(request, f'{sin_operadores} conversaciones no pudieron asignarse (no hay operadores logueados disponibles)')
-    
-    if asignadas == 0 and sin_operadores == 0:
-        messages.info(request, 'No hay conversaciones sin asignar')
+    try:
+        from .services import AsignadorAutomatico
+        
+        conversaciones_sin_asignar = Conversacion.objects.filter(
+            estado='activa',
+            operador_asignado=None
+        ).only('id', 'estado')
+        
+        asignadas = 0
+        sin_operadores = 0
+        
+        for conversacion in conversaciones_sin_asignar:
+            try:
+                if AsignadorAutomatico.asignar_conversacion_automatica(conversacion):
+                    asignadas += 1
+                else:
+                    sin_operadores += 1
+            except Exception as e:
+                import logging
+                logging.warning(f"Error asignando conversación {conversacion.id}: {e}")
+                sin_operadores += 1
+        
+        AsignadorAutomatico.actualizar_todas_las_colas()
+        
+        if asignadas > 0:
+            messages.success(request, f'{asignadas} conversaciones asignadas automáticamente')
+        if sin_operadores > 0:
+            messages.warning(request, f'{sin_operadores} conversaciones no pudieron asignarse')
+        if asignadas == 0 and sin_operadores == 0:
+            messages.info(request, 'No hay conversaciones sin asignar')
+    except Exception as e:
+        import logging
+        logging.error(f"Error en asignación automática: {e}", exc_info=True)
+        messages.error(request, 'Error en la asignación automática')
     
     return redirect('conversaciones:lista')
 

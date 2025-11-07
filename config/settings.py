@@ -16,6 +16,8 @@ ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")  # dev|qa|prd
 
 # --- Secret Key ---
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("DJANGO_SECRET_KEY debe estar configurada en .env")
 
 # --- i18n/Timezone ---
 LANGUAGE_CODE = "es-ar"
@@ -36,6 +38,11 @@ if DEBUG:
         if h not in hosts:
             hosts.append(h)
 
+# Agregar nombres de servicios Docker para nginx
+for h in ("sedronar-http", "sedronar-ws"):
+    if h not in hosts:
+        hosts.append(h)
+
 ALLOWED_HOSTS = list(dict.fromkeys(hosts))  # sin duplicados
 
 DEFAULT_SCHEME = "https" if ENVIRONMENT == "prd" else "http"
@@ -43,7 +50,7 @@ DEFAULT_SCHEME = "https" if ENVIRONMENT == "prd" else "http"
 # CSRF_TRUSTED_ORIGINS requiere esquema. Para PA siempre https.
 CSRF_TRUSTED_ORIGINS = ["https://mlepera.pythonanywhere.com"]
 if DEBUG:
-    CSRF_TRUSTED_ORIGINS += ["http://localhost", "http://127.0.0.1"]
+    CSRF_TRUSTED_ORIGINS += ["http://localhost", "http://127.0.0.1", "http://localhost:9000", "http://127.0.0.1:9000"]
 
 # --- Apps ---
 INSTALLED_APPS = [
@@ -59,6 +66,11 @@ INSTALLED_APPS = [
     "django_extensions",
     "rest_framework",
     "channels",
+    "django_redis",
+    "health_check",
+    "health_check.db",
+    "health_check.cache",
+    "silk",  # Performance profiling
     # Apps propias
     "users",
     "core",
@@ -69,14 +81,19 @@ INSTALLED_APPS = [
     "conversaciones",
     "portal",
     "tramites",
-    "healthcheck",  # la usás en urls
-    # "simple_history",       # si la reactivás, agregala también acá
-    # "drf_spectacular",      # si vas a usar docs de API
+    "healthcheck",
+    "drf_spectacular",
 ]
 
 # --- Middleware ---
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
+    "django.middleware.security.SecurityMiddleware",  # Seguridad primero
+    "core.middleware_concurrency.ConcurrencyLimitMiddleware",  # Limitar antes de medir
+    "silk.middleware.SilkyMiddleware",  # Performance profiling
+    "django.middleware.gzip.GZipMiddleware",
+    "core.middleware_concurrency.RequestMetricsMiddleware",    # Métricas en tiempo real
+    "core.monitoring.MonitoringMiddleware",  # Sistema de monitoreo avanzado
+    "config.middlewares.performance.PerformanceMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -86,8 +103,8 @@ MIDDLEWARE = [
     "django.contrib.admindocs.middleware.XViewMiddleware",
     "config.middlewares.xss_protection.XSSProtectionMiddleware",
     "config.middlewares.threadlocals.ThreadLocalMiddleware",
-    # "simple_history.middleware.HistoryRequestMiddleware",
     "config.middlewares.auditoria.AuditoriaMiddleware",
+    "config.middlewares.query_counter.QueryCountMiddleware",
 ]
 
 # --- URLs / WSGI / ASGI ---
@@ -118,10 +135,21 @@ TEMPLATES = [
 # --- Static & Media ---
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
-STATIC_ROOT = BASE_DIR / "staticfiles"   # coherente con mapeo en panel Web
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# Static files optimization
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+]
+
+if ENVIRONMENT == "prd":
+    STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
+else:
+    STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 
 # --- Auth / Redirects ---
 LOGIN_URL = "login"
@@ -156,8 +184,14 @@ DATABASES = {
         "OPTIONS": {
             "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
             "charset": "utf8mb4",
+            "isolation_level": "read committed",
+            "autocommit": True,
+            "connect_timeout": 10,
+            "read_timeout": 10,
+            "write_timeout": 10,
         },
-        "CONN_MAX_AGE": 60,
+        "CONN_MAX_AGE": 60,  # Reusar conexiones por 60 segundos
+        "CONN_HEALTH_CHECKS": True,  # Verificar salud de conexión antes de reusar
     }
 }
 
@@ -167,13 +201,49 @@ if "pytest" in sys.argv or os.environ.get("PYTEST_RUNNING") == "1":
 # --- Cache ---
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "unique-snowflake",
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://sedronar-redis:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
+            "CONNECTION_POOL_KWARGS": {"max_connections": 200},
+        },
+        "KEY_PREFIX": "sedronar",
+        "TIMEOUT": 300,
+    },
+    "sessions": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://sedronar-redis:6379/2",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": {"max_connections": 100},
+        },
+        "KEY_PREFIX": "session",
     }
 }
 
+# --- Sessions ---
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "sessions"
+SESSION_COOKIE_AGE = 86400  # 24 horas
+
 # --- Channels ---
-CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("sedronar-redis", 6379)],
+            "capacity": 1500,
+            "expiry": 60,
+        },
+    },
+}
+
+# --- Health Check ---
+HEALTH_CHECK = {
+    'DISK_USAGE_MAX': 90,  # percent
+    'MEMORY_MIN': 100,     # in MB
+}
 
 # --- TTLs ---
 DEFAULT_CACHE_TIMEOUT = 300
@@ -184,7 +254,7 @@ CIUDADANO_CACHE_TIMEOUT = 300
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
-    # "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 # --- Integraciones ---
@@ -237,6 +307,28 @@ AUTH_PASSWORD_VALIDATORS = [
 if DEBUG:
     INTERNAL_IPS = ["127.0.0.1", "::1"]
 
+# --- Compresión Gzip ---
+USE_GZIP = True
+GZIP_CONTENT_TYPES = (
+    'text/css',
+    'text/javascript',
+    'application/javascript',
+    'application/x-javascript',
+    'text/xml',
+    'text/plain',
+    'text/html',
+    'application/json',
+)
+
+# --- Silk Configuration ---
+SILKY_PYTHON_PROFILER = True
+SILKY_PYTHON_PROFILER_BINARY = True
+SILKY_AUTHENTICATION = True
+SILKY_AUTHORISATION = True
+SILKY_MAX_REQUEST_BODY_SIZE = 1024  # 1KB
+SILKY_MAX_RESPONSE_BODY_SIZE = 1024  # 1KB
+SILKY_INTERCEPT_PERCENT = 100 if DEBUG else 10  # 100% en dev, 10% en prod
+
 # --- Seguridad por entorno ---
 if ENVIRONMENT == "prd":
     STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
@@ -254,3 +346,12 @@ else:
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
+# DRF Spectacular Configuration
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'SEDRONAR API',
+    'DESCRIPTION': 'Sistema de Gestión SEDRONAR - Documentación de APIs',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SCHEMA_PATH_PREFIX': '/api/',
+}

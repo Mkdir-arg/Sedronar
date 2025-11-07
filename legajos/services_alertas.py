@@ -18,7 +18,9 @@ class AlertasService:
         """Genera todas las alertas para un ciudadano específico"""
         try:
             ciudadano = Ciudadano.objects.get(id=ciudadano_id)
-            legajos = LegajoAtencion.objects.filter(ciudadano=ciudadano)
+            legajos = LegajoAtencion.objects.filter(ciudadano=ciudadano).select_related(
+                'ciudadano', 'dispositivo', 'responsable'
+            ).prefetch_related('evaluacion', 'seguimientos', 'eventos', 'derivaciones')
             
             # Limpiar alertas existentes no críticas
             AlertaCiudadano.objects.filter(
@@ -88,7 +90,7 @@ class AlertasService:
         # 5. Sin Contacto Prolongado
         ultimo_contacto = HistorialContacto.objects.filter(
             legajo=legajo
-        ).order_by('-fecha_contacto').first()
+        ).select_related('legajo__ciudadano').order_by('-fecha_contacto').first()
         
         if ultimo_contacto:
             dias_sin_contacto = (timezone.now().date() - ultimo_contacto.fecha_contacto.date()).days

@@ -6,5 +6,11 @@ class LegajosConfig(AppConfig):
     name = 'legajos'
     
     def ready(self):
+        import legajos.signals
+    
+    def ready(self):
+        import legajos.signals_historial
+    
+    def ready(self):
         import legajos.signals_alertas
     verbose_name = 'Legajos'

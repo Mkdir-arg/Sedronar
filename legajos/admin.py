@@ -10,6 +10,9 @@ class CiudadanoAdmin(admin.ModelAdmin):
     ordering = ("apellido", "nombre")
     readonly_fields = ("creado", "modificado")
     
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related('legajos__dispositivo')
+    
     fieldsets = (
         ("Información Personal", {
             "fields": ("dni", "nombre", "apellido", "fecha_nacimiento", "genero")
@@ -32,6 +35,9 @@ class ProfesionalAdmin(admin.ModelAdmin):
     list_display = ("usuario", "rol", "matricula")
     search_fields = ("usuario__username", "usuario__first_name", "usuario__last_name", "rol", "matricula")
     list_filter = ("rol",)
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('usuario')
 
 
 @admin.register(LegajoAtencion)
@@ -40,6 +46,9 @@ class LegajoAtencionAdmin(admin.ModelAdmin):
     list_filter = ("estado", "nivel_riesgo", "dispositivo__provincia", "dispositivo__tipo", "via_ingreso", "plan_vigente")
     search_fields = ("codigo", "ciudadano__dni", "ciudadano__apellido", "ciudadano__nombre")
     readonly_fields = ("id", "codigo", "creado", "modificado", "fecha_apertura", "dias_desde_admision")
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('ciudadano', 'dispositivo', 'responsable')
     
     def codigo_corto(self, obj):
         return f"{obj.codigo[:8]}..."
@@ -71,6 +80,9 @@ class ConsentimientoAdmin(admin.ModelAdmin):
     list_filter = ("vigente", "fecha_firma")
     search_fields = ("ciudadano__dni", "ciudadano__apellido", "ciudadano__nombre")
     readonly_fields = ("creado", "modificado")
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('ciudadano')
 
 
 @admin.register(EvaluacionInicial)
@@ -79,6 +91,9 @@ class EvaluacionInicialAdmin(admin.ModelAdmin):
     list_filter = ("riesgo_suicida", "violencia", "creado")
     search_fields = ("legajo__codigo", "legajo__ciudadano__dni", "legajo__ciudadano__apellido")
     readonly_fields = ("creado", "modificado")
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('legajo__ciudadano', 'legajo__dispositivo')
     
     fieldsets = (
         ("Información Básica", {
@@ -120,6 +135,9 @@ class SeguimientoContactoAdmin(admin.ModelAdmin):
     list_filter = ['tipo', 'adherencia', 'creado']
     search_fields = ['legajo__codigo', 'descripcion', 'profesional__usuario__username']
     date_hierarchy = 'creado'
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('legajo__ciudadano', 'profesional__usuario')
 
 
 @admin.register(Derivacion)
@@ -128,6 +146,9 @@ class DerivacionAdmin(admin.ModelAdmin):
     list_filter = ['urgencia', 'estado', 'origen__provincia', 'destino__provincia', 'creado']
     search_fields = ['legajo__codigo', 'motivo', 'origen__nombre', 'destino__nombre']
     date_hierarchy = 'creado'
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('legajo__ciudadano', 'origen', 'destino')
 
 
 @admin.register(EventoCritico)
@@ -135,6 +156,9 @@ class EventoCriticoAdmin(admin.ModelAdmin):
     list_display = ['legajo', 'tipo', 'creado']
     list_filter = ['tipo', 'creado']
     search_fields = ['legajo__codigo', 'detalle']
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('legajo__ciudadano')
 
 
 @admin.register(Adjunto)
@@ -150,6 +174,9 @@ class AlertaEventoCriticoAdmin(admin.ModelAdmin):
     list_filter = ['fecha_cierre', 'evento__tipo']
     search_fields = ['evento__legajo__codigo', 'responsable__username']
     readonly_fields = ['fecha_cierre']
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('evento__legajo__ciudadano', 'responsable')
 
 
 # Registrar modelos de contactos en admin

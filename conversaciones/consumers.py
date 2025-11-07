@@ -195,15 +195,16 @@ class ConversacionesListConsumer(AsyncWebsocketConsumer):
         # Notificar nueva conversación
         await self.send(text_data=json.dumps({
             'type': 'nueva_conversacion',
-            'conversacion': event['conversacion']
+            'conversacion_id': event.get('conversacion_id'),
+            'mensaje': event.get('mensaje', 'Nueva conversación disponible')
         }))
     
     async def nuevo_mensaje(self, event):
         # Notificar nuevo mensaje
         await self.send(text_data=json.dumps({
             'type': 'nuevo_mensaje',
-            'conversacion_id': event['conversacion_id'],
-            'mensaje': event['mensaje']
+            'conversacion_id': event.get('conversacion_id'),
+            'mensaje': event.get('mensaje', '')
         }))
     
     async def actualizar_lista(self, event):

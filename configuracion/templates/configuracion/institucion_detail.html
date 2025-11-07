@@ -246,16 +246,18 @@
             {% if planes %}
                 <div class="space-y-3">
                     {% for plan in planes|slice:":5" %}
-                    <div class="p-3 bg-gray-50 rounded-lg">
-                        <div class="font-medium text-gray-900">{{ plan.nombre }}</div>
-                        <div class="text-sm text-gray-600 mb-1">{{ plan.get_tipo_display }} - {{ plan.get_subtipo_display }}</div>
-                        <div class="text-sm text-gray-500 mb-2">Cupo: {{ plan.cupo_ciudadanos }} | Staff: {{ plan.staff.count }}</div>
-                        <span class="px-2 py-1 rounded-full text-xs font-medium
-                            {% if plan.estado == 'ACTIVO' %}bg-green-100 text-green-800
-                            {% elif plan.estado == 'FINALIZADO' %}bg-blue-100 text-blue-800
-                            {% else %}bg-yellow-100 text-yellow-800{% endif %}">
-                            {{ plan.get_estado_display }}
-                        </span>
+                    <div class="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <a href="{% url 'configuracion:actividad_detalle' plan.pk %}" class="block">
+                            <div class="font-medium text-gray-900 hover:text-blue-600">{{ plan.nombre }}</div>
+                            <div class="text-sm text-gray-600 mb-1">{{ plan.get_tipo_display }} - {{ plan.get_subtipo_display }}</div>
+                            <div class="text-sm text-gray-500 mb-2">Cupo: {{ plan.cupo_ciudadanos }} | Staff: {{ plan.staff.count }}</div>
+                            <span class="px-2 py-1 rounded-full text-xs font-medium
+                                {% if plan.estado == 'ACTIVO' %}bg-green-100 text-green-800
+                                {% elif plan.estado == 'FINALIZADO' %}bg-blue-100 text-blue-800
+                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ plan.get_estado_display }}
+                            </span>
+                        </a>
                     </div>
                     {% endfor %}
                 </div>
@@ -317,10 +319,12 @@
                     {% for plan in planes %}
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="font-medium text-gray-900">{{ plan.nombre }}</div>
-                            {% if plan.descripcion %}
-                                <div class="text-sm text-gray-500">{{ plan.descripcion|truncatechars:50 }}</div>
-                            {% endif %}
+                            <a href="{% url 'configuracion:actividad_detalle' plan.pk %}" class="block hover:text-blue-600">
+                                <div class="font-medium text-gray-900 hover:text-blue-600">{{ plan.nombre }}</div>
+                                {% if plan.descripcion %}
+                                    <div class="text-sm text-gray-500">{{ plan.descripcion|truncatechars:50 }}</div>
+                                {% endif %}
+                            </a>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">

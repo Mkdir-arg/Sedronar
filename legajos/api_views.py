@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
+from django.db.models import Count
 from .models import (
     Ciudadano, LegajoAtencion, EvaluacionInicial,
     PlanIntervencion, SeguimientoContacto, Derivacion, EventoCritico, AlertaCiudadano
@@ -31,7 +32,7 @@ class CiudadanoViewSet(viewsets.ModelViewSet):
     
     Permite realizar operaciones CRUD sobre los ciudadanos del sistema.
     """
-    queryset = Ciudadano.objects.all()
+    queryset = Ciudadano.objects.prefetch_related('legajos__dispositivo', 'legajos__responsable').annotate(legajos_count=Count('legajos'))
     serializer_class = CiudadanoSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
@@ -55,7 +56,10 @@ class LegajoAtencionViewSet(viewsets.ModelViewSet):
     
     Permite realizar operaciones CRUD sobre los legajos de atención.
     """
-    queryset = LegajoAtencion.objects.select_related('ciudadano', 'dispositivo', 'responsable')
+    queryset = LegajoAtencion.objects.select_related('ciudadano', 'dispositivo', 'responsable').annotate(
+        seguimientos_count=Count('seguimientos'),
+        eventos_count=Count('eventos')
+    )
     serializer_class = LegajoAtencionSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
@@ -140,7 +144,7 @@ class EvaluacionInicialViewSet(viewsets.ModelViewSet):
     """
     ViewSet para gestionar evaluaciones iniciales.
     """
-    queryset = EvaluacionInicial.objects.select_related('legajo')
+    queryset = EvaluacionInicial.objects.select_related('legajo__ciudadano', 'legajo__dispositivo')
     serializer_class = EvaluacionInicialSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
@@ -159,7 +163,7 @@ class PlanIntervencionViewSet(viewsets.ModelViewSet):
     """
     ViewSet para gestionar planes de intervención.
     """
-    queryset = PlanIntervencion.objects.select_related('legajo', 'profesional')
+    queryset = PlanIntervencion.objects.select_related('legajo__ciudadano', 'profesional__usuario')
     serializer_class = PlanIntervencionSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
@@ -178,7 +182,7 @@ class SeguimientoContactoViewSet(viewsets.ModelViewSet):
     """
     ViewSet para gestionar seguimientos de contacto.
     """
-    queryset = SeguimientoContacto.objects.select_related('legajo', 'profesional')
+    queryset = SeguimientoContacto.objects.select_related('legajo__ciudadano', 'profesional__usuario')
     serializer_class = SeguimientoContactoSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
@@ -198,7 +202,7 @@ class DerivacionViewSet(viewsets.ModelViewSet):
     """
     ViewSet para gestionar derivaciones entre dispositivos.
     """
-    queryset = Derivacion.objects.select_related('legajo', 'origen', 'destino')
+    queryset = Derivacion.objects.select_related('legajo__ciudadano', 'origen', 'destino')
     serializer_class = DerivacionSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
@@ -218,7 +222,7 @@ class EventoCriticoViewSet(viewsets.ModelViewSet):
     """
     ViewSet para gestionar eventos críticos.
     """
-    queryset = EventoCritico.objects.select_related('legajo')
+    queryset = EventoCritico.objects.select_related('legajo__ciudadano')
     serializer_class = EventoCriticoSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
@@ -233,7 +237,7 @@ class AlertasViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet para consultar alertas del sistema.
     """
-    queryset = AlertaCiudadano.objects.all()
+    queryset = AlertaCiudadano.objects.select_related('ciudadano', 'legajo__dispositivo')
     serializer_class = AlertaCiudadanoSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
@@ -242,7 +246,7 @@ class AlertasViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         """Filtrar alertas según el usuario autenticado"""
-        return FiltrosUsuarioService.obtener_alertas_usuario(self.request.user).select_related('ciudadano', 'legajo')
+        return FiltrosUsuarioService.obtener_alertas_usuario(self.request.user).select_related('ciudadano', 'legajo__dispositivo', 'cerrada_por')
     
     @extend_schema(description="Obtiene contador de alertas activas")
     @action(detail=False, methods=['get'])

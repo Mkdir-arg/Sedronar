@@ -24,7 +24,7 @@ class FiltrosUsuarioService:
         filtros = Q()
         
         # 1. Alertas de legajos donde el usuario es responsable
-        legajos_responsable = LegajoAtencion.objects.filter(responsable=usuario)
+        legajos_responsable = LegajoAtencion.objects.filter(responsable=usuario).select_related('dispositivo')
         if legajos_responsable.exists():
             filtros |= Q(legajo__in=legajos_responsable)
         
@@ -35,7 +35,7 @@ class FiltrosUsuarioService:
                 # Usuarios provinciales ven alertas de su provincia
                 legajos_provincia = LegajoAtencion.objects.filter(
                     dispositivo__provincia=profile.provincia
-                )
+                ).select_related('dispositivo')
                 filtros |= Q(legajo__in=legajos_provincia)
             else:
                 # Usuarios de dispositivo ven alertas de su dispositivo
@@ -44,7 +44,7 @@ class FiltrosUsuarioService:
                 if dispositivo_usuario:
                     legajos_dispositivo = LegajoAtencion.objects.filter(
                         dispositivo=dispositivo_usuario
-                    )
+                    ).select_related('dispositivo')
                     filtros |= Q(legajo__in=legajos_dispositivo)
         except Profile.DoesNotExist:
             pass
@@ -63,7 +63,7 @@ class FiltrosUsuarioService:
                 if profile.provincia:
                     legajos_supervision = LegajoAtencion.objects.filter(
                         dispositivo__provincia=profile.provincia
-                    )
+                    ).select_related('dispositivo')
                     filtros |= Q(legajo__in=legajos_supervision)
             except Profile.DoesNotExist:
                 pass
@@ -82,7 +82,7 @@ class FiltrosUsuarioService:
         # Buscar en diferentes posibles relaciones
         
         # 1. Como responsable de legajos
-        legajo_responsable = LegajoAtencion.objects.filter(responsable=usuario).first()
+        legajo_responsable = LegajoAtencion.objects.filter(responsable=usuario).select_related('dispositivo').first()
         if legajo_responsable:
             return legajo_responsable.dispositivo
         
@@ -90,7 +90,7 @@ class FiltrosUsuarioService:
         try:
             from .models import Profesional, SeguimientoContacto
             profesional = Profesional.objects.get(usuario=usuario)
-            seguimiento = SeguimientoContacto.objects.filter(profesional=profesional).first()
+            seguimiento = SeguimientoContacto.objects.filter(profesional=profesional).select_related('legajo__dispositivo').first()
             if seguimiento:
                 return seguimiento.legajo.dispositivo
         except:

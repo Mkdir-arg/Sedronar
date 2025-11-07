@@ -1,9 +1,8 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.db import models
-from .models import Ciudadano, LegajoAtencion, Consentimiento, EvaluacionInicial, Objetivo, PlanIntervencion, SeguimientoContacto, Derivacion, EventoCritico
+from .models import Ciudadano, LegajoAtencion, Consentimiento, EvaluacionInicial, Objetivo, PlanIntervencion, SeguimientoContacto, Derivacion, EventoCritico, InscriptoActividad, PlanFortalecimiento
 from core.models import DispositivoRed
-import json
 
 
 class ConsultaRenaperForm(forms.Form):
@@ -127,18 +126,15 @@ class AdmisionLegajoForm(forms.ModelForm):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
-        # Filtrar usuarios con permisos para ser responsables
-        # Buscar en múltiples grupos posibles
-        responsables_queryset = User.objects.filter(
-            models.Q(groups__name='Responsable') |
-            models.Q(groups__name='Ciudadanos') |
-            models.Q(groups__name='Administrador') |
-            models.Q(is_superuser=True)
-        ).filter(is_active=True).distinct()
-        
-        self.fields['responsable'].queryset = responsables_queryset
+        # Mostrar solo usuarios activos que existen en la base de datos
+        self.fields['responsable'].queryset = User.objects.filter(is_active=True).order_by('username')
         self.fields['responsable'].empty_label = "Seleccionar responsable (opcional)"
         self.fields['responsable'].required = False
+        
+        # Limpiar el valor inicial si el usuario no existe
+        if self.instance and self.instance.pk and self.instance.responsable_id:
+            if not User.objects.filter(id=self.instance.responsable_id).exists():
+                self.instance.responsable = None
         
         # Filtrar dispositivos según el usuario
         if user and (user.is_superuser or user.groups.filter(name__in=['Administrador', 'Coordinador']).exists()):
@@ -162,6 +158,13 @@ class AdmisionLegajoForm(forms.ModelForm):
         
         self.fields['dispositivo'].queryset = dispositivos_queryset.order_by('nombre')
         self.fields['dispositivo'].empty_label = "Seleccionar dispositivo"
+    
+    def clean_responsable(self):
+        """Validar que el responsable existe en la base de datos"""
+        responsable = self.cleaned_data.get('responsable')
+        if responsable and not User.objects.filter(id=responsable.id, is_active=True).exists():
+            raise forms.ValidationError('El usuario seleccionado no existe o no está activo.')
+        return responsable
 
 
 class ConsentimientoForm(forms.ModelForm):
@@ -445,3 +448,35 @@ class LegajoCerrarForm(forms.Form):
             'placeholder': 'Motivo del cierre (opcional)'
         })
     )
+
+
+class InscribirActividadForm(forms.ModelForm):
+    """Formulario para inscribir ciudadano a actividad del centro"""
+    
+    class Meta:
+        model = InscriptoActividad
+        fields = ['actividad', 'observaciones']
+        widgets = {
+            'actividad': forms.Select(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'
+            }),
+            'observaciones': forms.Textarea(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500',
+                'rows': 3,
+                'placeholder': 'Observaciones sobre la inscripción (opcional)'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        legajo = kwargs.pop('legajo', None)
+        super().__init__(*args, **kwargs)
+        
+        if legajo:
+            # Filtrar actividades del dispositivo del legajo que estén activas
+            self.fields['actividad'].queryset = PlanFortalecimiento.objects.filter(
+                legajo_institucional__institucion=legajo.dispositivo,
+                estado='ACTIVO'
+            ).select_related('legajo_institucional__institucion')
+            self.fields['actividad'].label_from_instance = lambda obj: f"{obj.nombre} ({obj.get_tipo_display()})"
+        else:
+            self.fields['actividad'].queryset = PlanFortalecimiento.objects.none()

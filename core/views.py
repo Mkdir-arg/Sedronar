@@ -15,7 +15,7 @@ from core.models import (
 def load_municipios(request):
     """Carga municipios filtrados por provincia."""
     provincia_id = request.GET.get("provincia_id")
-    municipios = Municipio.objects.filter(provincia=provincia_id)
+    municipios = Municipio.objects.filter(provincia=provincia_id).select_related('provincia')
     return JsonResponse(list(municipios.values("id", "nombre")), safe=False)
 
 
@@ -26,7 +26,7 @@ def load_localidad(request):
     municipio_id = request.GET.get("municipio_id")
 
     if municipio_id:
-        localidades = Localidad.objects.filter(municipio=municipio_id)
+        localidades = Localidad.objects.filter(municipio=municipio_id).select_related('municipio')
     else:
         localidades = Localidad.objects.none()
 

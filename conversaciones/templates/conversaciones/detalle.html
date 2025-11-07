@@ -97,7 +97,49 @@
             init() {
                 this.$nextTick(() => {
                     this.scrollToBottom();
+                    this.conectarWebSocket();
                 });
+            },
+            
+            conectarWebSocket() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/ws/conversacion/${this.conversacionId}/`;
+                
+                this.socket = new WebSocket(wsUrl);
+                
+                this.socket.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'mensaje') {
+                        this.agregarMensajeCiudadano(data.mensaje);
+                    }
+                };
+                
+                this.socket.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                };
+                
+                this.socket.onclose = () => {
+                    console.log('WebSocket cerrado, reconectando...');
+                    setTimeout(() => this.conectarWebSocket(), 3000);
+                };
+            },
+            
+            agregarMensajeCiudadano(mensaje) {
+                if (mensaje.remitente === 'ciudadano') {
+                    const container = this.$refs.mensajesContainer;
+                    const mensajeDiv = document.createElement('div');
+                    mensajeDiv.className = 'flex justify-start';
+                    
+                    mensajeDiv.innerHTML = `
+                        <div class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg bg-gray-200 text-gray-800">
+                            <p>${mensaje.contenido}</p>
+                            <p class="text-xs opacity-70 mt-1">Ciudadano - ${mensaje.fecha}</p>
+                        </div>
+                    `;
+                    
+                    container.appendChild(mensajeDiv);
+                    this.scrollToBottom();
+                }
             },
             
             async enviarMensaje() {
