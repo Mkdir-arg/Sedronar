@@ -40,7 +40,7 @@
             <td class="px-6 py-4 whitespace-nowrap">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${estadoBadge}">${conv.estado_display || conv.estado || ''}</span>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${conv.operador || 'Sin asignar'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(conv.operador && conv.operador !== null) ? conv.operador : 'Sin asignar'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${conv.fecha || ''}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">${conv.mensajes || 0}</span>
@@ -49,6 +49,8 @@
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <div class="flex space-x-2">
                     <a href="/conversaciones/${conv.id}/" class="text-blue-600 hover:text-blue-900"><i class="fas fa-eye"></i> Ver</a>
+                    ${(!conv.operador || conv.operador === 'Sin asignar' || conv.operador === null) ? `<button onclick="asignarConversacion(${conv.id})" class="text-green-600 hover:text-green-900"><i class="fas fa-user-plus"></i> Asignar</button>` : ''}
+                    ${conv.estado === 'activa' ? `<a href="/conversaciones/${conv.id}/cerrar/" class="text-red-600 hover:text-red-900" onclick="return confirm('¿Estás seguro de cerrar esta conversación?')"><i class="fas fa-times"></i> Cerrar</a>` : ''}
                 </div>
             </td>
         `;
