@@ -132,15 +132,12 @@ class MetricasService:
             satisfaccion_promedio=Avg('satisfaccion')
         )
         
-        metricas = {
-            
-            # Tiempos y satisfacción ya incluidos en aggregate
-            'tiempo_respuesta_promedio': stats['tiempo_respuesta_promedio'] or 0,
-            'tiempo_espera_promedio': stats['tiempo_espera_promedio'] or 0,
-            'satisfaccion_promedio': stats['satisfaccion_promedio'] or 0,
-            
-            **stats  # Incluir todas las estadísticas del aggregate
-        }
+        metricas = stats
+        
+        # Normalizar valores None a 0
+        metricas['tiempo_respuesta_promedio'] = stats['tiempo_respuesta_promedio'] or 0
+        metricas['tiempo_espera_promedio'] = stats['tiempo_espera_promedio'] or 0
+        metricas['satisfaccion_promedio'] = stats['satisfaccion_promedio'] or 0
         
         # Operadores (consulta separada optimizada)
         operadores_stats = ColaAsignacion.objects.aggregate(

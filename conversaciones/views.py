@@ -273,6 +273,8 @@ def lista_conversaciones(request):
     if operador_filtro:
         if operador_filtro == 'sin_asignar':
             conversaciones = conversaciones.filter(operador_asignado=None)
+        elif operador_filtro == 'mis_conversaciones':
+            conversaciones = conversaciones.filter(operador_asignado=request.user)
         else:
             conversaciones = conversaciones.filter(operador_asignado_id=operador_filtro)
     
@@ -643,6 +645,34 @@ def api_metricas_tiempo_real(request):
         'success': True,
         'metricas': metricas
     })
+
+
+@login_required
+@user_passes_test(tiene_permiso_conversaciones)
+def api_conversacion_detalle(request, conversacion_id):
+    """API para obtener detalles de una conversación específica"""
+    try:
+        conversacion = Conversacion.objects.select_related('operador_asignado').annotate(
+            mensajes_no_leidos=Count('mensajes', filter=Q(mensajes__remitente='ciudadano', mensajes__leido=False))
+        ).get(id=conversacion_id)
+        
+        return JsonResponse({
+            'success': True,
+            'conversacion': {
+                'id': conversacion.id,
+                'tipo': conversacion.get_tipo_display(),
+                'dni': conversacion.dni_ciudadano,
+                'sexo': conversacion.sexo_ciudadano,
+                'estado': conversacion.estado,
+                'estado_display': conversacion.get_estado_display(),
+                'operador': conversacion.operador_asignado.get_full_name() if conversacion.operador_asignado else None,
+                'fecha': conversacion.fecha_inicio.strftime('%d/%m/%Y %H:%M'),
+                'mensajes': conversacion.mensajes.count(),
+                'no_leidos': conversacion.mensajes_no_leidos
+            }
+        })
+    except Conversacion.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Conversación no encontrada'})
 
 
 @login_required

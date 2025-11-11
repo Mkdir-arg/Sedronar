@@ -68,29 +68,27 @@ def aprobar_tramite(request, tramite_id):
         # Aprobar institución
         tramite.aprobar(nro_registro=nro_registro, resolucion=resolucion)
         
-        # Crear ciudadano dummy para el legajo institucional
-        from legajos.models import Ciudadano
-        ciudadano_dummy, created = Ciudadano.objects.get_or_create(
-            dni='00000000',
+        # Crear usuario para la institución
+        from django.contrib.auth.models import User, Group
+        username = f"institucion_{tramite.id}"
+        user, created = User.objects.get_or_create(
+            username=username,
             defaults={
-                'nombre': 'Institución',
-                'apellido': tramite.nombre,
-                'genero': 'X'
+                'email': tramite.email,
+                'first_name': tramite.nombre[:30],
+                'is_active': True
             }
         )
         
-        # Crear legajo institucional
-        legajo = LegajoAtencion.objects.create(
-            dispositivo=tramite,
-            responsable=request.user,
-            ciudadano=ciudadano_dummy,
-            notas=f'Legajo institucional creado automáticamente al aprobar registro {nro_registro}'
-        )
+        if created:
+            # Asignar grupo EncargadoInstitucion
+            grupo, _ = Group.objects.get_or_create(name='EncargadoInstitucion')
+            user.groups.add(grupo)
+            
+            # Asociar usuario a la institución
+            tramite.encargados.add(user)
         
-        # Habilitar usuarios (optimizado)
-        tramite.encargados.update(is_active=True)
-        
-        messages.success(request, f'Trámite aprobado. Legajo {legajo.codigo} creado.')
+        messages.success(request, f'Trámite aprobado. Usuario {username} creado.')
         return redirect('tramites:lista_tramites')
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)

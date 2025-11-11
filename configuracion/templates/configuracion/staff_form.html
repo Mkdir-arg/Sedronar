@@ -188,23 +188,45 @@ document.addEventListener('DOMContentLoaded', function() {
         radio.addEventListener('change', toggleSections);
     });
     
-    // Funcionalidad de búsqueda
+    // Búsqueda AJAX de personal
     if (buscarInput && personalSelect) {
-        const originalOptions = Array.from(personalSelect.options);
         let searchTimeout;
+        const pathParts = window.location.pathname.split('/');
+        const actividadId = pathParts[3];
+        
+        console.log('Actividad ID:', actividadId);
         
         buscarInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
+            const searchTerm = this.value.trim();
             
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
-                // Búsqueda local
-                personalSelect.innerHTML = '';
-                originalOptions.forEach(option => {
-                    if (option.value === '' || option.textContent.toLowerCase().includes(searchTerm)) {
-                        personalSelect.appendChild(option.cloneNode(true));
-                    }
-                });
+                const url = `/configuracion/actividades/${actividadId}/buscar-personal/?q=${encodeURIComponent(searchTerm)}`;
+                console.log('Buscando en:', url);
+                
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Error en la respuesta');
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Resultados:', data);
+                        console.log('Select encontrado:', personalSelect);
+                        personalSelect.innerHTML = '<option value="">---------</option>';
+                        if (data.results && data.results.length > 0) {
+                            data.results.forEach(item => {
+                                const option = document.createElement('option');
+                                option.value = item.id;
+                                option.textContent = item.text;
+                                personalSelect.appendChild(option);
+                                console.log('Opción agregada:', item.text);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al buscar personal:', error);
+                        alert('Error al buscar personal. Revisa la consola.');
+                    });
             }, 300);
         });
     }

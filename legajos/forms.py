@@ -101,7 +101,7 @@ class AdmisionLegajoForm(forms.ModelForm):
     
     class Meta:
         model = LegajoAtencion
-        fields = ['dispositivo', 'responsable', 'via_ingreso', 'nivel_riesgo', 'notas']
+        fields = ['responsable', 'via_ingreso', 'nivel_riesgo', 'notas']
         widgets = {
             'dispositivo': forms.Select(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'
@@ -136,28 +136,7 @@ class AdmisionLegajoForm(forms.ModelForm):
             if not User.objects.filter(id=self.instance.responsable_id).exists():
                 self.instance.responsable = None
         
-        # Filtrar dispositivos según el usuario
-        if user and (user.is_superuser or user.groups.filter(name__in=['Administrador', 'Coordinador']).exists()):
-            # Superusuario o administradores ven todos los dispositivos
-            dispositivos_queryset = DispositivoRed.objects.filter(activo=True)
-        elif user:
-            # Usuario normal ve dispositivos donde es encargado O todos si no hay restricción específica
-            dispositivos_encargado = DispositivoRed.objects.filter(
-                activo=True,
-                encargados=user
-            )
-            
-            # Si no es encargado de ningún dispositivo, mostrar todos los activos
-            if not dispositivos_encargado.exists():
-                dispositivos_queryset = DispositivoRed.objects.filter(activo=True)
-            else:
-                dispositivos_queryset = dispositivos_encargado
-        else:
-            # Sin usuario, mostrar todos (fallback)
-            dispositivos_queryset = DispositivoRed.objects.filter(activo=True)
-        
-        self.fields['dispositivo'].queryset = dispositivos_queryset.order_by('nombre')
-        self.fields['dispositivo'].empty_label = "Seleccionar dispositivo"
+
     
     def clean_responsable(self):
         """Validar que el responsable existe en la base de datos"""
@@ -361,9 +340,12 @@ class DerivacionForm(forms.ModelForm):
     
     class Meta:
         model = Derivacion
-        fields = ['destino', 'motivo', 'urgencia']
+        fields = ['destino', 'actividad_destino', 'motivo', 'urgencia']
         widgets = {
             'destino': forms.Select(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'
+            }),
+            'actividad_destino': forms.Select(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'
             }),
             'motivo': forms.Textarea(attrs={
@@ -376,22 +358,31 @@ class DerivacionForm(forms.ModelForm):
             }),
         }
     
-    actividad_destino = forms.ModelChoiceField(
-        queryset=None,
-        required=False,
-        label='Actividad Específica (opcional)',
-        widget=forms.Select(attrs={
-            'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'
-        })
-    )
-    
     def __init__(self, *args, **kwargs):
         legajo = kwargs.pop('legajo', None)
         super().__init__(*args, **kwargs)
-        if legajo:
-            self.fields['destino'].queryset = self.fields['destino'].queryset.filter(activo=True)
-            
-            from .models import PlanFortalecimiento
+        
+        self.fields['destino'].queryset = self.fields['destino'].queryset.filter(activo=True)
+        self.fields['actividad_destino'].required = False
+        
+        from .models import PlanFortalecimiento
+        # Si hay una instancia con destino, cargar sus actividades
+        if self.instance and self.instance.pk and self.instance.destino:
+            self.fields['actividad_destino'].queryset = PlanFortalecimiento.objects.filter(
+                legajo_institucional__institucion=self.instance.destino,
+                estado='ACTIVO'
+            )
+        # Si hay datos POST con destino, cargar actividades de ese destino
+        elif self.data.get('destino'):
+            try:
+                destino_id = int(self.data.get('destino'))
+                self.fields['actividad_destino'].queryset = PlanFortalecimiento.objects.filter(
+                    legajo_institucional__institucion_id=destino_id,
+                    estado='ACTIVO'
+                )
+            except (ValueError, TypeError):
+                self.fields['actividad_destino'].queryset = PlanFortalecimiento.objects.none()
+        else:
             self.fields['actividad_destino'].queryset = PlanFortalecimiento.objects.none()
 
 

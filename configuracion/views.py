@@ -3,10 +3,11 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView, D
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect, get_object_or_404
 from django.http import JsonResponse
+from django.db.models import Q
 from core.models import Provincia, Municipio, Localidad, Institucion
 from legajos.models import LegajoInstitucional, PersonalInstitucion, EvaluacionInstitucional, PlanFortalecimiento, IndicadorInstitucional, StaffActividad
 from .forms import ProvinciaForm, MunicipioForm, LocalidadForm, InstitucionForm, PlanFortalecimientoForm
-from .views_extra import InscriptoEditarView, ActividadEditarView, StaffEditarView, StaffDesasignarView, AsistenciaView, RegistrarAsistenciaView
+from .views_extra import InscriptoEditarView, ActividadEditarView, StaffEditarView, StaffDesasignarView, AsistenciaView, TomarAsistenciaView
 
 # Alias para compatibilidad
 DispositivoRed = Institucion
@@ -315,18 +316,24 @@ class ActividadDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'actividad'
     
     def get_context_data(self, **kwargs):
+        from django.db.models import Count, Q
         context = super().get_context_data(**kwargs)
         actividad = self.get_object()
         
         # Obtener staff de la actividad
         context['staff'] = StaffActividad.objects.filter(actividad=actividad).select_related('personal', 'actividad')
         
-        # Obtener derivaciones a esta actividad
-        from legajos.models import Derivacion, InscriptoActividad
-        context['derivaciones'] = Derivacion.objects.filter(actividad_destino=actividad).select_related('legajo__ciudadano', 'origen', 'destino').order_by('-creado')
+        # Obtener derivaciones a esta actividad (solo pendientes y rechazadas)
+        from legajos.models import Derivacion, InscriptoActividad, RegistroAsistencia
+        context['derivaciones'] = Derivacion.objects.filter(actividad_destino=actividad).exclude(estado='ACEPTADA').select_related('legajo__ciudadano', 'destino').order_by('-creado')
         
-        # Obtener nómina de la actividad (inscritos)
-        context['nomina'] = InscriptoActividad.objects.filter(actividad=actividad).select_related('ciudadano', 'actividad').order_by('-fecha_inscripcion')
+        # Obtener nómina de la actividad (inscritos) con contadores de asistencia
+        nomina = InscriptoActividad.objects.filter(actividad=actividad).select_related('ciudadano', 'actividad').annotate(
+            cantidad_presentes=Count('asistencias', filter=Q(asistencias__estado='PRESENTE')),
+            cantidad_ausentes=Count('asistencias', filter=Q(asistencias__estado='AUSENTE'))
+        ).order_by('-fecha_inscripcion')
+        
+        context['nomina'] = nomina
         
         return context
 
@@ -493,6 +500,7 @@ class DerivacionRechazarView(LoginRequiredMixin, UpdateView):
 
 class InscriptoEditarView(LoginRequiredMixin, UpdateView):
     model = None
+    fields = ['estado', 'observaciones']
     template_name = 'configuracion/inscripto_form.html'
     
     def get_object(self):
@@ -582,5 +590,32 @@ class ActividadEditarView(LoginRequiredMixin, UpdateView):
     
     def get_success_url(self):
         return reverse_lazy('configuracion:actividad_detalle', kwargs={'pk': self.object.pk})
+
+
+def buscar_personal_ajax(request, actividad_pk):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'No autorizado'}, status=401)
+    
+    actividad = get_object_or_404(PlanFortalecimiento, pk=actividad_pk)
+    query = request.GET.get('q', '').strip()
+    
+    personal = PersonalInstitucion.objects.filter(
+        legajo_institucional=actividad.legajo_institucional,
+        activo=True
+    )
+    
+    if query:
+        personal = personal.filter(
+            Q(nombre__icontains=query) |
+            Q(apellido__icontains=query) |
+            Q(dni__icontains=query)
+        )
+    
+    resultados = [{
+        'id': p.id,
+        'text': f"{p.apellido}, {p.nombre} - DNI: {p.dni}"
+    } for p in personal.order_by('apellido', 'nombre')]
+    
+    return JsonResponse({'results': resultados})
 
 

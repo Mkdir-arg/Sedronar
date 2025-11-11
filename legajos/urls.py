@@ -3,6 +3,7 @@ from . import views
 from . import views_dashboard_simple as views_simple
 from . import views_simple_contactos as views_contactos_simple
 from . import views_alertas
+from . import views_cursos
 
 app_name = 'legajos'
 
@@ -81,6 +82,15 @@ urlpatterns = [
     # API Alertas
     path('ciudadanos/<int:ciudadano_id>/alertas/', views_contactos_simple.alertas_ciudadano_api, name='alertas_ciudadano'),
     path('alertas/<int:alerta_id>/cerrar/', views_contactos_simple.cerrar_alerta_api, name='cerrar_alerta'),
+    
+    # API Cursos y Actividades
+    path('ciudadanos/<int:pk>/cursos-actividades/', views_cursos.cursos_actividades_ciudadano, name='cursos_actividades_ciudadano'),
+    
+    # API Línea Temporal
+    path('ciudadanos/<int:ciudadano_id>/timeline/', views_contactos_simple.timeline_ciudadano_api, name='timeline_ciudadano'),
+    
+    # API Predicción de Riesgo
+    path('ciudadanos/<int:ciudadano_id>/prediccion-riesgo/', views_contactos_simple.prediccion_riesgo_api, name='prediccion_riesgo'),
     
     # Dashboard de Alertas
     path('alertas/', views_alertas.alertas_dashboard, name='alertas_dashboard'),

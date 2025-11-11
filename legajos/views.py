@@ -544,13 +544,6 @@ class DerivacionCreateView(LoginRequiredMixin, CreateView):
     
     def form_valid(self, form):
         form.instance.legajo = self.legajo
-        form.instance.origen = self.legajo.dispositivo
-        
-        # Manejar actividad destino
-        actividad_destino = form.cleaned_data.get('actividad_destino')
-        if actividad_destino:
-            form.instance.actividad_destino = actividad_destino
-        
         response = super().form_valid(form)
         messages.success(self.request, 'Derivación creada exitosamente.')
         return response
@@ -596,7 +589,7 @@ class DerivacionListView(LoginRequiredMixin, ListView):
         return super().dispatch(request, *args, **kwargs)
     
     def get_queryset(self):
-        queryset = self.legajo.derivaciones.select_related('origen', 'destino')
+        queryset = self.legajo.derivaciones.select_related('destino')
         estado = self.request.GET.get('estado')
         if estado:
             queryset = queryset.filter(estado=estado)
@@ -780,7 +773,7 @@ class DispositivoDerivacionesView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         queryset = Derivacion.objects.filter(
             destino=self.dispositivo
-        ).select_related('legajo__ciudadano', 'origen')
+        ).select_related('legajo__ciudadano')
         
         estado = self.request.GET.get('estado')
         if estado:
