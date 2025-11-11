@@ -211,10 +211,18 @@
 
     <!-- Nómina de la Actividad -->
     <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-            <i class="fas fa-users text-green-600 mr-3"></i>
-            Nómina de la Actividad ({{ nomina.count }})
-        </h3>
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+                <i class="fas fa-users text-green-600 mr-3"></i>
+                Nómina de la Actividad ({{ nomina.count }})
+            </h3>
+            {% if nomina %}
+            <a href="{% url 'configuracion:tomar_asistencia' actividad.pk %}" 
+               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-clipboard-check mr-2"></i>Tomar Asistencia
+            </a>
+            {% endif %}
+        </div>
         
         {% if nomina %}
         <div class="overflow-x-auto">

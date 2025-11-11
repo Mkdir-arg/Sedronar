@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from core.models import Provincia, Municipio, Localidad, Institucion
 from legajos.models import LegajoInstitucional, PersonalInstitucion, EvaluacionInstitucional, PlanFortalecimiento, IndicadorInstitucional, StaffActividad
 from .forms import ProvinciaForm, MunicipioForm, LocalidadForm, InstitucionForm, PlanFortalecimientoForm
-from .views_extra import InscriptoEditarView, ActividadEditarView, StaffEditarView, StaffDesasignarView, AsistenciaView, RegistrarAsistenciaView
+from .views_extra import InscriptoEditarView, ActividadEditarView, StaffEditarView, StaffDesasignarView, AsistenciaView, TomarAsistenciaView
 
 # Alias para compatibilidad
 DispositivoRed = Institucion
@@ -493,6 +493,7 @@ class DerivacionRechazarView(LoginRequiredMixin, UpdateView):
 
 class InscriptoEditarView(LoginRequiredMixin, UpdateView):
     model = None
+    fields = ['estado', 'observaciones']
     template_name = 'configuracion/inscripto_form.html'
     
     def get_object(self):

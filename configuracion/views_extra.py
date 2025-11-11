@@ -206,80 +206,58 @@ class AsistenciaView(LoginRequiredMixin, DetailView):
         return context
 
 
-class RegistrarAsistenciaView(LoginRequiredMixin, UpdateView):
-    model = None
+class TomarAsistenciaView(LoginRequiredMixin, DetailView):
+    model = PlanFortalecimiento
+    template_name = 'configuracion/tomar_asistencia.html'
+    context_object_name = 'actividad'
+    
+    def get_context_data(self, **kwargs):
+        from legajos.models import InscriptoActividad
+        from datetime import datetime
+        
+        context = super().get_context_data(**kwargs)
+        actividad = self.get_object()
+        
+        context['inscritos'] = InscriptoActividad.objects.filter(
+            actividad=actividad,
+            estado__in=['INSCRITO', 'ACTIVO']
+        ).select_related('ciudadano').order_by('ciudadano__apellido')
+        
+        context['fecha_hoy'] = datetime.now().date()
+        context['hora_actual'] = datetime.now().strftime('%H:%M')
+        
+        return context
     
     def post(self, request, *args, **kwargs):
-        from legajos.models import InscriptoActividad, RegistroAsistencia, AlertaAusentismo
-        from django.utils import timezone
+        from legajos.models import InscriptoActividad, RegistroAsistencia
         from django.contrib import messages
-        from datetime import datetime, timedelta
+        from datetime import datetime
         
-        fecha_str = request.POST.get('fecha')
-        actividad_id = request.POST.get('actividad_id')
+        actividad = self.get_object()
+        fecha = datetime.now().date()
         
-        fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-        actividad = get_object_or_404(PlanFortalecimiento, pk=actividad_id)
-        
-        # Procesar asistencias
+        contador = 0
         for key, value in request.POST.items():
             if key.startswith('asistencia_'):
                 inscripto_id = key.replace('asistencia_', '')
                 inscripto = get_object_or_404(InscriptoActividad, pk=inscripto_id)
+                obs_key = f'obs_{inscripto_id}'
+                observaciones = request.POST.get(obs_key, '')
                 
-                # Crear o actualizar registro
-                registro, created = RegistroAsistencia.objects.get_or_create(
+                RegistroAsistencia.objects.update_or_create(
                     inscripto=inscripto,
                     fecha=fecha,
                     defaults={
                         'estado': value,
+                        'observaciones': observaciones,
                         'registrado_por': request.user
                     }
                 )
-                
-                if not created:
-                    registro.estado = value
-                    registro.registrado_por = request.user
-                    registro.save()
-                
-                # Verificar ausentismo si está ausente
-                if value == 'AUSENTE':
-                    self._verificar_ausentismo(inscripto, fecha)
+                contador += 1
         
-        messages.success(request, f'Asistencia registrada para {fecha.strftime("%d/%m/%Y")}')
-        return redirect('configuracion:asistencia', pk=actividad_id)
-    
-    def _verificar_ausentismo(self, inscripto, fecha):
-        from legajos.models import RegistroAsistencia, AlertaAusentismo
-        from datetime import timedelta
-        
-        # Contar días consecutivos de ausencia
-        dias_ausente = 0
-        fecha_actual = fecha
-        
-        while True:
-            try:
-                registro = RegistroAsistencia.objects.get(
-                    inscripto=inscripto,
-                    fecha=fecha_actual
-                )
-                if registro.estado == 'AUSENTE':
-                    dias_ausente += 1
-                    fecha_actual -= timedelta(days=1)
-                else:
-                    break
-            except RegistroAsistencia.DoesNotExist:
-                break
-        
-        # Crear alerta si es necesario
-        if dias_ausente >= 3:
-            tipo_alerta = 'AUSENTISMO_5' if dias_ausente >= 5 else 'AUSENTISMO_3'
-            
-            AlertaAusentismo.objects.get_or_create(
-                inscripto=inscripto,
-                tipo=tipo_alerta,
-                defaults={
-                    'dias_ausente': dias_ausente,
-                    'fecha_inicio_ausencia': fecha_actual + timedelta(days=1)
-                }
-            )
+        messages.success(request, f'Asistencia registrada para {contador} personas el {fecha.strftime("%d/%m/%Y")} a las {datetime.now().strftime("%H:%M")}')
+        return redirect('configuracion:actividad_detalle', pk=actividad.pk)
+
+
+class RegistrarAsistenciaView(TomarAsistenciaView):
+    pass

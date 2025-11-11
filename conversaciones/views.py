@@ -273,6 +273,8 @@ def lista_conversaciones(request):
     if operador_filtro:
         if operador_filtro == 'sin_asignar':
             conversaciones = conversaciones.filter(operador_asignado=None)
+        elif operador_filtro == 'mis_conversaciones':
+            conversaciones = conversaciones.filter(operador_asignado=request.user)
         else:
             conversaciones = conversaciones.filter(operador_asignado_id=operador_filtro)
     

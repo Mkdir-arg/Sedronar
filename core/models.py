@@ -178,9 +178,6 @@ class TipoInstitucion(models.TextChoices):
     CAI = "CAI", "Centro de Asistencia Inmediata"
     IC = "IC", "Institución Conveniada"
     CT = "CT", "Comunidad Terapéutica"
-    PREVENCION = "PREVENCION", "Prevención"
-    ASISTENCIA = "ASISTENCIA", "Asistencia"
-    MIXTA = "MIXTA", "Prevención y Asistencia"
 
 
 class EstadoRegistro(models.TextChoices):
