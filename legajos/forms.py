@@ -340,9 +340,12 @@ class DerivacionForm(forms.ModelForm):
     
     class Meta:
         model = Derivacion
-        fields = ['destino', 'motivo', 'urgencia']
+        fields = ['destino', 'actividad_destino', 'motivo', 'urgencia']
         widgets = {
             'destino': forms.Select(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'
+            }),
+            'actividad_destino': forms.Select(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'
             }),
             'motivo': forms.Textarea(attrs={
@@ -355,22 +358,31 @@ class DerivacionForm(forms.ModelForm):
             }),
         }
     
-    actividad_destino = forms.ModelChoiceField(
-        queryset=None,
-        required=False,
-        label='Actividad Específica (opcional)',
-        widget=forms.Select(attrs={
-            'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'
-        })
-    )
-    
     def __init__(self, *args, **kwargs):
         legajo = kwargs.pop('legajo', None)
         super().__init__(*args, **kwargs)
-        if legajo:
-            self.fields['destino'].queryset = self.fields['destino'].queryset.filter(activo=True)
-            
-            from .models import PlanFortalecimiento
+        
+        self.fields['destino'].queryset = self.fields['destino'].queryset.filter(activo=True)
+        self.fields['actividad_destino'].required = False
+        
+        from .models import PlanFortalecimiento
+        # Si hay una instancia con destino, cargar sus actividades
+        if self.instance and self.instance.pk and self.instance.destino:
+            self.fields['actividad_destino'].queryset = PlanFortalecimiento.objects.filter(
+                legajo_institucional__institucion=self.instance.destino,
+                estado='ACTIVO'
+            )
+        # Si hay datos POST con destino, cargar actividades de ese destino
+        elif self.data.get('destino'):
+            try:
+                destino_id = int(self.data.get('destino'))
+                self.fields['actividad_destino'].queryset = PlanFortalecimiento.objects.filter(
+                    legajo_institucional__institucion_id=destino_id,
+                    estado='ACTIVO'
+                )
+            except (ValueError, TypeError):
+                self.fields['actividad_destino'].queryset = PlanFortalecimiento.objects.none()
+        else:
             self.fields['actividad_destino'].queryset = PlanFortalecimiento.objects.none()
 
 

@@ -230,6 +230,99 @@
         </div>
     </div>
 
+    <!-- Predicción de Riesgo con IA -->
+    <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl shadow-lg border border-purple-100 p-8 mb-8">
+        <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+            <div class="bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg p-2 mr-3">
+                <i class="fas fa-brain text-white text-lg"></i>
+            </div>
+            Predicción de Riesgo con IA
+            <span class="ml-3 text-xs font-normal text-gray-500 bg-white px-3 py-1 rounded-full">Beta</span>
+        </h3>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Riesgo de Abandono -->
+            <div class="bg-white rounded-xl p-6 shadow-md">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-user-slash text-orange-500 mr-2"></i>
+                        Riesgo de Abandono
+                    </h4>
+                    <span id="abandono-nivel" class="px-3 py-1 rounded-full text-xs font-bold">-</span>
+                </div>
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm text-gray-600">Probabilidad</span>
+                        <span id="abandono-score" class="text-2xl font-bold text-gray-800">-</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div id="abandono-bar" class="h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div id="abandono-factores" class="space-y-2">
+                    <!-- Factores se cargarán aquí -->
+                </div>
+            </div>
+            
+            <!-- Riesgo de Evento Crítico -->
+            <div class="bg-white rounded-xl p-6 shadow-md">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+                        Riesgo de Evento Crítico
+                    </h4>
+                    <span id="evento-nivel" class="px-3 py-1 rounded-full text-xs font-bold">-</span>
+                </div>
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm text-gray-600">Próximos 30 días</span>
+                        <span id="evento-score" class="text-2xl font-bold text-gray-800">-</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div id="evento-bar" class="h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div id="evento-factores" class="space-y-2">
+                    <!-- Factores se cargarán aquí -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recomendaciones Automáticas -->
+        <div class="bg-white rounded-xl p-6 shadow-md">
+            <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>
+                Recomendaciones Automáticas
+            </h4>
+            <div id="recomendaciones-container" class="space-y-3">
+                <!-- Recomendaciones se cargarán aquí -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Línea Temporal -->
+    <div class="mt-8">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-1">📅 Línea Temporal</h2>
+                        <p class="text-indigo-100">Evolución cronológica del legajo</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <div id="timeline-container" class="relative">
+                    <!-- La línea temporal se cargará aquí -->
+                </div>
+                <div id="mensaje-sin-timeline" class="text-center py-12 hidden">
+                    <div class="text-gray-400 text-4xl mb-2">📅</div>
+                    <p class="text-gray-500">No hay eventos registrados</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Actividad Reciente -->
     <div class="mt-8">
         <div class="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -658,6 +751,8 @@ document.addEventListener('DOMContentLoaded', function() {
     cargarArchivos();
     cargarAlertas();
     cargarCursosActividades();
+    cargarLineaTemporal();
+    cargarPrediccionRiesgo();
     actualizarDashboard();
 });
 
@@ -1381,6 +1476,194 @@ function getEstadoInscripcionIcon(estado) {
         'ABANDONADO': 'fas fa-times-circle'
     };
     return iconos[estado] || 'fas fa-circle';
+}
+
+// Cargar línea temporal
+function cargarLineaTemporal() {
+    fetch(`/legajos/ciudadanos/{{ ciudadano.id }}/timeline/`)
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('timeline-container');
+            const mensajeSin = document.getElementById('mensaje-sin-timeline');
+            
+            if (data.eventos && data.eventos.length > 0) {
+                container.innerHTML = `
+                    <div class="relative border-l-4 border-indigo-200 ml-4">
+                        ${data.eventos.map((evento, index) => {
+                            const iconoConfig = getTimelineIcon(evento.tipo);
+                            return `
+                                <div class="mb-8 ml-8 relative">
+                                    <div class="absolute -left-12 mt-1.5 w-8 h-8 rounded-full ${iconoConfig.bg} flex items-center justify-center border-4 border-white shadow-lg">
+                                        <i class="${iconoConfig.icon} ${iconoConfig.color} text-sm"></i>
+                                    </div>
+                                    <div class="bg-gradient-to-r from-gray-50 to-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow border border-gray-200">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <h3 class="font-bold text-gray-900">${evento.titulo}</h3>
+                                            <span class="text-xs text-gray-500 whitespace-nowrap ml-4">${new Date(evento.fecha).toLocaleDateString('es-AR')}</span>
+                                        </div>
+                                        <p class="text-sm text-gray-700 mb-2">${evento.descripcion}</p>
+                                        ${evento.legajo_id ? `
+                                            <a href="/legajos/${evento.legajo_id}/" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                                                Ver Acompañamiento <i class="fas fa-arrow-right ml-1"></i>
+                                            </a>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+                mensajeSin.classList.add('hidden');
+            } else {
+                container.innerHTML = '';
+                mensajeSin.classList.remove('hidden');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('timeline-container').innerHTML = '<div class="text-center py-4 text-red-500">Error al cargar línea temporal</div>';
+        });
+}
+
+// Cargar predicción de riesgo
+function cargarPrediccionRiesgo() {
+    fetch(`/legajos/ciudadanos/{{ ciudadano.id }}/prediccion-riesgo/`)
+        .then(response => response.json())
+        .then(data => {
+            // Riesgo de Abandono
+            const abandono = data.abandono;
+            document.getElementById('abandono-score').textContent = abandono.score + '%';
+            document.getElementById('abandono-bar').style.width = abandono.score + '%';
+            
+            const abandonoNivel = document.getElementById('abandono-nivel');
+            abandonoNivel.textContent = abandono.nivel;
+            abandonoNivel.className = 'px-3 py-1 rounded-full text-xs font-bold ' + getNivelColor(abandono.nivel);
+            document.getElementById('abandono-bar').className = 'h-3 rounded-full transition-all duration-500 ' + getBarColor(abandono.nivel);
+            
+            const abandonoFactores = document.getElementById('abandono-factores');
+            if (abandono.factores.length > 0) {
+                abandonoFactores.innerHTML = abandono.factores.map(factor => `
+                    <div class="flex items-start text-sm text-gray-600">
+                        <i class="fas fa-circle text-xs text-gray-400 mr-2 mt-1"></i>
+                        <span>${factor}</span>
+                    </div>
+                `).join('');
+            } else {
+                abandonoFactores.innerHTML = '<p class="text-sm text-green-600">✓ Sin factores de riesgo identificados</p>';
+            }
+            
+            // Riesgo de Evento Crítico
+            const evento = data.evento_critico;
+            document.getElementById('evento-score').textContent = evento.score + '%';
+            document.getElementById('evento-bar').style.width = evento.score + '%';
+            
+            const eventoNivel = document.getElementById('evento-nivel');
+            eventoNivel.textContent = evento.nivel;
+            eventoNivel.className = 'px-3 py-1 rounded-full text-xs font-bold ' + getNivelColor(evento.nivel);
+            document.getElementById('evento-bar').className = 'h-3 rounded-full transition-all duration-500 ' + getBarColor(evento.nivel);
+            
+            const eventoFactores = document.getElementById('evento-factores');
+            if (evento.factores.length > 0) {
+                eventoFactores.innerHTML = evento.factores.map(factor => `
+                    <div class="flex items-start text-sm text-gray-600">
+                        <i class="fas fa-circle text-xs text-gray-400 mr-2 mt-1"></i>
+                        <span>${factor}</span>
+                    </div>
+                `).join('');
+            } else {
+                eventoFactores.innerHTML = '<p class="text-sm text-green-600">✓ Sin factores de riesgo identificados</p>';
+            }
+            
+            // Recomendaciones
+            const recomendaciones = document.getElementById('recomendaciones-container');
+            if (data.recomendaciones.length > 0) {
+                recomendaciones.innerHTML = data.recomendaciones.map(rec => `
+                    <div class="flex items-start p-3 rounded-lg ${getPrioridadBg(rec.prioridad)} border ${getPrioridadBorder(rec.prioridad)}">
+                        <span class="text-2xl mr-3">${rec.icono}</span>
+                        <div class="flex-1">
+                            <span class="text-sm font-medium text-gray-800">${rec.texto}</span>
+                            <span class="ml-2 text-xs ${getPrioridadText(rec.prioridad)} font-bold">${rec.prioridad}</span>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                recomendaciones.innerHTML = '<p class="text-sm text-green-600">✓ No hay recomendaciones pendientes</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+}
+
+// Obtener color según nivel de riesgo
+function getNivelColor(nivel) {
+    const colores = {
+        'CRITICO': 'bg-red-100 text-red-800',
+        'ALTO': 'bg-orange-100 text-orange-800',
+        'MEDIO': 'bg-yellow-100 text-yellow-800',
+        'BAJO': 'bg-green-100 text-green-800'
+    };
+    return colores[nivel] || 'bg-gray-100 text-gray-800';
+}
+
+// Obtener color de barra según nivel
+function getBarColor(nivel) {
+    const colores = {
+        'CRITICO': 'bg-red-500',
+        'ALTO': 'bg-orange-500',
+        'MEDIO': 'bg-yellow-500',
+        'BAJO': 'bg-green-500'
+    };
+    return colores[nivel] || 'bg-gray-500';
+}
+
+// Obtener background según prioridad
+function getPrioridadBg(prioridad) {
+    const colores = {
+        'CRITICA': 'bg-red-50',
+        'ALTA': 'bg-orange-50',
+        'MEDIA': 'bg-yellow-50',
+        'BAJA': 'bg-blue-50'
+    };
+    return colores[prioridad] || 'bg-gray-50';
+}
+
+// Obtener border según prioridad
+function getPrioridadBorder(prioridad) {
+    const colores = {
+        'CRITICA': 'border-red-200',
+        'ALTA': 'border-orange-200',
+        'MEDIA': 'border-yellow-200',
+        'BAJA': 'border-blue-200'
+    };
+    return colores[prioridad] || 'border-gray-200';
+}
+
+// Obtener color de texto según prioridad
+function getPrioridadText(prioridad) {
+    const colores = {
+        'CRITICA': 'text-red-600',
+        'ALTA': 'text-orange-600',
+        'MEDIA': 'text-yellow-600',
+        'BAJA': 'text-blue-600'
+    };
+    return colores[prioridad] || 'text-gray-600';
+}
+
+// Obtener configuración de icono para timeline
+function getTimelineIcon(tipo) {
+    const configs = {
+        'APERTURA': { icon: 'fas fa-folder-open', bg: 'bg-green-100', color: 'text-green-600' },
+        'EVALUACION': { icon: 'fas fa-stethoscope', bg: 'bg-purple-100', color: 'text-purple-600' },
+        'PLAN': { icon: 'fas fa-tasks', bg: 'bg-blue-100', color: 'text-blue-600' },
+        'SEGUIMIENTO': { icon: 'fas fa-clipboard-list', bg: 'bg-cyan-100', color: 'text-cyan-600' },
+        'DERIVACION': { icon: 'fas fa-share', bg: 'bg-yellow-100', color: 'text-yellow-600' },
+        'EVENTO': { icon: 'fas fa-exclamation-triangle', bg: 'bg-red-100', color: 'text-red-600' },
+        'CIERRE': { icon: 'fas fa-folder', bg: 'bg-gray-100', color: 'text-gray-600' },
+        'VINCULO': { icon: 'fas fa-users', bg: 'bg-orange-100', color: 'text-orange-600' },
+        'ALERTA': { icon: 'fas fa-bell', bg: 'bg-pink-100', color: 'text-pink-600' }
+    };
+    return configs[tipo] || { icon: 'fas fa-circle', bg: 'bg-gray-100', color: 'text-gray-600' };
 }
 </script>
 {% endblock %}

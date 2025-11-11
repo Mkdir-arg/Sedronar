@@ -450,12 +450,6 @@ class Derivacion(TimeStamped):
         on_delete=models.CASCADE, 
         related_name="derivaciones"
     )
-    origen = models.ForeignKey(
-        Institucion, 
-        on_delete=models.PROTECT, 
-        related_name="derivaciones_origen",
-        verbose_name="Institución Origen"
-    )
     destino = models.ForeignKey(
         Institucion, 
         on_delete=models.PROTECT, 
@@ -495,17 +489,14 @@ class Derivacion(TimeStamped):
             models.Index(fields=["urgencia"]),
             models.Index(fields=["estado", "urgencia"]),
             models.Index(fields=["destino", "estado"]),
-            models.Index(fields=["origen", "estado"]),
         ]
     
     def __str__(self):
-        return f"Derivación {self.origen.nombre} → {self.destino.nombre}"
+        return f"Derivación a {self.destino.nombre}"
     
     def clean(self):
         if hasattr(self, 'destino') and self.destino and not self.destino.activo:
             raise ValidationError("No es posible derivar a un dispositivo inactivo.")
-        if hasattr(self, 'origen') and self.origen and hasattr(self, 'destino') and self.destino and self.origen == self.destino:
-            raise ValidationError("No se puede derivar al mismo dispositivo.")
 
 
 class EventoCritico(TimeStamped):

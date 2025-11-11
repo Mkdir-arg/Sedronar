@@ -323,9 +323,9 @@ class ActividadDetailView(LoginRequiredMixin, DetailView):
         # Obtener staff de la actividad
         context['staff'] = StaffActividad.objects.filter(actividad=actividad).select_related('personal', 'actividad')
         
-        # Obtener derivaciones a esta actividad
+        # Obtener derivaciones a esta actividad (solo pendientes y rechazadas)
         from legajos.models import Derivacion, InscriptoActividad, RegistroAsistencia
-        context['derivaciones'] = Derivacion.objects.filter(actividad_destino=actividad).select_related('legajo__ciudadano', 'origen', 'destino').order_by('-creado')
+        context['derivaciones'] = Derivacion.objects.filter(actividad_destino=actividad).exclude(estado='ACEPTADA').select_related('legajo__ciudadano', 'destino').order_by('-creado')
         
         # Obtener nómina de la actividad (inscritos) con contadores de asistencia
         nomina = InscriptoActividad.objects.filter(actividad=actividad).select_related('ciudadano', 'actividad').annotate(

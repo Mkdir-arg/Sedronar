@@ -18,12 +18,6 @@
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Dispositivo Origen</label>
-                    <input type="text" value="{{ legajo.dispositivo.nombre }}" readonly
-                           class="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm">
-                </div>
-                
-                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Dispositivo Destino</label>
                     {{ form.destino }}
                 </div>
@@ -64,29 +58,42 @@ document.addEventListener('DOMContentLoaded', function() {
     const destinoSelect = document.getElementById('id_destino');
     const actividadSelect = document.getElementById('id_actividad_destino');
     
-    if (destinoSelect && actividadSelect) {
-        destinoSelect.addEventListener('change', function() {
-            const institucionId = this.value;
-            
-            if (institucionId) {
-                fetch(`/legajos/actividades-por-institucion/${institucionId}/`)
-                    .then(response => response.json())
-                    .then(data => {
-                        actividadSelect.innerHTML = '<option value="">---------</option>';
-                        data.actividades.forEach(actividad => {
-                            const option = document.createElement('option');
-                            option.value = actividad.id;
-                            option.textContent = `${actividad.nombre} (${actividad.tipo_display})`;
-                            actividadSelect.appendChild(option);
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        actividadSelect.innerHTML = '<option value="">Error cargando actividades</option>';
+    function cargarActividades(institucionId, actividadSeleccionada = null) {
+        if (institucionId) {
+            fetch(`/legajos/actividades-por-institucion/${institucionId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    actividadSelect.innerHTML = '<option value="">---------</option>';
+                    data.actividades.forEach(actividad => {
+                        const option = document.createElement('option');
+                        option.value = actividad.id;
+                        option.textContent = `${actividad.nombre} (${actividad.tipo_display})`;
+                        if (actividadSeleccionada && actividad.id == actividadSeleccionada) {
+                            option.selected = true;
+                        }
+                        actividadSelect.appendChild(option);
                     });
-            } else {
-                actividadSelect.innerHTML = '<option value="">---------</option>';
-            }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    actividadSelect.innerHTML = '<option value="">Error cargando actividades</option>';
+                });
+        } else {
+            actividadSelect.innerHTML = '<option value="">---------</option>';
+        }
+    }
+    
+    if (destinoSelect && actividadSelect) {
+        // Cargar actividades al inicio si hay institución seleccionada
+        const institucionInicial = destinoSelect.value;
+        const actividadInicial = actividadSelect.value;
+        if (institucionInicial) {
+            cargarActividades(institucionInicial, actividadInicial);
+        }
+        
+        // Cargar actividades cuando cambia la institución
+        destinoSelect.addEventListener('change', function() {
+            cargarActividades(this.value);
         });
     }
 });

@@ -86,6 +86,12 @@ urlpatterns = [
     # API Cursos y Actividades
     path('ciudadanos/<int:pk>/cursos-actividades/', views_cursos.cursos_actividades_ciudadano, name='cursos_actividades_ciudadano'),
     
+    # API Línea Temporal
+    path('ciudadanos/<int:ciudadano_id>/timeline/', views_contactos_simple.timeline_ciudadano_api, name='timeline_ciudadano'),
+    
+    # API Predicción de Riesgo
+    path('ciudadanos/<int:ciudadano_id>/prediccion-riesgo/', views_contactos_simple.prediccion_riesgo_api, name='prediccion_riesgo'),
+    
     # Dashboard de Alertas
     path('alertas/', views_alertas.alertas_dashboard, name='alertas_dashboard'),
     path('alertas/<int:alerta_id>/cerrar-ajax/', views_alertas.cerrar_alerta_ajax, name='cerrar_alerta_ajax'),

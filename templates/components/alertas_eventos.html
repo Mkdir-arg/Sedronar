@@ -25,12 +25,8 @@
 }
 
 #alertas-eventos .alerta-critica {
-    /* Aseguramos opacidad total y un fondo rojo sólido */
     opacity: 1 !important;
-    background-color: #dc2626 !important;
-    background-image: none !important;
     background: #dc2626 !important;
-    /* Animaciones sin afectar opacidad */
     animation: slideInRight 0.5s ease-out, alertPulse 2s infinite !important;
     box-shadow: 0 10px 25px rgba(220, 38, 38, 0.3) !important;
 }
@@ -45,7 +41,8 @@
 <div id="alertas-eventos" class="fixed top-20 right-4 z-[60] space-y-2">
     {% for evento in eventos_criticos_pendientes %}
         <div id="alerta-{{ evento.id }}" 
-             class="alerta-critica text-white p-4 rounded-lg shadow-lg max-w-sm border-l-4 border-red-800 transition-all duration-300 transform">
+             class="alerta-critica text-white p-4 rounded-lg shadow-lg max-w-sm border-l-4 border-red-800 transition-all duration-300 transform"
+             style="background: #dc2626 !important; opacity: 1 !important;">
             <div class="flex items-start justify-between">
                 <div class="flex-1">
                     <div class="flex items-center mb-2">
