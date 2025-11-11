@@ -44,7 +44,7 @@ def actividades_ciudadano_api(request, ciudadano_id):
     """API para obtener todas las actividades de un ciudadano"""
     try:
         ciudadano = get_object_or_404(Ciudadano, id=ciudadano_id)
-        legajos = LegajoAtencion.objects.filter(ciudadano=ciudadano)
+        legajos = LegajoAtencion.objects.filter(ciudadano=ciudadano).select_related('dispositivo', 'responsable')
         
         actividades = []
         
@@ -55,7 +55,6 @@ def actividades_ciudadano_api(request, ciudadano_id):
                 actividades.append({
                     'fecha_hora': legajo.fecha_apertura.isoformat(),
                     'tipo': 'APERTURA',
-                    'tipo_display': 'Apertura de Acompañamiento',
                     'descripcion': f'Acompañamiento abierto en {legajo.dispositivo.nombre if legajo.dispositivo else "Dispositivo no especificado"}',
                     'usuario_nombre': legajo.responsable.get_full_name() if legajo.responsable else 'Sistema',
                     'legajo_id': str(legajo.id),
@@ -67,8 +66,75 @@ def actividades_ciudadano_api(request, ciudadano_id):
                 actividades.append({
                     'fecha_hora': legajo.fecha_cierre.isoformat(),
                     'tipo': 'CIERRE',
-                    'tipo_display': 'Cierre de Acompañamiento',
                     'descripcion': 'Acompañamiento cerrado',
+                    'usuario_nombre': 'Sistema',
+                    'legajo_id': str(legajo.id),
+                    'legajo_codigo': str(legajo.codigo)[:12] + '...' if legajo.codigo else str(legajo.id)
+                })
+            
+            # Seguimientos
+            from .models import SeguimientoContacto
+            seguimientos = SeguimientoContacto.objects.filter(legajo=legajo).select_related('profesional__usuario')
+            for seg in seguimientos:
+                actividades.append({
+                    'fecha_hora': seg.creado.isoformat(),
+                    'tipo': 'SEGUIMIENTO',
+                    'descripcion': f'{seg.get_tipo_display()}: {seg.descripcion[:100] if seg.descripcion else "Sin descripción"}',
+                    'usuario_nombre': seg.profesional.usuario.get_full_name() if seg.profesional and seg.profesional.usuario else 'Sistema',
+                    'legajo_id': str(legajo.id),
+                    'legajo_codigo': str(legajo.codigo)[:12] + '...' if legajo.codigo else str(legajo.id)
+                })
+            
+            # Evaluaciones
+            from .models import EvaluacionInicial
+            try:
+                if hasattr(legajo, 'evaluacion'):
+                    eval = legajo.evaluacion
+                    actividades.append({
+                        'fecha_hora': eval.creado.isoformat(),
+                        'tipo': 'EVALUACION',
+                        'descripcion': f'Evaluación inicial realizada - Riesgo: {eval.nivel_riesgo if hasattr(eval, "nivel_riesgo") else "No especificado"}',
+                        'usuario_nombre': 'Sistema',
+                        'legajo_id': str(legajo.id),
+                        'legajo_codigo': str(legajo.codigo)[:12] + '...' if legajo.codigo else str(legajo.id)
+                    })
+            except:
+                pass
+            
+            # Planes de intervención
+            from .models import PlanIntervencion
+            planes = PlanIntervencion.objects.filter(legajo=legajo).select_related('profesional__usuario')
+            for plan in planes:
+                actividades.append({
+                    'fecha_hora': plan.creado.isoformat(),
+                    'tipo': 'PLAN',
+                    'descripcion': f'Plan de intervención creado - Objetivos: {plan.objetivos[:100] if plan.objetivos else "Sin objetivos"}',
+                    'usuario_nombre': plan.profesional.usuario.get_full_name() if plan.profesional and plan.profesional.usuario else 'Sistema',
+                    'legajo_id': str(legajo.id),
+                    'legajo_codigo': str(legajo.codigo)[:12] + '...' if legajo.codigo else str(legajo.id)
+                })
+            
+            # Derivaciones
+            from .models import Derivacion
+            derivaciones = Derivacion.objects.filter(legajo=legajo).select_related('origen', 'destino')
+            for der in derivaciones:
+                actividades.append({
+                    'fecha_hora': der.creado.isoformat(),
+                    'tipo': 'DERIVACION',
+                    'descripcion': f'Derivación a {der.destino.nombre if der.destino else "destino no especificado"} - Estado: {der.get_estado_display()}',
+                    'usuario_nombre': 'Sistema',
+                    'legajo_id': str(legajo.id),
+                    'legajo_codigo': str(legajo.codigo)[:12] + '...' if legajo.codigo else str(legajo.id)
+                })
+            
+            # Eventos críticos
+            from .models import EventoCritico
+            eventos = EventoCritico.objects.filter(legajo=legajo)
+            for evento in eventos:
+                actividades.append({
+                    'fecha_hora': evento.creado.isoformat(),
+                    'tipo': 'EVENTO',
+                    'descripcion': f'Evento crítico: {evento.get_tipo_display()} - {evento.descripcion[:100] if evento.descripcion else ""}',
                     'usuario_nombre': 'Sistema',
                     'legajo_id': str(legajo.id),
                     'legajo_codigo': str(legajo.codigo)[:12] + '...' if legajo.codigo else str(legajo.id)
@@ -81,7 +147,6 @@ def actividades_ciudadano_api(request, ciudadano_id):
                 actividades.append({
                     'fecha_hora': vinculo.creado.isoformat() if hasattr(vinculo, 'creado') else datetime.now().isoformat(),
                     'tipo': 'VINCULO',
-                    'tipo_display': 'Vínculo Familiar',
                     'descripcion': f'Vínculo agregado: {vinculo.get_tipo_vinculo_display() if hasattr(vinculo, "get_tipo_vinculo_display") else vinculo.tipo_vinculo}',
                     'usuario_nombre': 'Sistema',
                     'legajo_id': '-',
@@ -94,12 +159,14 @@ def actividades_ciudadano_api(request, ciudadano_id):
         actividades.sort(key=lambda x: x['fecha_hora'] or '', reverse=True)
         
         return JsonResponse({
-            'results': actividades[:20],  # Limitar a 20 registros
+            'results': actividades[:50],  # Limitar a 50 registros
             'count': len(actividades)
         })
         
     except Exception as e:
         print(f"Error en actividades_ciudadano_api: {e}")
+        import traceback
+        traceback.print_exc()
         return JsonResponse({
             'results': [],
             'count': 0,

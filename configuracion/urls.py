@@ -29,6 +29,7 @@ urlpatterns = [
     # Actividades
     path('actividades/<int:pk>/', login_required(views.ActividadDetailView.as_view()), name='actividad_detalle'),
     path('actividades/<int:actividad_pk>/staff/crear/', login_required(views.StaffActividadCreateView.as_view()), name='staff_crear'),
+    path('actividades/<int:actividad_pk>/buscar-personal/', views.buscar_personal_ajax, name='buscar_personal_ajax'),
     path('derivaciones/<int:pk>/aceptar/', login_required(views.DerivacionAceptarView.as_view()), name='derivacion_aceptar'),
     path('derivaciones/<int:pk>/rechazar/', login_required(views.DerivacionRechazarView.as_view()), name='derivacion_rechazar'),
     path('inscriptos/<int:pk>/editar/', login_required(views.InscriptoEditarView.as_view()), name='inscripto_editar'),
