@@ -691,6 +691,38 @@ function cargarTimelineEventos() {
             color: 'blue'
         },
         {% endfor %}
+        {% for derivacion in legajo.derivaciones.all|slice:":3" %}
+        {
+            tipo: 'derivacion',
+            titulo: 'Derivación Realizada',
+            descripcion: 'Derivado a {{ derivacion.institucion_destino }}',
+            fecha: '{{ derivacion.fecha|date:"d/m/Y" }}',
+            icono: 'fa-share',
+            color: 'pink'
+        },
+        {% endfor %}
+        {% for inscripcion in legajo.ciudadano.actividades_inscrito.all|slice:":3" %}
+        {
+            tipo: 'inscripcion',
+            titulo: 'Inscripción a Actividad',
+            descripcion: 'Inscrito en {{ inscripcion.actividad.nombre }}',
+            fecha: '{{ inscripcion.fecha_inscripcion|date:"d/m/Y" }}',
+            icono: 'fa-calendar-plus',
+            color: 'teal'
+        },
+        {% endfor %}
+        {% for inscripcion in legajo.ciudadano.actividades_inscrito.all %}
+            {% for asistencia in inscripcion.asistencias.all|slice:":2" %}
+            {
+                tipo: 'asistencia',
+                titulo: 'Asistencia Registrada',
+                descripcion: '{{ asistencia.get_estado_display }} en {{ inscripcion.actividad.nombre }}',
+                fecha: '{{ asistencia.fecha|date:"d/m/Y" }}',
+                icono: 'fa-check-circle',
+                color: 'orange'
+            },
+            {% endfor %}
+        {% endfor %}
         {% for evento in legajo.eventos.all|slice:":2" %}
         {
             tipo: 'evento',
@@ -711,7 +743,10 @@ function cargarTimelineEventos() {
             purple: 'from-purple-400 to-violet-600 border-purple-400',
             blue: 'from-blue-400 to-cyan-600 border-blue-400',
             red: 'from-red-400 to-rose-600 border-red-400',
-            green: 'from-green-400 to-emerald-600 border-green-400'
+            green: 'from-green-400 to-emerald-600 border-green-400',
+            pink: 'from-pink-400 to-rose-600 border-pink-400',
+            teal: 'from-teal-400 to-cyan-600 border-teal-400',
+            orange: 'from-orange-400 to-amber-600 border-orange-400'
         };
         
         const eventoHTML = `
@@ -719,7 +754,7 @@ function cargarTimelineEventos() {
                 <div class="flex-shrink-0 w-16 h-16 bg-gradient-to-br ${colorClasses[evento.color]} rounded-full flex items-center justify-center shadow-lg border-4 border-white transform hover:scale-110 transition-transform relative z-20">
                     <i class="fas ${evento.icono} text-white text-lg"></i>
                 </div>
-                <div class="ml-8 bg-white rounded-xl shadow-md p-4 flex-1 border-l-4 ${evento.color === 'purple' ? 'border-purple-400' : evento.color === 'blue' ? 'border-blue-400' : 'border-red-400'} hover:shadow-lg transition-all transform hover:-translate-y-1 min-h-[100px]">
+                <div class="ml-8 bg-white rounded-xl shadow-md p-4 flex-1 border-l-4 ${evento.color === 'purple' ? 'border-purple-400' : evento.color === 'blue' ? 'border-blue-400' : evento.color === 'red' ? 'border-red-400' : evento.color === 'pink' ? 'border-pink-400' : evento.color === 'teal' ? 'border-teal-400' : 'border-orange-400'} hover:shadow-lg transition-all transform hover:-translate-y-1 min-h-[100px]">
                     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-2">
                         <h4 class="font-semibold text-gray-900">${evento.titulo}</h4>
                         <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full font-medium whitespace-nowrap">${evento.fecha}</span>

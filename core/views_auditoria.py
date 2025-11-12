@@ -11,7 +11,11 @@ import csv
 import json
 
 from .models_auditoria import LogAccion, LogDescargaArchivo, SesionUsuario, AlertaAuditoria
-# from simple_history.models import HistoricalRecord  # No existe este import
+from .models_auditoria_extendida import (
+    AuditoriaCiudadano, AuditoriaLegajo, AuditoriaEvaluacion,
+    AuditoriaEventoCritico, AuditoriaConsentimiento, AuditoriaAccesoSensible,
+    AuditoriaDerivacion, AuditoriaPlanIntervencion, AuditoriaInstitucion
+)
 
 
 def es_administrador(user):
@@ -35,6 +39,15 @@ def dashboard_auditoria(request):
         'descargas_hoy': LogDescargaArchivo.objects.filter(timestamp__date=hoy).count(),
         'sesiones_activas': SesionUsuario.objects.filter(activa=True).count(),
         'alertas_pendientes': AlertaAuditoria.objects.filter(revisada=False).count(),
+        # Nuevas estadísticas
+        'auditorias_ciudadano': AuditoriaCiudadano.objects.filter(timestamp__date__gte=hace_30_dias).count(),
+        'auditorias_legajo': AuditoriaLegajo.objects.filter(timestamp__date__gte=hace_30_dias).count(),
+        'eventos_criticos': AuditoriaEventoCritico.objects.filter(timestamp__date__gte=hace_30_dias).count(),
+        'accesos_sensibles': AuditoriaAccesoSensible.objects.filter(timestamp__date__gte=hace_30_dias).count(),
+        'accesos_fuera_horario': AuditoriaAccesoSensible.objects.filter(
+            timestamp__date__gte=hace_30_dias,
+            fuera_horario=True
+        ).count(),
     }
     
     # Actividad por día (últimos 7 días)
@@ -258,52 +271,65 @@ def marcar_alerta_revisada(request, alerta_id):
 @login_required
 @user_passes_test(es_administrador)
 def historial_cambios(request):
-    """Historial de cambios usando django-simple-history"""
-    # Obtener todos los modelos con historial
-    from django.apps import apps
+    """Historial de cambios usando los nuevos modelos de auditoría"""
     
-    modelos_con_historial = []
-    for model in apps.get_models():
-        if hasattr(model, 'history'):
-            modelos_con_historial.append({
-                'nombre': model._meta.verbose_name,
-                'app_label': model._meta.app_label,
-                'model_name': model._meta.model_name,
-            })
+    # Modelos auditados
+    modelos_auditados = [
+        {'nombre': 'Ciudadano', 'modelo': 'ciudadano'},
+        {'nombre': 'Legajo de Atención', 'modelo': 'legajo'},
+        {'nombre': 'Evaluación Inicial', 'modelo': 'evaluacion'},
+        {'nombre': 'Evento Crítico', 'modelo': 'evento'},
+        {'nombre': 'Consentimiento', 'modelo': 'consentimiento'},
+        {'nombre': 'Derivación', 'modelo': 'derivacion'},
+        {'nombre': 'Plan de Intervención', 'modelo': 'plan'},
+        {'nombre': 'Institución', 'modelo': 'institucion'},
+    ]
     
     # Filtros
     modelo_seleccionado = request.GET.get('modelo')
-    objeto_id = request.GET.get('objeto_id')
     fecha_desde = request.GET.get('fecha_desde')
+    fecha_hasta = request.GET.get('fecha_hasta')
+    usuario_id = request.GET.get('usuario')
     
     historial = None
     if modelo_seleccionado:
-        try:
-            app_label, model_name = modelo_seleccionado.split('.')
-            model = apps.get_model(app_label, model_name)
+        # Mapear modelo a clase de auditoría
+        modelo_map = {
+            'ciudadano': AuditoriaCiudadano,
+            'legajo': AuditoriaLegajo,
+            'evaluacion': AuditoriaEvaluacion,
+            'evento': AuditoriaEventoCritico,
+            'consentimiento': AuditoriaConsentimiento,
+            'derivacion': AuditoriaDerivacion,
+            'plan': AuditoriaPlanIntervencion,
+            'institucion': AuditoriaInstitucion,
+        }
+        
+        modelo_clase = modelo_map.get(modelo_seleccionado)
+        if modelo_clase:
+            historial = modelo_clase.objects.select_related('usuario').all()
             
-            if hasattr(model, 'history'):
-                historial = model.history.all()
-                
-                if objeto_id:
-                    historial = historial.filter(id=objeto_id)
-                if fecha_desde:
-                    historial = historial.filter(history_date__date__gte=fecha_desde)
-                
-                # Paginación
-                paginator = Paginator(historial, 50)
-                page = request.GET.get('page')
-                historial = paginator.get_page(page)
-        except:
-            pass
+            if fecha_desde:
+                historial = historial.filter(timestamp__date__gte=fecha_desde)
+            if fecha_hasta:
+                historial = historial.filter(timestamp__date__lte=fecha_hasta)
+            if usuario_id:
+                historial = historial.filter(usuario_id=usuario_id)
+            
+            # Paginación
+            paginator = Paginator(historial, 50)
+            page = request.GET.get('page')
+            historial = paginator.get_page(page)
     
     context = {
-        'modelos_con_historial': modelos_con_historial,
+        'modelos_auditados': modelos_auditados,
         'historial': historial,
+        'usuarios': User.objects.filter(is_active=True).only('id', 'username', 'first_name', 'last_name'),
         'filtros': {
             'modelo': modelo_seleccionado,
-            'objeto_id': objeto_id,
             'fecha_desde': fecha_desde,
+            'fecha_hasta': fecha_hasta,
+            'usuario': usuario_id,
         }
     }
     

@@ -13,31 +13,17 @@ def es_staff(user):
 @login_required
 @user_passes_test(es_staff)
 def lista_tramites(request):
-    tramites = Institucion.objects.filter(
+    tramites_activos = Institucion.objects.filter(
         estado_registro__in=['ENVIADO', 'REVISION']
     ).select_related('provincia', 'municipio', 'localidad').prefetch_related('encargados').order_by('-creado')
     
-    # Debug: crear trámite de prueba si no hay ninguno
-    if not tramites.exists():
-        from core.models import Provincia, Municipio
-        provincia = Provincia.objects.first()
-        municipio = Municipio.objects.first()
-        if provincia and municipio:
-            Institucion.objects.create(
-                tipo='DTC',
-                nombre='Institución de Prueba',
-                provincia=provincia,
-                municipio=municipio,
-                email='prueba@test.com',
-                estado_registro='ENVIADO',
-                descripcion='Trámite de prueba para testing'
-            )
-            tramites = Institucion.objects.filter(
-                estado_registro__in=['ENVIADO', 'REVISION']
-            ).select_related('provincia', 'municipio', 'localidad').prefetch_related('encargados').order_by('-creado')
+    tramites_cerrados = Institucion.objects.filter(
+        estado_registro__in=['APROBADO', 'RECHAZADO']
+    ).select_related('provincia', 'municipio', 'localidad').prefetch_related('encargados').order_by('-modificado')
     
     return render(request, 'tramites/lista_tramites.html', {
-        'tramites': tramites
+        'tramites_activos': tramites_activos,
+        'tramites_cerrados': tramites_cerrados
     })
 
 

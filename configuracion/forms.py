@@ -209,6 +209,7 @@ class StaffActividadForm(forms.ModelForm):
                 legajo_institucional=legajo_institucional,
                 activo=True
             ).order_by('apellido', 'nombre')
+            self.fields['personal'].label_from_instance = lambda obj: f"{obj.apellido}, {obj.nombre} - DNI: {obj.dni}"
     
     def clean(self):
         cleaned_data = super().clean()
