@@ -27,6 +27,7 @@ urlpatterns = [
     path('<uuid:legajo_id>/planes/', views.PlanListView.as_view(), name='planes'),
     path('<uuid:legajo_id>/plan/', views.PlanIntervencionView.as_view(), name='plan'),
     path('plan/<int:pk>/editar/', views.PlanUpdateView.as_view(), name='plan_editar'),
+    path('plan/<int:pk>/marcar-etapa/', views.marcar_etapa_plan, name='marcar_etapa_plan'),
     
     # Seguimientos
     path('<uuid:legajo_id>/seguimientos/', views.SeguimientoListView.as_view(), name='seguimientos'),
@@ -91,6 +92,9 @@ urlpatterns = [
     
     # API Predicción de Riesgo
     path('ciudadanos/<int:ciudadano_id>/prediccion-riesgo/', views_contactos_simple.prediccion_riesgo_api, name='prediccion_riesgo'),
+    
+    # API Evolución de Legajo
+    path('<uuid:legajo_id>/evolucion/', views_contactos_simple.evolucion_legajo_api, name='evolucion_legajo'),
     
     # Dashboard de Alertas
     path('alertas/', views_alertas.alertas_dashboard, name='alertas_dashboard'),

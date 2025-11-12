@@ -211,39 +211,72 @@
     {% if plan_vigente %}
     <div class="mt-6 bg-white rounded-lg shadow-sm border border-gray-200">
         <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-900">Plan Vigente - Detalle</h2>
+            <h2 class="text-lg font-semibold text-gray-900">Plan Vigente - Etapas</h2>
         </div>
         <div class="px-6 py-4">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                    <h3 class="text-md font-medium text-gray-900 mb-3">Objetivos</h3>
-                    <p class="text-gray-700 bg-gray-50 p-3 rounded-lg">
-                        {{ plan_vigente.objetivos|default:"Sin objetivos definidos" }}
-                    </p>
-                </div>
-                <div>
-                    <h3 class="text-md font-medium text-gray-900 mb-3">Actividades</h3>
-                    {% if plan_vigente.actividades %}
-                        <div class="space-y-2">
-                            {% for actividad in plan_vigente.actividades %}
-                            <div class="bg-gray-50 p-3 rounded-lg">
-                                <div class="font-medium text-gray-900">{{ actividad.accion }}</div>
-                                {% if actividad.freq %}
-                                    <div class="text-sm text-gray-600">Frecuencia: {{ actividad.freq }}</div>
-                                {% endif %}
-                                {% if actividad.responsable %}
-                                    <div class="text-sm text-gray-600">Responsable: {{ actividad.responsable }}</div>
-                                {% endif %}
+            {% if plan_vigente.actividades %}
+                <div class="space-y-3">
+                    {% for actividad in plan_vigente.actividades %}
+                    <div class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <input type="checkbox" 
+                               id="actividad_{{ forloop.counter }}" 
+                               class="mt-1 h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
+                               {% if actividad.completada %}checked{% endif %}
+                               onchange="marcarEtapa('{{ plan_vigente.id }}', {{ forloop.counter0 }}, this.checked)">
+                        <label for="actividad_{{ forloop.counter }}" class="flex-1 cursor-pointer">
+                            <div class="font-medium text-gray-900 {% if actividad.completada %}line-through text-gray-500{% endif %}">
+                                {{ actividad.accion }}
                             </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <p class="text-gray-500 bg-gray-50 p-3 rounded-lg">Sin actividades definidas</p>
-                    {% endif %}
+                            {% if actividad.freq %}
+                                <div class="text-sm text-gray-600">Frecuencia: {{ actividad.freq }}</div>
+                            {% endif %}
+                            {% if actividad.responsable %}
+                                <div class="text-sm text-gray-600">Responsable: {{ actividad.responsable }}</div>
+                            {% endif %}
+                        </label>
+                    </div>
+                    {% endfor %}
                 </div>
-            </div>
+            {% else %}
+                <p class="text-gray-500 bg-gray-50 p-3 rounded-lg">Sin actividades definidas</p>
+            {% endif %}
         </div>
     </div>
+
+    <script>
+    function marcarEtapa(planId, indice, completada) {
+        fetch(`/legajos/plan/${planId}/marcar-etapa/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                indice: indice,
+                completada: completada
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const label = document.querySelector(`label[for="actividad_${indice + 1}"] .font-medium`);
+                if (completada) {
+                    label.classList.add('line-through', 'text-gray-500');
+                } else {
+                    label.classList.remove('line-through', 'text-gray-500');
+                }
+            } else {
+                alert('Error al actualizar la etapa');
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al actualizar la etapa');
+            location.reload();
+        });
+    }
+    </script>
     {% endif %}
 </div>
 {% endblock %}

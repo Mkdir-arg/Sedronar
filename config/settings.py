@@ -103,7 +103,11 @@ MIDDLEWARE = [
     "django.contrib.admindocs.middleware.XViewMiddleware",
     "config.middlewares.xss_protection.XSSProtectionMiddleware",
     "config.middlewares.threadlocals.ThreadLocalMiddleware",
-    "config.middlewares.auditoria.AuditoriaMiddleware",
+    # Nuevos middleware de auditoría
+    "core.middleware_auditoria.AuditoriaMiddleware",
+    "core.middleware_auditoria.AccesoSensibleMiddleware",
+    "core.middleware_auditoria.DescargaArchivoMiddleware",
+    "core.middleware_auditoria.SesionUsuarioMiddleware",
     "config.middlewares.query_counter.QueryCountMiddleware",
 ]
 

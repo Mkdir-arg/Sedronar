@@ -445,6 +445,126 @@ def prediccion_riesgo_api(request, ciudadano_id):
             'recomendaciones': []
         })
 
+def evolucion_legajo_api(request, legajo_id):
+    """API para obtener datos de evolución de un legajo"""
+    try:
+        from .models import SeguimientoContacto, PlanIntervencion, Objetivo, EvaluacionInicial, Derivacion, EventoCritico
+        
+        legajo = get_object_or_404(LegajoAtencion, id=legajo_id)
+        
+        # Total de seguimientos
+        total_seguimientos = SeguimientoContacto.objects.filter(legajo=legajo).count()
+        
+        # Adherencia promedio
+        seguimientos_con_adherencia = SeguimientoContacto.objects.filter(
+            legajo=legajo,
+            adherencia__isnull=False
+        )
+        
+        adherencia_promedio = None
+        if seguimientos_con_adherencia.exists():
+            adherencia_map = {'ADECUADA': 100, 'PARCIAL': 50, 'NULA': 0}
+            total = 0
+            count = 0
+            for seg in seguimientos_con_adherencia:
+                total += adherencia_map.get(seg.adherencia, 0)
+                count += 1
+            adherencia_promedio = round(total / count) if count > 0 else None
+        
+        # Objetivos (etapas del plan vigente)
+        plan_vigente = PlanIntervencion.objects.filter(legajo=legajo, vigente=True).first()
+        objetivos_totales = 0
+        objetivos_cumplidos = 0
+        
+        if plan_vigente and plan_vigente.actividades:
+            objetivos_totales = len(plan_vigente.actividades)
+            objetivos_cumplidos = sum(1 for act in plan_vigente.actividades if act.get('completada', False))
+        
+        # Hitos del tratamiento
+        hitos = []
+        
+        # Apertura
+        hitos.append({
+            'tipo': 'APERTURA',
+            'titulo': 'Apertura de Acompañamiento',
+            'fecha': legajo.fecha_apertura.isoformat()
+        })
+        
+        # Evaluación
+        if hasattr(legajo, 'evaluacion'):
+            hitos.append({
+                'tipo': 'EVALUACION',
+                'titulo': 'Evaluación Inicial',
+                'fecha': legajo.evaluacion.creado.isoformat()
+            })
+        
+        # Plan vigente
+        plan_vigente = PlanIntervencion.objects.filter(legajo=legajo, vigente=True).first()
+        if plan_vigente:
+            hitos.append({
+                'tipo': 'PLAN',
+                'titulo': 'Plan de Intervención Activo',
+                'fecha': plan_vigente.creado.isoformat()
+            })
+        
+        # Último seguimiento
+        ultimo_seguimiento = SeguimientoContacto.objects.filter(legajo=legajo).order_by('-creado').first()
+        if ultimo_seguimiento:
+            hitos.append({
+                'tipo': 'SEGUIMIENTO',
+                'titulo': f'Último Seguimiento - {ultimo_seguimiento.get_tipo_display()}',
+                'fecha': ultimo_seguimiento.creado.isoformat()
+            })
+        
+        # Derivaciones
+        derivacion_reciente = Derivacion.objects.filter(legajo=legajo).order_by('-creado').first()
+        if derivacion_reciente:
+            hitos.append({
+                'tipo': 'DERIVACION',
+                'titulo': f'Derivación a {derivacion_reciente.destino.nombre}',
+                'fecha': derivacion_reciente.creado.isoformat()
+            })
+        
+        # Eventos críticos
+        evento_reciente = EventoCritico.objects.filter(legajo=legajo).order_by('-creado').first()
+        if evento_reciente:
+            hitos.append({
+                'tipo': 'EVENTO',
+                'titulo': f'Evento: {evento_reciente.get_tipo_display()}',
+                'fecha': evento_reciente.creado.isoformat()
+            })
+        
+        # Cierre
+        if legajo.fecha_cierre:
+            hitos.append({
+                'tipo': 'CIERRE',
+                'titulo': 'Cierre de Acompañamiento',
+                'fecha': legajo.fecha_cierre.isoformat()
+            })
+        
+        # Ordenar por fecha
+        hitos.sort(key=lambda x: x['fecha'])
+        
+        return JsonResponse({
+            'total_seguimientos': total_seguimientos,
+            'adherencia_promedio': adherencia_promedio,
+            'objetivos_totales': objetivos_totales,
+            'objetivos_cumplidos': objetivos_cumplidos,
+            'hitos': hitos
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'error': str(e),
+            'total_seguimientos': 0,
+            'adherencia_promedio': None,
+            'objetivos_totales': 0,
+            'objetivos_cumplidos': 0,
+            'hitos': []
+        })
+
 def timeline_ciudadano_api(request, ciudadano_id):
     """API para obtener línea temporal de eventos del ciudadano"""
     try:

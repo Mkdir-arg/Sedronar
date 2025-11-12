@@ -11,6 +11,7 @@ from django.core.cache import cache
 from django.utils.decorators import method_decorator
 from core.cache_decorators import cache_view, cache_queryset, invalidate_cache_pattern
 import csv
+import json
 from datetime import datetime
 from .models import Ciudadano, LegajoAtencion, EvaluacionInicial, PlanIntervencion, SeguimientoContacto, Profesional, Derivacion, EventoCritico, AlertaEventoCritico, LegajoInstitucional, InscriptoActividad, PlanFortalecimiento
 from core.models import DispositivoRed
@@ -961,7 +962,7 @@ class PlanListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['legajo'] = self.legajo
-        context['plan_vigente'] = self.legajo.plan_vigente
+        context['plan_vigente'] = self.legajo.planes.filter(vigente=True).first()
         return context
 
 
@@ -1205,6 +1206,25 @@ class InstitucionDeleteView(LoginRequiredMixin, DeleteView):
             ciudadano_falso.delete()
         
         return super().delete(request, *args, **kwargs)
+
+
+@require_http_methods(["POST"])
+def marcar_etapa_plan(request, pk):
+    """Vista AJAX para marcar/desmarcar etapa de plan como completada"""
+    try:
+        plan = get_object_or_404(PlanIntervencion, pk=pk)
+        data = json.loads(request.body)
+        indice = data.get('indice')
+        completada = data.get('completada', False)
+        
+        if plan.actividades and 0 <= indice < len(plan.actividades):
+            plan.actividades[indice]['completada'] = completada
+            plan.save()
+            return JsonResponse({'success': True})
+        
+        return JsonResponse({'success': False, 'error': 'Índice inválido'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
 
 @require_http_methods(["GET"])

@@ -1,6 +1,7 @@
 from django.utils.deprecation import MiddlewareMixin
 from django.contrib.auth.signals import user_logged_in, user_logged_out
 from django.dispatch import receiver
+from django.utils import timezone
 from core.models_auditoria import LogAccion, SesionUsuario
 from config.middlewares.threadlocals import get_current_user, get_current_request
 import json
@@ -114,15 +115,15 @@ def log_user_logout(sender, request, user, **kwargs):
         # Cerrar sesión
         if hasattr(request, 'session') and request.session.session_key:
             try:
-                sesion = SesionUsuario.objects.get(
-                    session_key=request.session.session_key,
+                sesiones = SesionUsuario.objects.filter(
                     usuario=user,
                     activa=True
                 )
-                sesion.activa = False
-                sesion.fin_sesion = timezone.now()
-                sesion.save()
-            except SesionUsuario.DoesNotExist:
+                for sesion in sesiones:
+                    sesion.activa = False
+                    sesion.fin_sesion = timezone.now()
+                    sesion.save()
+            except Exception:
                 pass
 
 
@@ -156,6 +157,3 @@ def log_model_action(accion, instance, usuario=None, detalles=None):
         ip_address=_get_client_ip(request),
         user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
     )
-
-
-from django.utils import timezone
