@@ -54,27 +54,34 @@ def aprobar_tramite(request, tramite_id):
         # Aprobar institución
         tramite.aprobar(nro_registro=nro_registro, resolucion=resolucion)
         
-        # Crear usuario para la institución
+        # Activar usuario existente asociado a la institución
         from django.contrib.auth.models import User, Group
-        username = f"institucion_{tramite.id}"
-        user, created = User.objects.get_or_create(
-            username=username,
-            defaults={
-                'email': tramite.email,
-                'first_name': tramite.nombre[:30],
-                'is_active': True
-            }
-        )
+        usuario_existente = tramite.encargados.first()
         
-        if created:
-            # Asignar grupo EncargadoInstitucion
-            grupo, _ = Group.objects.get_or_create(name='EncargadoInstitucion')
-            user.groups.add(grupo)
+        if usuario_existente:
+            # Activar el usuario que se registró desde el portal
+            usuario_existente.is_active = True
+            usuario_existente.save()
+            messages.success(request, f'Trámite aprobado. Usuario {usuario_existente.username} activado.')
+        else:
+            # Si no hay usuario asociado, crear uno nuevo (caso excepcional)
+            username = f"institucion_{tramite.id}"
+            user, created = User.objects.get_or_create(
+                username=username,
+                defaults={
+                    'email': tramite.email,
+                    'first_name': tramite.nombre[:30],
+                    'is_active': True
+                }
+            )
             
-            # Asociar usuario a la institución
-            tramite.encargados.add(user)
+            if created:
+                grupo, _ = Group.objects.get_or_create(name='EncargadoInstitucion')
+                user.groups.add(grupo)
+                tramite.encargados.add(user)
+            
+            messages.success(request, f'Trámite aprobado. Usuario {username} creado.')
         
-        messages.success(request, f'Trámite aprobado. Usuario {username} creado.')
         return redirect('tramites:lista_tramites')
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)

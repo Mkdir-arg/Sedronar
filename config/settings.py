@@ -109,6 +109,8 @@ MIDDLEWARE = [
     "core.middleware_auditoria.DescargaArchivoMiddleware",
     "core.middleware_auditoria.SesionUsuarioMiddleware",
     "config.middlewares.query_counter.QueryCountMiddleware",
+    # Middleware de redirección para usuarios institución
+    "config.middlewares.institucion_redirect.InstitucionRedirectMiddleware",
 ]
 
 # --- URLs / WSGI / ASGI ---

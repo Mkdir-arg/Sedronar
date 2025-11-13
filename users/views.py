@@ -1,8 +1,9 @@
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.views import LoginView
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.shortcuts import redirect
 from .forms import CustomUserChangeForm, UserCreationForm
 from .services import UsuariosService
 
@@ -14,6 +15,17 @@ class AdminRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
 
 class UsuariosLoginView(LoginView):
     template_name = "user/login.html"
+    
+    def get_success_url(self):
+        # Si es usuario EncargadoInstitucion, redirigir a su institución
+        if self.request.user.groups.filter(name='EncargadoInstitucion').exists():
+            from core.models import Institucion
+            institucion = Institucion.objects.filter(encargados=self.request.user).first()
+            if institucion:
+                return reverse('configuracion:institucion_detalle', kwargs={'pk': institucion.pk})
+        
+        # Para otros usuarios, usar el comportamiento por defecto
+        return super().get_success_url()
 
 
 class UserListView(AdminRequiredMixin, ListView):
