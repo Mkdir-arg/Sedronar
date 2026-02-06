@@ -196,27 +196,22 @@ class MetricasOperador(models.Model):
         return f"Métricas - {self.operador.get_full_name()}"
     
     def actualizar_metricas(self):
-        """Actualiza las métricas del operador"""
-        conversaciones = Conversacion.objects.filter(operador_asignado=self.operador)
+        """Actualiza las métricas del operador usando aggregate (optimizado)"""
+        from django.db.models import Avg, Count, Q
         
-        self.conversaciones_atendidas = conversaciones.count()
-        self.conversaciones_cerradas = conversaciones.filter(estado='cerrada').count()
+        stats = Conversacion.objects.filter(
+            operador_asignado=self.operador
+        ).aggregate(
+            total=Count('id'),
+            cerradas=Count('id', filter=Q(estado='cerrada')),
+            avg_tiempo=Avg('tiempo_respuesta_segundos'),
+            avg_satisfaccion=Avg('satisfaccion')
+        )
         
-        # Tiempo de respuesta promedio
-        tiempos = conversaciones.filter(
-            tiempo_respuesta_segundos__isnull=False
-        ).values_list('tiempo_respuesta_segundos', flat=True)
-        
-        if tiempos:
-            self.tiempo_respuesta_promedio = sum(tiempos) / len(tiempos) / 60  # convertir a minutos
-        
-        # Satisfacción promedio
-        satisfacciones = conversaciones.filter(
-            satisfaccion__isnull=False
-        ).values_list('satisfaccion', flat=True)
-        
-        if satisfacciones:
-            self.satisfaccion_promedio = sum(satisfacciones) / len(satisfacciones)
+        self.conversaciones_atendidas = stats['total'] or 0
+        self.conversaciones_cerradas = stats['cerradas'] or 0
+        self.tiempo_respuesta_promedio = (stats['avg_tiempo'] or 0) / 60
+        self.satisfaccion_promedio = stats['avg_satisfaccion'] or 0.0
         
         self.save()
 

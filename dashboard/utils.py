@@ -49,7 +49,51 @@ def contar_ciudadanos():
         cache.set(cache_key, cached_value, timeout=CACHE_TIMEOUT)
     return cached_value
 
+def contar_legajos():
+    """Contar legajos con caché."""
+    from legajos.models import LegajoAtencion
+    from django.db.models import Count, Q
+    
+    cache_key = "stats_legajos"
+    cached_value = cache.get(cache_key)
+    if cached_value is None:
+        cached_value = LegajoAtencion.objects.aggregate(
+            total=Count('id'),
+            activos=Count('id', filter=Q(estado__in=['ABIERTO', 'EN_SEGUIMIENTO']))
+        )
+        cache.set(cache_key, cached_value, timeout=CACHE_TIMEOUT)
+    return cached_value
+
+def contar_seguimientos_hoy():
+    """Contar seguimientos de hoy con caché."""
+    from legajos.models import SeguimientoContacto
+    from django.utils import timezone
+    
+    cache_key = f"seguimientos_hoy_{timezone.now().date()}"
+    cached_value = cache.get(cache_key)
+    if cached_value is None:
+        cached_value = SeguimientoContacto.objects.filter(
+            creado__date=timezone.now().date()
+        ).count()
+        cache.set(cache_key, cached_value, timeout=300)  # 5 min
+    return cached_value
+
+def contar_alertas_activas():
+    """Contar alertas activas con caché."""
+    from legajos.models import AlertaCiudadano
+    
+    cache_key = "alertas_activas"
+    cached_value = cache.get(cache_key)
+    if cached_value is None:
+        cached_value = AlertaCiudadano.objects.filter(activa=True).count()
+        cache.set(cache_key, cached_value, timeout=60)  # 1 min
+    return cached_value
+
 def invalidate_dashboard_cache():
     """Invalida el caché del dashboard."""
     cache.delete("contar_usuarios")
     cache.delete("contar_ciudadanos")
+    cache.delete("stats_legajos")
+    cache.delete("alertas_activas")
+    from django.utils import timezone
+    cache.delete(f"seguimientos_hoy_{timezone.now().date()}")
